@@ -70,12 +70,12 @@ CODE_SUMMARY=""
 for f in $CODE_FILES; do
   LINES=$(wc -l < "$f" 2>/dev/null || echo "0")
   CODE_SUMMARY+="### $f ($LINES lines)"$'\n'
-  # 핵심 구조만 추출: 함수명, 주석, 주요 로직
-  CODE_SUMMARY+=$(grep -n -E '(^#|function |call_|echo.*━|VERDICT|RATE|MATCH|ANALYSIS|mkdir|curl |jq )' "$f" 2>/dev/null | head -60 || echo "(패턴 없음)")
+  # 파일 내용 직접 포함 (상위 80줄)
+  CODE_SUMMARY+=$(head -80 "$f" 2>/dev/null || echo "(읽기 실패)")
   CODE_SUMMARY+=$'\n\n'
 done
 
-CODE_SUMMARY="${CODE_SUMMARY:0:8000}"
+CODE_SUMMARY="${CODE_SUMMARY:0:12000}"
 
 echo -e "${BLUE}⏳ AI에게 갭 분석 요청 중...${NC}"
 echo ""

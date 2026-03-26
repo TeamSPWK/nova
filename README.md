@@ -9,7 +9,7 @@ AI 시대의 소프트웨어 개발 방법론 도구 키트.
 
 ### 하네스 엔지니어링에서 출발
 
-AXIS는 [하네스 엔지니어링](https://www.youtube.com/watch?v=example)의 핵심 철학을 계승합니다.
+AXIS는 하네스 엔지니어링의 핵심 철학을 계승합니다.
 하네스 엔지니어링은 AI 모델에 관계없이 **멱등성 있는 결과물**을 만들기 위한 구조화 기법으로, CPS 프레임워크, MECE 분석, 린터 강제화, 구조화된 문서화를 통해 일관된 품질을 보장합니다.
 
 AXIS는 여기에 **실전에서 부족했던 3가지**를 추가합니다:
@@ -29,7 +29,7 @@ bkit, Cursor Rules 같은 범용 AI 코딩 플러그인과 비교:
 | | 범용 플러그인 | AXIS Kit |
 |---|---|---|
 | 철학 | 가능한 많은 기능을 제공 | **필요한 것만, 가볍게** |
-| 커맨드 | 30개+ 스킬, 11개+ 에이전트 | **5개 커맨드** |
+| 커맨드 | 30개+ 스킬, 11개+ 에이전트 | **6개 커맨드** |
 | 컨텍스트 비용 | 매 대화마다 수천 토큰 로드 | 호출할 때만 로드 |
 | 커스터마이징 | 설정 파일 수정 | **코드 자체를 수정** (내 것) |
 | AI 검증 | 단일 AI 의존 | **멀티 AI 교차검증** |
@@ -142,6 +142,8 @@ EOF
 
 3개 AI(Claude, GPT, Gemini)에게 동시에 질의하고 합의율을 자동 산출합니다.
 
+![X-Verification 데모](assets/xv-demo.gif)
+
 ```bash
 # CLI에서 직접 실행
 ./scripts/x-verify.sh "기술적 질문"
@@ -164,6 +166,8 @@ EOF
 
 설계 문서와 구현 코드의 갭을 자동 탐지합니다.
 
+![Gap Check 데모](assets/gap-demo.gif)
+
 ```bash
 ./scripts/gap-check.sh docs/designs/feature.md src/
 ```
@@ -172,6 +176,12 @@ EOF
 - 매칭률 90%+ → PASS
 - 매칭률 70~89% → REVIEW NEEDED
 - 매칭률 70% 미만 → SIGNIFICANT GAPS
+
+## 튜토리얼
+
+하나의 기능을 Plan → Design → 구현 → Gap Check까지 따라가는 실전 예시:
+
+**[Todo API 튜토리얼](examples/tutorial-todo-api.md)** — 30분 안에 AXIS 전체 워크플로우를 체험
 
 ## CPS 프레임워크
 
