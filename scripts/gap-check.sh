@@ -24,6 +24,23 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
+# 필수 도구 확인
+for cmd in jq curl; do
+  if ! command -v "$cmd" &> /dev/null; then
+    echo -e "${RED}ERROR: '$cmd'이 설치되어 있지 않습니다.${NC}"
+    echo "  brew install $cmd  (macOS)"
+    echo "  apt install $cmd   (Ubuntu)"
+    exit 1
+  fi
+done
+
+# API 키 확인
+if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+  echo -e "${RED}ERROR: GEMINI_API_KEY가 .env에 설정되지 않았습니다.${NC}"
+  echo "  .env 파일에 GEMINI_API_KEY=your-key 를 추가하세요."
+  exit 1
+fi
+
 # 입력 확인
 if [[ $# -lt 2 ]]; then
   echo "Usage: $0 <design-doc.md> <code-dir>"
@@ -66,6 +83,25 @@ CODE_FILES=$(find "$CODE_DIR" -type f \( \
   -o -name "*.sh" -o -name "*.sql" \
   \) ! -path "*/node_modules/*" ! -path "*/.next/*" ! -path "*/dist/*" 2>/dev/null | head -100)
 
+# 빈 디렉토리 확인
+if [[ -z "$CODE_FILES" ]]; then
+  echo -e "${RED}ERROR: '$CODE_DIR' 에서 분석 가능한 코드 파일을 찾을 수 없습니다.${NC}"
+  echo -e "  지원 확장자: .ts .tsx .js .jsx .py .go .rs .java .sh .sql"
+  echo -e "  디렉토리 경로를 확인하거나, 코드 파일이 존재하는지 확인하세요."
+  exit 1
+fi
+
+# 파일 수 및 총 줄 수 계산
+FILE_COUNT=0
+TOTAL_LINES=0
+for f in $CODE_FILES; do
+  ((FILE_COUNT++)) || true
+  lines=$(wc -l < "$f" 2>/dev/null || echo "0")
+  TOTAL_LINES=$((TOTAL_LINES + lines))
+done
+echo -e "${BLUE}분석 대상: ${FILE_COUNT}개 파일 (총 ${TOTAL_LINES}줄)${NC}"
+echo ""
+
 CODE_SUMMARY=""
 for f in $CODE_FILES; do
   LINES=$(wc -l < "$f" 2>/dev/null || echo "0")
@@ -100,7 +136,7 @@ $CODE_SUMMARY
   \"summary\": \"한줄 요약\"
 }"
 
-RESULT=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+RESULT=$(curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
     contents: [{parts: [{text: $p}]}],
