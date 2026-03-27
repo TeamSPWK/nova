@@ -120,6 +120,7 @@ INSTALL_DIR=$(mktemp -d)
 bash "$ROOT_DIR/install.sh" "$INSTALL_DIR" > /dev/null 2>&1 || true
 assert "install full: 커맨드 9개 설치" "[ \$(ls '$INSTALL_DIR/.claude/commands/'*.md 2>/dev/null | wc -l) -eq 9 ]"
 assert "install full: 스크립트 3개 설치" "[ \$(ls '$INSTALL_DIR/scripts/'*.sh 2>/dev/null | wc -l) -eq 3 ]"
+assert "install full: common.sh 설치" "[ -f '$INSTALL_DIR/scripts/lib/common.sh' ]"
 assert "install full: 템플릿 5개 설치" "[ \$(ls '$INSTALL_DIR/docs/templates/'*.md 2>/dev/null | wc -l) -eq 5 ]"
 assert "install full: 가이드 3개 설치" "[ -f '$INSTALL_DIR/docs/context-chain.md' ] && [ -f '$INSTALL_DIR/docs/eval-checklist.md' ] && [ -f '$INSTALL_DIR/docs/adoption-guide.md' ]"
 
@@ -128,6 +129,7 @@ MINIMAL_DIR=$(mktemp -d)
 bash "$ROOT_DIR/install.sh" --minimal "$MINIMAL_DIR" > /dev/null 2>&1 || true
 assert "install minimal: 커맨드 3개만 설치" "[ \$(ls '$MINIMAL_DIR/.claude/commands/'*.md 2>/dev/null | wc -l) -eq 3 ]"
 assert "install minimal: init.sh만 설치" "[ \$(ls '$MINIMAL_DIR/scripts/'*.sh 2>/dev/null | wc -l) -eq 1 ]"
+assert "install minimal: common.sh 설치" "[ -f '$MINIMAL_DIR/scripts/lib/common.sh' ]"
 assert "install minimal: 템플릿 없음" "[ ! -d '$MINIMAL_DIR/docs/templates' ] || [ \$(ls '$MINIMAL_DIR/docs/templates/'*.md 2>/dev/null | wc -l) -eq 0 ]"
 
 # update 모드 (full 위에 덮어쓰기)
