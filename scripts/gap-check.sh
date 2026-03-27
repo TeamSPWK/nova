@@ -27,12 +27,21 @@ fi
 
 require_commands jq curl
 
-# API 키 확인
-if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo -e "${RED}ERROR: ${BOLD}GEMINI_API_KEY${NC}${RED}가 .env에 설정되지 않았습니다.${NC}"
-  echo -e "  ${CYAN}.env${NC} 파일에 ${BOLD}GEMINI_API_KEY${NC}=your-key 를 추가하세요."
+# API 키 확인 (Gemini > GPT > Claude 우선순위로 fallback)
+SELECTED_AI=""
+if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+  SELECTED_AI="gemini"
+elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
+  SELECTED_AI="gpt"
+elif [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+  SELECTED_AI="claude"
+else
+  echo -e "${RED}ERROR: 사용 가능한 API 키가 없습니다.${NC}"
+  echo -e "  ${CYAN}.env${NC} 파일에 다음 중 하나를 추가하세요:"
+  echo -e "  ${BOLD}GEMINI_API_KEY${NC}, ${BOLD}OPENAI_API_KEY${NC}, 또는 ${BOLD}ANTHROPIC_API_KEY${NC}"
   exit 1
 fi
+echo -e "  ${BLUE}🤖 분석 AI:${NC} ${BOLD}${SELECTED_AI}${NC}"
 
 DESIGN_DOC="$1"
 CODE_DIR="$2"
@@ -85,12 +94,19 @@ CODE_SUMMARY=""
 for f in $CODE_FILES; do
   LINES=$(wc -l < "$f" 2>/dev/null || echo "0")
   CODE_SUMMARY+="### $f ($LINES lines)"$'\n'
-  # 파일 내용 직접 포함 (상위 80줄)
-  CODE_SUMMARY+=$(head -80 "$f" 2>/dev/null || echo "(읽기 실패)")
+  # 파일 상위 200줄 + 시그니처 추출 (200줄 이후 함수/클래스 정의)
+  CODE_SUMMARY+=$(head -200 "$f" 2>/dev/null || echo "(읽기 실패)")
+  if [[ "$LINES" -gt 200 ]]; then
+    SIGS=$(tail -n +"201" "$f" 2>/dev/null | grep -n -E '^\s*(export |function |class |def |func |pub fn |public |private |protected |async function )' 2>/dev/null | head -30)
+    if [[ -n "$SIGS" ]]; then
+      CODE_SUMMARY+=$'\n# --- signatures after line 200 ---\n'
+      CODE_SUMMARY+="$SIGS"
+    fi
+  fi
   CODE_SUMMARY+=$'\n\n'
 done
 
-CODE_SUMMARY="${CODE_SUMMARY:0:12000}"
+CODE_SUMMARY="${CODE_SUMMARY:0:20000}"
 
 echo -e "${BLUE}⏳ AI에게 갭 분석 요청 중...${NC}"
 echo ""
@@ -102,7 +118,7 @@ ANALYSIS_PROMPT="당신은 소프트웨어 품질 검증 전문가입니다.
 ## 설계 문서
 $DESIGN_CONTENT
 
-## 구현 코드 (주요 파일 상위 50줄)
+## 구현 코드 (주요 파일 상위 200줄 + 시그니처)
 $CODE_SUMMARY
 
 다음 JSON 형식으로만 응답하세요:
@@ -115,34 +131,71 @@ $CODE_SUMMARY
   \"summary\": \"한줄 요약\"
 }"
 
-RESULT=$(curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
-    contents: [{parts: [{text: $p}]}],
-    generationConfig: {
-      temperature: 0.1,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "object",
-        properties: {
-          match_rate: {type: "integer"},
-          implemented: {type: "array", items: {type: "string"}},
-          missing: {type: "array", items: {type: "string"}},
-          extra: {type: "array", items: {type: "string"}},
-          risks: {type: "array", items: {type: "string"}},
-          summary: {type: "string"}
-        },
-        required: ["match_rate", "implemented", "missing", "extra", "risks", "summary"]
+# AI별 API 호출
+call_gemini_gap() {
+  curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
+      contents: [{parts: [{text: $p}]}],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            match_rate: {type: "integer"},
+            implemented: {type: "array", items: {type: "string"}},
+            missing: {type: "array", items: {type: "string"}},
+            extra: {type: "array", items: {type: "string"}},
+            risks: {type: "array", items: {type: "string"}},
+            summary: {type: "string"}
+          },
+          required: ["match_rate", "implemented", "missing", "extra", "risks", "summary"]
+        }
       }
-    }
-  }')" | jq -r '.candidates[0].content.parts[0].text // "ERROR"')
+    }')" | jq -r '.candidates[0].content.parts[0].text // "ERROR"'
+}
 
-# JSON 정리
-CLEAN_JSON=$(echo "$RESULT" | jq '.' 2>/dev/null || echo "{}")
+call_gpt_gap() {
+  local response
+  response=$(curl -s --max-time 30 "https://api.openai.com/v1/chat/completions" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
+      model: "gpt-4o",
+      messages: [{role: "user", content: $p}],
+      temperature: 0.1,
+      response_format: {type: "json_object"}
+    }')")
+  echo "$response" | jq -r '.choices[0].message.content // "ERROR"'
+}
+
+call_claude_gap() {
+  local response
+  response=$(curl -s --max-time 30 "https://api.anthropic.com/v1/messages" \
+    -H "x-api-key: $ANTHROPIC_API_KEY" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "content-type: application/json" \
+    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      messages: [{role: "user", content: $p}]
+    }')")
+  echo "$response" | jq -r '.content[0].text // "ERROR"'
+}
+
+case "$SELECTED_AI" in
+  gemini) RESULT=$(call_gemini_gap) ;;
+  gpt)    RESULT=$(call_gpt_gap) ;;
+  claude) RESULT=$(call_claude_gap) ;;
+esac
+
+# JSON 정리 (GPT/Claude가 마크다운 코드블록으로 감쌀 수 있음)
+CLEAN_JSON=$(echo "$RESULT" | sed 's/```json//g' | sed 's/```//g' | jq '.' 2>/dev/null || echo "{}")
 
 # match_rate 키가 없으면 응답 구조가 다른 것 — 직접 추출 시도
 if ! echo "$CLEAN_JSON" | jq -e '.match_rate' > /dev/null 2>&1; then
-  # Gemini가 다른 구조로 응답했을 수 있음 — 요약 재시도
+  # AI가 다른 구조로 응답했을 수 있음 — 요약 재시도
   CLEAN_JSON='{"match_rate": 0, "implemented": [], "missing": ["JSON 파싱 실패 - 원시 응답을 확인하세요"], "extra": [], "risks": [], "summary": "응답 구조 불일치"}'
   echo -e "${YELLOW}[INFO] AI 응답이 예상 형식과 다릅니다. 원시 응답:${NC}"
   echo "$RESULT" | head -40

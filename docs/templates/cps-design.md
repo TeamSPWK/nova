@@ -2,7 +2,8 @@
 
 > AXIS Engineering — CPS Framework
 > 작성일: {YYYY-MM-DD}
-> Plan 문서: {링크}
+> Plan: {plans/slug.md}
+> Verification: {verifications/slug.md — Gap 검증 후 경로 추가}
 
 ---
 

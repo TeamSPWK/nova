@@ -39,6 +39,7 @@ Plan 문서를 기반으로 기술적 설계 상세를 작성한다.
 - 단순성: 불필요한 복잡도가 없는가?
 
 5. 작성된 문서를 `docs/designs/{slug}.md`에 저장한다.
+6. 저장 후, 원본 Plan 문서의 헤더에 `> Design: designs/{slug}.md` 경로를 추가한다.
 
 # Notes
 - Design은 "어떻게" — 구체적 기술 상세

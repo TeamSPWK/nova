@@ -13,11 +13,15 @@ BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 # 모드 설정
 UPDATE_MODE=false
 MINIMAL_MODE=false
+UNINSTALL_MODE=false
 if [[ "${1:-}" == "--update" ]]; then
   UPDATE_MODE=true
   shift
 elif [[ "${1:-}" == "--minimal" ]]; then
   MINIMAL_MODE=true
+  shift
+elif [[ "${1:-}" == "--uninstall" ]]; then
+  UNINSTALL_MODE=true
   shift
 fi
 
@@ -36,7 +40,9 @@ COUNT_UPDATED=0
 COUNT_SKIPPED=0
 
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-if $UPDATE_MODE; then
+if $UNINSTALL_MODE; then
+echo -e "${CYAN}  🗑️  AXIS Kit Uninstaller${NC}"
+elif $UPDATE_MODE; then
 echo -e "${CYAN}  🔄 AXIS Kit Updater${NC}"
 elif $MINIMAL_MODE; then
 echo -e "${CYAN}  📦 AXIS Kit Installer ${YELLOW}(Minimal)${NC}"
@@ -46,6 +52,81 @@ fi
 echo -e "${CYAN}  ${BOLD}A${NC}${CYAN}daptive · ${BOLD}X${NC}${CYAN}-Verification · ${BOLD}I${NC}${CYAN}dempotent · ${BOLD}S${NC}${CYAN}tructured${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+
+# ── Uninstall 모드 ──
+if $UNINSTALL_MODE; then
+  echo -e "  ${BOLD}📂 대상 경로:${NC} ${CYAN}$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")${NC}"
+  echo ""
+
+  COUNT_REMOVED=0
+
+  # AXIS가 설치한 커맨드 파일 제거
+  COMMANDS_UNINSTALL=(next init plan xv design gap review propose metrics)
+  echo -e "${BOLD}🔧 커맨드 제거 중...${NC}"
+  for cmd in "${COMMANDS_UNINSTALL[@]}"; do
+    local_path="${TARGET_DIR}/.claude/commands/${cmd}.md"
+    if [[ -f "$local_path" ]]; then
+      rm "$local_path"
+      echo -e "  ${RED}✗${NC} ${CYAN}.claude/commands/${cmd}.md${NC}"
+      COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    fi
+  done
+  echo ""
+
+  # AXIS 스크립트 제거
+  SCRIPTS_UNINSTALL=(.axis-version lib/common.sh x-verify.sh gap-check.sh init.sh)
+  echo -e "${BOLD}🚀 스크립트 제거 중...${NC}"
+  for scr in "${SCRIPTS_UNINSTALL[@]}"; do
+    local_path="${TARGET_DIR}/scripts/${scr}"
+    if [[ -f "$local_path" ]]; then
+      rm "$local_path"
+      echo -e "  ${RED}✗${NC} ${CYAN}scripts/${scr}${NC}"
+      COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    fi
+  done
+  # scripts/lib/ 디렉토리가 비었으면 제거
+  rmdir "${TARGET_DIR}/scripts/lib" 2>/dev/null || true
+  echo ""
+
+  # 템플릿 제거
+  TEMPLATES_UNINSTALL=(cps-plan.md cps-design.md claude-md.md decision-record.md rule-proposal.md)
+  echo -e "${BOLD}📄 템플릿 제거 중...${NC}"
+  for tmpl in "${TEMPLATES_UNINSTALL[@]}"; do
+    local_path="${TARGET_DIR}/docs/templates/${tmpl}"
+    if [[ -f "$local_path" ]]; then
+      rm "$local_path"
+      echo -e "  ${RED}✗${NC} ${CYAN}docs/templates/${tmpl}${NC}"
+      COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    fi
+  done
+  echo ""
+
+  # 가이드 문서 제거
+  GUIDES_UNINSTALL=(context-chain.md eval-checklist.md adoption-guide.md)
+  echo -e "${BOLD}📚 가이드 문서 제거 중...${NC}"
+  for guide in "${GUIDES_UNINSTALL[@]}"; do
+    local_path="${TARGET_DIR}/docs/${guide}"
+    if [[ -f "$local_path" ]]; then
+      rm "$local_path"
+      echo -e "  ${RED}✗${NC} ${CYAN}docs/${guide}${NC}"
+      COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    fi
+  done
+  echo ""
+
+  # 사용자 문서는 보존
+  echo -e "${YELLOW}  ℹ️  보존됨: docs/plans/, docs/designs/, docs/decisions/, docs/verifications/ (사용자 문서)${NC}"
+  echo -e "${YELLOW}  ℹ️  보존됨: CLAUDE.md, .env (사용자 설정)${NC}"
+  echo ""
+
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${GREEN}  ✅ AXIS Kit 제거 완료: ${BOLD}${COUNT_REMOVED}개${NC}${GREEN} 파일 삭제${NC}"
+  echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+  echo -e "${BOLD}💡 CLAUDE.md에서 AXIS 섹션을 수동으로 제거하세요.${NC}"
+  echo ""
+  exit 0
+fi
 
 # curl 확인
 if ! command -v curl &> /dev/null; then
