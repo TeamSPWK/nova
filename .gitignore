@@ -15,12 +15,13 @@ docs/plans/
 docs/designs/
 docs/verifications/
 
+# bkit generated files
+docs/.bkit-memory.json
+docs/.pdca-status.json
+
 # IDE
 .vscode/
 .idea/
 
 # Dependencies
 node_modules/
-
-# AXIS Engineering
-docs/.pdca-status.json
