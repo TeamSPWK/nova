@@ -1,7 +1,7 @@
 # AXIS Kit
 
 [![CI](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/TeamSPWK/axis-kit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/TeamSPWK/axis-kit/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **처음부터 제대로. 매번 더 빠르게.**
