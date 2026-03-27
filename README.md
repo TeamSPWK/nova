@@ -1,5 +1,7 @@
 # AXIS Kit
 
+[![CI](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml)
+
 > **A**daptive · **X**-Verification · **I**dempotent · **S**tructured
 
 AI 시대의 소프트웨어 개발 방법론 도구 키트.
@@ -53,7 +55,11 @@ S — Structured  : CPS + MECE + 린터로 구조가 품질을 만든다
 ![설치 데모](assets/install-demo.gif)
 
 ```bash
+# 신규 설치
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
+
+# 업데이트 (커맨드+스크립트만 갱신, 사용자 커스터마이징 보존)
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --update
 ```
 
 ### 또는 직접 복사
@@ -172,11 +178,18 @@ EOF
 # CLI에서 직접 실행
 ./scripts/x-verify.sh "기술적 질문"
 
+# Claude 모델 선택 (기본: sonnet)
+./scripts/x-verify.sh --model opus "중요한 아키텍처 질문"
+./scripts/x-verify.sh --model haiku "빠른 질문"
+
 # 결과 저장 없이 실행
 ./scripts/x-verify.sh --no-save "빠른 질문"
 
 # 파일에서 질문 읽기
 ./scripts/x-verify.sh -f question.txt
+
+# 옵션 조합
+./scripts/x-verify.sh --no-save --model opus "질문"
 ```
 
 **합의 프로토콜:**
@@ -201,11 +214,15 @@ EOF
 - 매칭률 70~89% → REVIEW NEEDED
 - 매칭률 70% 미만 → SIGNIFICANT GAPS
 
-## 튜토리얼
+## 문서
 
-하나의 기능을 Plan → Design → 구현 → Gap Check까지 따라가는 실전 예시:
-
-**[Todo API 튜토리얼](examples/tutorial-todo-api.md)** — 30분 안에 AXIS 전체 워크플로우를 체험
+| 문서 | 설명 |
+|------|------|
+| **[사용법 가이드](docs/usage-guide.md)** | 9개 커맨드 + 3개 스크립트 상세 사용법 |
+| **[Todo API 튜토리얼](examples/tutorial-todo-api.md)** | Plan → Design → 구현 → Gap 전체 워크플로우 체험 |
+| **[도입 가이드](docs/adoption-guide.md)** | 신규/기존 프로젝트별 단계적 도입 전략 |
+| **[방법론 상세](docs/axis-engineering.md)** | AXIS 4 Pillars, PDCA, 보안 체계 |
+| **[실전 예시](examples/)** | CPS Plan, Design, Decision Record, XV 결과 샘플 |
 
 ## CPS 프레임워크
 
@@ -255,14 +272,6 @@ axis-kit/
 ├── tests/                   # 스크립트 테스트
 └── examples/                # 사용 예시 + 튜토리얼
 ```
-
-## 도입 가이드
-
-신규/기존 프로젝트별 단계적 도입 전략: **[docs/adoption-guide.md](docs/adoption-guide.md)**
-
-- **신규 프로젝트**: 위의 "빠른 시작" 참조
-- **기존 프로젝트**: `--adopt` 모드로 CLAUDE.md 비파괴적 도입 (기존 설정 유지)
-- **최소 도입**: 커맨드만 복사해도 `/xv`, `/gap`, `/next` 바로 사용 가능
 
 ## 요구사항
 
