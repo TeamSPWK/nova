@@ -59,6 +59,7 @@ fi
 # 옵션 처리
 SAVE_RESULT=true
 CLAUDE_MODEL="claude-sonnet-4-20250514"
+SELECTED_AIS=()
 while [[ "${1:-}" == --* ]]; do
   case "$1" in
     --no-save)
@@ -74,11 +75,28 @@ while [[ "${1:-}" == --* ]]; do
       esac
       shift 2
       ;;
+    --claude)  SELECTED_AIS+=("claude"); shift ;;
+    --gpt)     SELECTED_AIS+=("gpt"); shift ;;
+    --gemini)  SELECTED_AIS+=("gemini"); shift ;;
     *)
       echo -e "${RED}ERROR: 알 수 없는 옵션: $1${NC}"; exit 1
       ;;
   esac
 done
+
+# AI 선택 필터링: --claude/--gpt/--gemini 지정 시 해당 AI만 사용
+if [[ ${#SELECTED_AIS[@]} -gt 0 ]]; then
+  FILTERED_AIS=()
+  for ai in "${SELECTED_AIS[@]}"; do
+    if [[ " ${AVAILABLE_AIS[*]} " =~ " $ai " ]]; then
+      FILTERED_AIS+=("$ai")
+    else
+      echo -e "${RED}ERROR: ${BOLD}$ai${NC}${RED} API 키가 .env에 없습니다.${NC}"
+      exit 1
+    fi
+  done
+  AVAILABLE_AIS=("${FILTERED_AIS[@]}")
+fi
 
 # 입력 처리
 if [[ "${1:-}" == "-f" && -n "${2:-}" ]]; then
@@ -87,8 +105,16 @@ elif [[ -n "${1:-}" ]]; then
   QUESTION="$1"
 else
   echo -e "${BOLD}Usage:${NC}"
-  echo -e "  ${YELLOW}\$ $0 [--no-save] [--model opus|sonnet|haiku] \"질문 내용\"${NC}"
-  echo -e "  ${YELLOW}\$ $0 [--no-save] [--model opus|sonnet|haiku] -f question.txt${NC}"
+  echo -e "  ${YELLOW}\$ $0 [옵션] \"질문 내용\"${NC}"
+  echo -e "  ${YELLOW}\$ $0 [옵션] -f question.txt${NC}"
+  echo ""
+  echo -e "${BOLD}옵션:${NC}"
+  echo -e "  ${YELLOW}--claude${NC}              Claude만 호출"
+  echo -e "  ${YELLOW}--gpt${NC}                 GPT만 호출"
+  echo -e "  ${YELLOW}--gemini${NC}              Gemini만 호출"
+  echo -e "  ${YELLOW}--gpt --gemini${NC}        조합 가능"
+  echo -e "  ${YELLOW}--model opus|sonnet|haiku${NC}  Claude 모델 선택"
+  echo -e "  ${YELLOW}--no-save${NC}             결과 저장 안 함"
   exit 1
 fi
 
@@ -221,29 +247,37 @@ if [[ $SUCCESS_COUNT -eq 0 ]]; then
   exit 1
 fi
 
-# ── Phase 2: 합의율 자동 산출 (4th AI Call) ──
+# ── Phase 2: 합의율 자동 산출 ──
 
-echo -e "${BLUE}⏳ Phase 2: 합의율 분석 중...${NC}"
-echo ""
+# 호출된 AI 응답 수집
+RESPONSES=""
+for ai in claude gpt gemini; do
+  if [[ -f "$TMPDIR/${ai}.txt" ]] && ! grep -q "^ERROR:" "$TMPDIR/${ai}.txt" 2>/dev/null; then
+    RESP=$(cat "$TMPDIR/${ai}.txt")
+    RESPONSES+="## ${ai} 응답"$'\n'"${RESP}"$'\n\n'
+  fi
+done
 
-CLAUDE_RESP=$(cat "$TMPDIR/claude.txt")
-GPT_RESP=$(cat "$TMPDIR/gpt.txt")
-GEMINI_RESP=$(cat "$TMPDIR/gemini.txt")
+if [[ $SUCCESS_COUNT -eq 1 ]]; then
+  echo -e "${BLUE}💡 AI 1개 + 현재 에이전트 = 교차검증 (합의 분석 건너뜀)${NC}"
+  echo ""
+  # 1개일 때는 합의 분석 없이 바로 결과 저장으로
+  RATE="N/A"
+  VERDICT="agent_review"
+  SUMMARY="단일 AI 응답 — 현재 에이전트와 교차검증하세요"
+  CLEAN_JSON="{}"
+  COMMON=""
+  DIFFS=""
+else
+  echo -e "${BLUE}⏳ Phase 2: ${SUCCESS_COUNT}개 AI 합의율 분석 중...${NC}"
+  echo ""
 
-ANALYSIS_PROMPT="다음은 같은 질문에 대한 3개 AI의 응답입니다. 합의 수준을 분석하세요.
+  ANALYSIS_PROMPT="다음은 같은 질문에 대한 ${SUCCESS_COUNT}개 AI의 응답입니다. 합의 수준을 분석하세요.
 
 ## 원래 질문
 $QUESTION
 
-## Claude 응답
-$CLAUDE_RESP
-
-## GPT 응답
-$GPT_RESP
-
-## Gemini 응답
-$GEMINI_RESP
-
+$RESPONSES
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만:
 {
   \"consensus_rate\": (0-100 정수. 핵심 결론의 방향성이 일치하는 정도),
@@ -288,24 +322,27 @@ RATE=$(echo "$CLEAN_JSON" | jq -r '.consensus_rate // "?"' 2>/dev/null || echo "
 VERDICT=$(echo "$CLEAN_JSON" | jq -r '.verdict // "unknown"' 2>/dev/null || echo "unknown")
 SUMMARY=$(echo "$CLEAN_JSON" | jq -r '.summary // "분석 실패"' 2>/dev/null || echo "분석 실패")
 
+# 공통점/차이점 출력
+COMMON=$(echo "$CLEAN_JSON" | jq -r '.common_points[]? // empty' 2>/dev/null)
+DIFFS=$(echo "$CLEAN_JSON" | jq -r '.differences[]? // empty' 2>/dev/null)
+
+fi  # SUCCESS_COUNT == 1 분기 종료
+
 # 판정 색상
 case "$VERDICT" in
-  auto_approve) VERDICT_COLOR="${GREEN}✅ AUTO APPROVE${NC}" ;;
-  human_review) VERDICT_COLOR="${YELLOW}⚠️  HUMAN REVIEW${NC}" ;;
-  redefine)     VERDICT_COLOR="${RED}🔄 REDEFINE${NC}" ;;
-  *)            VERDICT_COLOR="${RED}❓ UNKNOWN${NC}" ;;
+  auto_approve)  VERDICT_COLOR="${GREEN}✅ AUTO APPROVE${NC}" ;;
+  human_review)  VERDICT_COLOR="${YELLOW}⚠️  HUMAN REVIEW${NC}" ;;
+  agent_review)  VERDICT_COLOR="${CYAN}🤖 AGENT REVIEW${NC}" ;;
+  redefine)      VERDICT_COLOR="${RED}🔄 REDEFINE${NC}" ;;
+  *)             VERDICT_COLOR="${RED}❓ UNKNOWN${NC}" ;;
 esac
 
 echo -e "${MAGENTA}━━━ 📊 합의 분석 결과 ━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "  ${BOLD}합의율:${NC}  ${CYAN}${BOLD}${RATE}%${NC}"
+echo -e "  ${BOLD}합의율:${NC}  ${CYAN}${BOLD}${RATE}${NC}$( [[ "$RATE" != "N/A" ]] && echo "%" || true )"
 echo -e "  ${BOLD}판정:${NC}    ${VERDICT_COLOR}"
 echo -e "  ${BOLD}요약:${NC}    ${SUMMARY}"
 echo ""
-
-# 공통점/차이점 출력
-COMMON=$(echo "$CLEAN_JSON" | jq -r '.common_points[]? // empty' 2>/dev/null)
-DIFFS=$(echo "$CLEAN_JSON" | jq -r '.differences[]? // empty' 2>/dev/null)
 
 if [[ -n "$COMMON" ]]; then
   echo -e "  ${GREEN}공통점:${NC}"
@@ -330,27 +367,29 @@ if [[ "$SAVE_RESULT" == true ]]; then
   FILENAME="${DATE}-${SLUG}.md"
   FILEPATH="$VERIFY_DIR/$FILENAME"
 
+  # 호출된 AI 응답만 수집
+  AI_SECTIONS=""
+  for ai in claude gpt gemini; do
+    if [[ -f "$TMPDIR/${ai}.txt" ]]; then
+      AI_SECTIONS+="## ${ai}"$'\n'
+      AI_SECTIONS+="$(cat "$TMPDIR/${ai}.txt")"$'\n\n'
+    fi
+  done
+
   cat > "$FILEPATH" << MDEOF
 # X-Verification: ${QUESTION:0:80}
 
 > 날짜: $DATE
-> 합의율: ${RATE}%
+> 합의율: ${RATE}$( [[ "$RATE" != "N/A" ]] && echo "%" || true )
 > 판정: $VERDICT
+> AI: ${AVAILABLE_AIS[*]}
 
 ## 질문
 $QUESTION
 
-## Claude
-$CLAUDE_RESP
-
-## GPT
-$GPT_RESP
-
-## Gemini
-$GEMINI_RESP
-
+$AI_SECTIONS
 ## 합의 분석
-- **합의율**: ${RATE}%
+- **합의율**: ${RATE}$( [[ "$RATE" != "N/A" ]] && echo "%" || true )
 - **판정**: $VERDICT
 - **요약**: $SUMMARY
 
