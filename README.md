@@ -218,11 +218,59 @@ axis-kit/
     └── sample-xv-result.md
 ```
 
+## 치트시트
+
+### 설치 & 업데이트
+
+```bash
+# 최소 설치 (핵심 3개: /next, /plan, /review)
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --minimal
+
+# 전체 설치
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
+
+# 업데이트 (커맨드+스크립트만 갱신, 커스터마이징 보존)
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --update
+
+# 초기화
+bash scripts/init.sh my-project "Next.js + TypeScript"     # 신규
+bash scripts/init.sh --adopt my-project                     # 기존 프로젝트
+```
+
+### 커맨드 요약
+
+```bash
+/next                              # 다음 할 일 추천
+/plan 기능명                        # CPS Plan 작성
+/xv "질문"                          # 멀티 AI 교차검증
+/design 기능명                      # CPS Design 작성
+/gap docs/designs/x.md src/        # 설계↔구현 갭 검증
+/review src/                       # 코드 리뷰
+/propose 패턴명                     # 규칙 제안
+/metrics                           # AXIS 도입 수준 측정
+/init 프로젝트명                    # 프로젝트 초기 설정
+```
+
+### CLI 스크립트
+
+```bash
+./scripts/x-verify.sh "질문"                    # 교차검증 (기본: Sonnet)
+./scripts/x-verify.sh --model opus "질문"       # Opus 모델 사용
+./scripts/x-verify.sh --no-save "질문"          # 결과 저장 안 함
+./scripts/gap-check.sh design.md src/           # 갭 체크
+```
+
+### 워크플로우
+
+```
+기능 요청 → /plan → /xv(필요시) → /design → 구현 → /gap → /review → /propose(패턴 발견시)
+```
+
 ## 요구사항
 
 - [Claude Code](https://claude.ai/code) CLI
 - `jq`, `curl` (스크립트 실행용)
-- API 키: Anthropic + OpenAI + Google AI Studio (교차검증 사용 시)
+- API 키: Anthropic + OpenAI + Google AI Studio (교차검증 사용 시, 선택)
 
 ## 라이선스
 

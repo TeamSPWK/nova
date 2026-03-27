@@ -2,7 +2,7 @@
 
 > 처음부터 제대로. 매번 더 빠르게.
 >
-> 9개 커맨드 + 5개 전문가 에이전트 + 3개 스크립트의 상세 사용법
+> 9개 커맨드 + 5개 전문가 에이전트 + CLI 스크립트의 상세 사용법
 
 ---
 
@@ -107,7 +107,7 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh |
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --update
 ```
 
-**갱신 대상:** 커맨드 9개, 에이전트 5개, 스크립트 5개
+**갱신 대상:** 커맨드 9개, 에이전트 5개, 스크립트 3개 + 공통 유틸리티
 **보존 대상:** 템플릿, 가이드 문서 (사용자 커스터마이징 보호)
 
 ### Uninstall (`--uninstall`)
