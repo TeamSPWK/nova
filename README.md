@@ -2,44 +2,44 @@
 
 [![CI](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/axis-kit/actions/workflows/ci.yml)
 
-> **A**daptive · **X**-Verification · **I**dempotent · **S**tructured
+**처음부터 제대로. 매번 더 빠르게.**
+Build Right the First Time. Faster Every Time.
 
-AI 시대의 소프트웨어 개발 방법론 도구 키트.
-어떤 AI를 쓰든, 누가 쓰든, 언제 쓰든 — 같은 구조에서 같은 품질이 나온다.
+---
 
-## 왜 AXIS인가?
+## AI 도구는 넘쳐나는데, 왜 재작업은 줄지 않는가?
 
-### 하네스 엔지니어링에서 출발
+AI 코딩 도구는 **타이핑 속도**를 높여줬다. 하지만 진짜 병목은 거기에 없다.
 
-AXIS는 하네스 엔지니어링의 핵심 철학을 계승합니다.
-하네스 엔지니어링은 AI 모델에 관계없이 **멱등성 있는 결과물**을 만들기 위한 구조화 기법으로, CPS 프레임워크, MECE 분석, 린터 강제화, 구조화된 문서화를 통해 일관된 품질을 보장합니다.
+> 잘못된 설계 판단 하나가 3주 뒤 전체 리팩토링으로 돌아온다.
+> "빠르게 만들었다"가 "빠르게 다시 만들었다"로 바뀐다.
+> 팀원이 바뀌면 맥락이 증발하고, 같은 실수가 반복된다.
 
-AXIS는 여기에 **실전에서 부족했던 3가지**를 추가합니다:
+**재작업의 근본 원인은 속도가 아니라 판단이다.** 잘못된 판단은 복리로 비용이 쌓인다. 1주차의 잘못된 결정이 4주차에 10배의 재작업으로 돌아온다.
 
-| | 하네스 엔지니어링 | AXIS Kit |
-|---|---|---|
-| 규칙 체계 | 정적 (한번 정하면 고정) | **Adaptive** — 프로젝트와 함께 진화 |
-| 검증 방식 | 단일 AI 결과 신뢰 | **X-Verify** — 멀티 AI 교차검증 + 합의율 자동 산출 |
-| 설계↔구현 | 정방향만 (설계→구현) | **양방향** — 역방향 검증으로 갭 자동 탐지 |
-| 문서 구조 | CPS + MECE | CPS + MECE (동일하게 계승) |
-| 코드 강제 | 린터 | 린터 (동일하게 계승) |
+AXIS Kit은 AI 시대의 소프트웨어 개발에서 **처음부터 제대로 만들게 하여 재작업을 제거한다.**
 
-### 범용 플러그인(bkit 등)과의 차이
+## AXIS가 하는 일
 
-bkit, Cursor Rules 같은 범용 AI 코딩 플러그인과 비교:
+AXIS Kit은 5가지 자산으로 개발 과정의 핵심 병목을 제거한다.
 
-| | 범용 플러그인 | AXIS Kit |
-|---|---|---|
-| 철학 | 가능한 많은 기능을 제공 | **필요한 것만, 가볍게** |
-| 커맨드 | 30개+ 스킬, 11개+ 에이전트 | **9개 커맨드** |
-| 컨텍스트 비용 | 매 대화마다 수천 토큰 로드 | 호출할 때만 로드 |
-| 커스터마이징 | 설정 파일 수정 | **코드 자체를 수정** (내 것) |
-| AI 검증 | 단일 AI 의존 | **멀티 AI 교차검증** |
-| 방법론 | 범용 PDCA | **CPS + MECE + 합의 프로토콜** |
+| 자산 | 제거하는 병목 | 결과 |
+|------|-------------|------|
+| **CPS 문서 체계** | "뭘 만들지 합의 안 됨" | 기획-설계-구현이 하나의 구조로 연결 |
+| **교차검증 (/xv)** | "AI 한 마리 말만 믿음" | 3개 AI 합의로 잘못된 판단 사전 차단 |
+| **역방향 검증 (/gap)** | "설계와 코드가 따로 놂" | 설계-구현 갭 자동 탐지, 누락 제로 |
+| **컨텍스트 체인** | "세션 끊기면 맥락 증발" | CLAUDE.md + git + 의사결정 기록으로 영속 복원 |
+| **적응형 규칙** | "규칙이 낡아서 무시됨" | 프로젝트와 함께 진화하는 살아있는 규칙 |
 
-AXIS는 플러그인이 아닙니다. **내 프로젝트에 복사해서 내 것으로 만드는 도구 키트**입니다.
+## 철학
 
-## 핵심 원칙
+AXIS는 세 가지 원칙 위에 서 있다.
+
+**일관성** -- 누가 작업하든, 어떤 AI를 쓰든 같은 품질이 나온다. 구조가 품질을 만든다.
+
+**생산성** -- 재작업을 제거하는 것이 가장 빠른 길이다. 처음부터 제대로 만들면 두 번 만들 필요가 없다.
+
+**혁신 흡수** -- 규칙은 고정이 아니다. 좋은 패턴이 발견되면 제안하고, 검증하고, 흡수한다.
 
 ```
 A — Adaptive    : 규칙이 프로젝트와 함께 진화한다
@@ -50,36 +50,40 @@ S — Structured  : CPS + MECE + 린터로 구조가 품질을 만든다
 
 ## 빠른 시작
 
-### 기존 프로젝트에 도입 (권장)
+### 최소 설치 (권장 -- 핵심 3개 커맨드부터)
 
 ![설치 데모](assets/install-demo.gif)
 
 ```bash
-# 핵심 커맨드 3개만 설치 (/next, /plan, /review)
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --minimal
-
-# CLAUDE.md에 AXIS 섹션 추가 (기존 내용 유지)
-bash scripts/init.sh --adopt my-project
-
-# 바로 시작
-/next   # 다음 할 일 확인
 ```
-
-> 2~3개 커맨드부터 시작하고, 익숙해지면 전체 설치로 업그레이드하세요.
 
 ### 전체 설치
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
+```
 
-# 업데이트 (커맨드+스크립트만 갱신, 사용자 커스터마이징 보존)
+### 업데이트 (커스터마이징 보존)
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --update
 ```
 
-### 신규 프로젝트 초기화
+### 프로젝트 초기화
 
 ```bash
+# 기존 프로젝트에 AXIS 도입 (CLAUDE.md 기존 내용 유지)
+bash scripts/init.sh --adopt my-project
+
+# 신규 프로젝트 생성
 bash scripts/init.sh my-project "Next.js + TypeScript"
+```
+
+### 바로 시작
+
+```bash
+/next   # 다음 할 일 확인 — 여기서부터 시작
 ```
 
 ### API 키 설정 (교차검증용, 선택)
@@ -92,20 +96,7 @@ GEMINI_API_KEY="your-key"
 EOF
 ```
 
-> `/next`, `/plan`, `/review` 등 대부분의 커맨드는 API 키 없이 동작합니다. `/xv`(교차검증)만 API 키가 필요합니다.
-
-### 사용
-
-```bash
-/next                    # 뭘 해야 하지?
-/plan 사용자 인증        # 기능 기획
-/xv "JWT vs 세션?"      # 교차검증
-/design 사용자 인증      # 기술 설계
-# ... 구현 ...
-/gap docs/designs/auth.md src/   # 설계 vs 구현 검증
-/review src/auth/        # 코드 리뷰
-/metrics                 # 도입 수준 확인
-```
+> `/xv`(교차검증)만 API 키가 필요합니다. 나머지 커맨드는 모두 API 키 없이 동작합니다.
 
 ## 커맨드
 
@@ -121,180 +112,122 @@ EOF
 | `/propose 패턴` | 규칙 제안 (Adaptive) | 반복 패턴 발견 시 |
 | `/metrics` | AXIS 도입 수준 자동 측정 | 정기 평가, 현황 파악 |
 
-### 워크플로우
+## 에이전트
+
+특화된 관점이 필요할 때, 전문 에이전트를 호출한다.
+
+| 에이전트 | 전문 영역 |
+|----------|----------|
+| `architect` | 시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토 |
+| `senior-dev` | 코드 품질 개선, 리팩토링, 기술 부채 식별 |
+| `qa-engineer` | 테스트 전략, 엣지 케이스 식별, 품질 검증 |
+| `security-engineer` | 보안 취약점 점검, 위협 모델링, 인증/인가 검토 |
+| `devops-engineer` | CI/CD 파이프라인, 인프라 설정, 배포 전략 |
+
+## 워크플로우
 
 ```
-/init → /next (뭘 해야 하지?) → /plan → /xv (필요시) → /design → 구현 → /gap → /review
-                                         └── 패턴 발견 시 → /propose → 승인 → 규칙 반영
-                                         └── 현황 파악 → /metrics
+/next ─── 뭘 해야 하지?
+  │
+  ▼
+/plan ─── 기능 기획 (CPS)
+  │
+  ├── /xv ─── 설계 판단이 필요하면 교차검증
+  │
+  ▼
+/design ─ 기술 설계 (CPS)
+  │
+  ▼
+  구현
+  │
+  ├── /gap ──── 설계 vs 구현 갭 검증
+  ├── /review ─ 코드 리뷰
+  │
+  ▼
+  완료
+  │
+  └── 패턴 발견 → /propose → 승인 → 규칙 진화
 ```
-
-## 컨텍스트 체인 (Context Chain)
-
-세션이 끊겨도, 팀원이 바뀌어도 맥락은 살아있습니다.
-
-**3계층 메모리 아키텍처:**
-
-| 계층 | 저장 위치 | 수명 |
-|------|----------|------|
-| Ephemeral | 현재 대화 | 세션 내 |
-| Persistent | CLAUDE.md, docs/decisions/ | 프로젝트 전체 |
-| Structural | 설계 문서, git history, 린터 | 영구 |
-
-새 세션 시작 시: CLAUDE.md 로드 → git log 확인 → 의사결정 기록 참조 → 계속 작업
-
-상세: `docs/context-chain.md`
-
-## 규칙 진화 (Adaptive Rules)
-
-규칙은 고정이 아닙니다. 프로젝트와 함께 성장합니다.
-
-```
-감지(Detect) → 제안(/propose) → 승인(사람) → 적용 → 검증
-```
-
-- 반복 패턴 3회 이상 → 규칙 제안 고려
-- AI가 제안, **사람이 승인** (AI 독단 변경 불가)
-- 변경 이력: `docs/rules-changelog.md`
-
-## 자가 평가 (Eval Checklist)
-
-프로젝트의 AXIS 도입 수준을 측정합니다.
-
-| Pillar | 평가 항목 |
-|--------|----------|
-| Structured | CLAUDE.md, CPS 문서, 린터, 커밋 컨벤션 |
-| Idempotent | AI 독립성, 컨텍스트 복원, 의사결정 추적 |
-| X-Verification | 교차검증, 합의 프로토콜, 역방향 검증 |
-| Adaptive | 규칙 제안, 변경 관리, 이력 추적 |
-
-상세: `docs/eval-checklist.md`
-
-## 교차검증 (X-Verification)
-
-3개 AI(Claude, GPT, Gemini)에게 동시에 질의하고 합의율을 자동 산출합니다.
 
 ![X-Verification 데모](assets/xv-demo.gif)
-
-```bash
-# CLI에서 직접 실행
-./scripts/x-verify.sh "기술적 질문"
-
-# Claude 모델 선택 (기본: sonnet)
-./scripts/x-verify.sh --model opus "중요한 아키텍처 질문"
-./scripts/x-verify.sh --model haiku "빠른 질문"
-
-# 결과 저장 없이 실행
-./scripts/x-verify.sh --no-save "빠른 질문"
-
-# 파일에서 질문 읽기
-./scripts/x-verify.sh -f question.txt
-
-# 옵션 조합
-./scripts/x-verify.sh --no-save --model opus "질문"
-```
-
-**합의 프로토콜:**
-- 90%+ 합의 → 자동 채택
-- 70~89% → AI가 차이점 요약, 사람이 판단
-- 70% 미만 → 사람 필수 개입, 질문 재정의 검토
-
-검증 결과는 `docs/verifications/`에 자동 저장됩니다.
-
-## 역방향 검증 (Gap Check)
-
-설계 문서와 구현 코드의 갭을 자동 탐지합니다.
-
 ![Gap Check 데모](assets/gap-demo.gif)
-
-```bash
-./scripts/gap-check.sh docs/designs/feature.md src/
-```
-
-**판정 기준:**
-- 매칭률 90%+ → PASS
-- 매칭률 70~89% → REVIEW NEEDED
-- 매칭률 70% 미만 → SIGNIFICANT GAPS
 
 ## 문서
 
 | 문서 | 설명 |
 |------|------|
-| **[사용법 가이드](docs/usage-guide.md)** | 9개 커맨드 + 3개 스크립트 상세 사용법 |
-| **[Todo API 튜토리얼](examples/tutorial-todo-api.md)** | Plan → Design → 구현 → Gap 전체 워크플로우 체험 |
+| **[사용법 가이드](docs/usage-guide.md)** | 커맨드, 스크립트, 에이전트 상세 사용법 |
+| **[Todo API 튜토리얼](examples/tutorial-todo-api.md)** | Plan - Design - 구현 - Gap 전체 워크플로우 체험 |
 | **[도입 가이드](docs/adoption-guide.md)** | 신규/기존 프로젝트별 단계적 도입 전략 |
-| **[방법론 상세](docs/axis-engineering.md)** | AXIS 4 Pillars, PDCA, 보안 체계 |
-| **[실전 예시](examples/)** | CPS Plan, Design, Decision Record, XV 결과 샘플 |
-
-## CPS 프레임워크
-
-모든 설계/분석 문서는 CPS 구조를 따릅니다:
-
-```
-Context  — 왜 이 작업이 필요한가? 배경과 현재 상태
-Problem  — 구체적으로 무엇이 문제인가? MECE로 분해
-Solution — 어떻게 해결하는가? 트레이드오프와 결정 근거 포함
-```
-
-템플릿: `docs/templates/cps-plan.md`, `docs/templates/cps-design.md`
+| **[방법론 상세](docs/axis-engineering.md)** | AXIS 4 Pillars, CPS, MECE, 보안 체계 |
 
 ## 파일 구조
 
 ```
 axis-kit/
-├── install.sh              # 한 줄 설치 스크립트
-├── .claude/commands/       # Claude Code 슬래시 커맨드 (9개)
-│   ├── next.md             # /next — 다음 할 일 추천
-│   ├── init.md             # /init — 프로젝트 초기 설정
-│   ├── plan.md             # /plan — CPS Plan 작성
-│   ├── xv.md               # /xv — 멀티 AI 교차검증
-│   ├── design.md           # /design — CPS Design 작성
-│   ├── gap.md              # /gap — 역방향 검증
-│   ├── review.md           # /review — 코드 리뷰
-│   ├── propose.md          # /propose — 규칙 제안 (Adaptive)
-│   └── metrics.md          # /metrics — 도입 수준 측정
+├── install.sh                  # 한 줄 설치 스크립트
+├── CONTRIBUTING.md             # 기여 가이드
+├── .claude/
+│   ├── commands/               # 슬래시 커맨드
+│   │   ├── next.md             #   /next — 다음 할 일 추천
+│   │   ├── init.md             #   /init — 프로젝트 초기 설정
+│   │   ├── plan.md             #   /plan — CPS Plan 작성
+│   │   ├── xv.md               #   /xv — 멀티 AI 교차검증
+│   │   ├── design.md           #   /design — CPS Design 작성
+│   │   ├── gap.md              #   /gap — 역방향 검증
+│   │   ├── review.md           #   /review — 코드 리뷰
+│   │   ├── propose.md          #   /propose — 규칙 제안
+│   │   └── metrics.md          #   /metrics — 도입 수준 측정
+│   └── agents/                 # 전문 에이전트
+│       ├── architect.md
+│       ├── senior-dev.md
+│       ├── qa-engineer.md
+│       ├── security-engineer.md
+│       └── devops-engineer.md
 ├── scripts/
-│   ├── x-verify.sh         # 교차검증 CLI
-│   ├── gap-check.sh        # 갭 체크 CLI
-│   └── init.sh             # 초기화 CLI
+│   ├── .axis-version           # 현재 버전
+│   ├── x-verify.sh             # 교차검증 CLI
+│   ├── gap-check.sh            # 갭 체크 CLI
+│   ├── init.sh                 # 초기화 CLI
+│   └── lib/
+│       └── common.sh           # 공통 함수 라이브러리
 ├── docs/
-│   ├── axis-engineering.md  # 방법론 상세
-│   ├── context-chain.md     # 컨텍스트 유지 체계
-│   ├── eval-checklist.md    # 도입 수준 자가 평가
-│   ├── rules-changelog.md   # 규칙 변경 이력
-│   ├── plans/               # CPS Plan 문서
-│   ├── templates/           # 문서 템플릿
-│   │   ├── cps-plan.md
-│   │   ├── cps-design.md
-│   │   ├── claude-md.md     # CLAUDE.md 작성 가이드
-│   │   ├── decision-record.md # 의사결정 기록
-│   │   └── rule-proposal.md  # 규칙 제안서
-│   ├── decisions/           # 의사결정 기록
-│   └── verifications/       # 교차검증 결과 (자동 생성)
-├── tests/                   # 스크립트 테스트
-└── examples/                # 사용 예시 + 튜토리얼
+│   ├── usage-guide.md          # 사용법 가이드
+│   ├── adoption-guide.md       # 도입 가이드
+│   ├── axis-engineering.md     # 방법론 상세
+│   ├── context-chain.md        # 컨텍스트 유지 체계
+│   ├── eval-checklist.md       # 도입 수준 자가 평가
+│   ├── rules-changelog.md      # 규칙 변경 이력
+│   ├── proposals/              # 규칙 제안서
+│   ├── plans/                  # CPS Plan 문서
+│   ├── decisions/              # 의사결정 기록 (ADR)
+│   ├── verifications/          # 교차검증 결과
+│   └── templates/              # 문서 템플릿
+│       ├── cps-plan.md
+│       ├── cps-design.md
+│       ├── claude-md.md
+│       ├── decision-record.md
+│       └── rule-proposal.md
+├── tests/
+│   └── test-scripts.sh         # 스크립트 테스트
+└── examples/                   # 사용 예시 + 튜토리얼
+    ├── tutorial-todo-api.md
+    ├── sample-plan.md
+    ├── sample-design.md
+    ├── sample-decision.md
+    └── sample-xv-result.md
 ```
-
-## 도입 가이드
-
-상세 전략: **[docs/adoption-guide.md](docs/adoption-guide.md)**
-
-| 방식 | 명령어 | 포함 내용 |
-|------|--------|----------|
-| **최소 설치** | `install.sh --minimal` | `/next`, `/plan`, `/review` + `init.sh` |
-| **전체 설치** | `install.sh` | 9개 커맨드 + 스크립트 + 템플릿 + 가이드 |
-| **업데이트** | `install.sh --update` | 커맨드/스크립트만 갱신 (커스터마이징 보존) |
 
 ## 요구사항
 
 - [Claude Code](https://claude.ai/code) CLI
-- API 키: Anthropic + OpenAI + Google AI Studio
 - `jq`, `curl` (스크립트 실행용)
+- API 키: Anthropic + OpenAI + Google AI Studio (교차검증 사용 시)
 
 ## 라이선스
 
 MIT
 
-## 만든 사람
+---
 
 Spacewalk Engineering
