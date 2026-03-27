@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 source "${SCRIPT_DIR}/lib/common.sh"
+check_update
 load_env "$ROOT_DIR/.env"
 
 # 입력 확인 (Usage를 먼저 — API 키 없어도 도움말은 보여줘야 함)

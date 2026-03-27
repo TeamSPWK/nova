@@ -6,6 +6,8 @@
 
 # Execution
 
+0. (버전 체크) `scripts/.axis-version` 파일이 있으면 `curl -fsSL --max-time 3 https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/scripts/.axis-version 2>/dev/null`로 최신 버전을 확인한다. 버전이 다르면 출력 마지막에 한 줄 안내한다: `🔄 AXIS Kit 업데이트 가능 (현재 → 최신) — curl -fsSL .../install.sh | bash -s -- --update`. 실패 시 조용히 건너뛴다.
+
 아래 17개 항목을 **하나씩 실제로 확인**한다. 추측하지 말고 파일/디렉토리 존재 여부를 직접 검사한다.
 
 ---

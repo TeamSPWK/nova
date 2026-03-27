@@ -90,8 +90,8 @@ skip() {
 # 모드별 파일 목록 결정
 COMMANDS_ALL=(next init plan xv design gap review propose metrics)
 COMMANDS_MINIMAL=(next plan review)
-SCRIPTS_ALL=(lib/common.sh x-verify.sh gap-check.sh init.sh)
-SCRIPTS_MINIMAL=(lib/common.sh init.sh)
+SCRIPTS_ALL=(.axis-version lib/common.sh x-verify.sh gap-check.sh init.sh)
+SCRIPTS_MINIMAL=(.axis-version lib/common.sh init.sh)
 TEMPLATES_ALL=(cps-plan cps-design claude-md decision-record rule-proposal)
 GUIDES_ALL=(context-chain.md eval-checklist.md adoption-guide.md)
 

@@ -25,6 +25,7 @@ LANGUAGE="${3:-한국어}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+check_update
 
 if [ -z "$PROJECT_NAME" ]; then
   echo -e "${BOLD}사용법:${NC}"

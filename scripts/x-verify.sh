@@ -12,6 +12,7 @@ ENV_FILE="$ROOT_DIR/.env"
 VERIFY_DIR="$ROOT_DIR/docs/verifications"
 
 source "${SCRIPT_DIR}/lib/common.sh"
+check_update
 
 # .env 로드 (필수)
 if [[ ! -f "$ENV_FILE" ]]; then

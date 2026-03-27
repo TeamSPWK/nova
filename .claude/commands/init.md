@@ -6,6 +6,8 @@
 
 # Execution
 
+0. (버전 체크) `scripts/.axis-version` 파일이 있으면 `curl -fsSL --max-time 3 https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/scripts/.axis-version 2>/dev/null`로 최신 버전을 확인한다. 버전이 다르면 출력 마지막에 한 줄 안내한다: `🔄 AXIS Kit 업데이트 가능 (현재 → 최신) — curl -fsSL .../install.sh | bash -s -- --update`. 실패 시 조용히 건너뛴다.
+
 1. 사용자에게 기본 정보를 확인한다 (인자가 없으면 질문):
    - **프로젝트명**: 프로젝트 이름 (예: my-app)
    - **기술 스택**: 프레임워크와 언어 (예: Next.js + TypeScript)
