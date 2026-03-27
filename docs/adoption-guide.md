@@ -10,7 +10,7 @@
 # 방법 1: 최소 설치 (핵심 3개 커맨드만 — 권장 시작점)
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --minimal
 
-# 방법 2: 전체 설치 (10개 커맨드 + 스크립트 + 템플릿 + 가이드)
+# 방법 2: 전체 설치 (11개 커맨드 + 스크립트 + 템플릿 + 가이드)
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
 
 # 방법 3: 직접 복사 (원하는 것만 골라서)
@@ -32,7 +32,7 @@ bash scripts/init.sh --adopt my-project
 
 ## 처음이라면: 2~3개 커맨드부터
 
-AXIS는 10개 커맨드를 제공하지만, **처음부터 전부 쓸 필요 없습니다.**
+AXIS는 11개 커맨드를 제공하지만, **처음부터 전부 쓸 필요 없습니다.**
 
 ### 추천 시작 세트
 

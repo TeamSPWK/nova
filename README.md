@@ -75,7 +75,7 @@ S — Structured  : CPS + MECE + 린터로 구조가 품질을 만든다
 # 최소 설치 — 핵심 3개 커맨드 (/next, /plan, /review)
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --minimal
 
-# 전체 설치 — 10개 커맨드 + 5개 에이전트 + 스크립트 + 템플릿
+# 전체 설치 — 11개 커맨드 + 5개 에이전트 + 스크립트 + 템플릿
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
 ```
 
@@ -127,6 +127,7 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh |
 | `/propose 패턴` | 규칙 제안 (Adaptive) | 반복 패턴 발견 시 |
 | `/metrics` | AXIS 도입 수준 자동 측정 | 정기 평가, 현황 파악 |
 | `/team 프리셋` | Agent Teams 병렬 구성 | 팀 단위 리뷰, QA, 디버깅 |
+| `/axis-update` | AXIS Kit 최신 버전으로 업데이트 | 새 버전 출시 시 |
 
 ## 에이전트
 
