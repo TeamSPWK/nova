@@ -126,81 +126,65 @@ trap "rm -rf $TMPDIR" EXIT
 
 # ── Phase 1: 3개 AI 병렬 호출 ──
 
-call_claude() {
+# API 응답에서 텍스트 추출
+extract_text() {
+  local name="$1" response="$2"
+  case "$name" in
+    claude) echo "$response" | jq -r '.content[0].text // empty' 2>/dev/null ;;
+    gpt)    echo "$response" | jq -r '.choices[0].message.content // empty' 2>/dev/null ;;
+    gemini) echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null ;;
+  esac
+}
+
+# 범용 API 호출 (재시도 + 파일 저장)
+call_api() {
+  local name="$1" outfile="$TMPDIR/${name}.txt"
+  shift
   local attempt
   for attempt in 1 2; do
-    local response
-    response=$(curl -s --max-time 30 https://api.anthropic.com/v1/messages \
-      -H "x-api-key: $ANTHROPIC_API_KEY" \
-      -H "anthropic-version: 2023-06-01" \
-      -H "content-type: application/json" \
-      -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" --arg m "$CLAUDE_MODEL" '{
-        model: $m,
-        max_tokens: 1024,
-        system: $s,
-        messages: [{role: "user", content: $q}]
-      }')" 2>/dev/null)
-    local text
-    text=$(echo "$response" | jq -r '.content[0].text // empty' 2>/dev/null)
+    local response text
+    response=$(curl -s --max-time 30 "$@" 2>/dev/null)
+    text=$(extract_text "$name" "$response")
     if [[ -n "$text" ]]; then
-      echo "$text" > "$TMPDIR/claude.txt"
+      echo "$text" > "$outfile"
       return 0
     fi
-    if [[ $attempt -eq 1 ]]; then
-      sleep 2
-    fi
+    [[ $attempt -eq 1 ]] && sleep 2
   done
-  echo "ERROR: Claude API 호출 실패 (2회 시도 후 실패)" > "$TMPDIR/claude.txt"
+  echo "ERROR: ${name} API 호출 실패 (2회 시도 후 실패)" > "$outfile"
   return 1
+}
+
+call_claude() {
+  call_api claude https://api.anthropic.com/v1/messages \
+    -H "x-api-key: $ANTHROPIC_API_KEY" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "content-type: application/json" \
+    -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" --arg m "$CLAUDE_MODEL" '{
+      model: $m,
+      max_tokens: 1024,
+      system: $s,
+      messages: [{role: "user", content: $q}]
+    }')"
 }
 
 call_gpt() {
-  local attempt
-  for attempt in 1 2; do
-    local response
-    response=$(curl -s --max-time 30 https://api.openai.com/v1/chat/completions \
-      -H "Authorization: Bearer $OPENAI_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" '{
-        model: "gpt-4o",
-        messages: [{role: "system", content: $s}, {role: "user", content: $q}],
-        temperature: 0.7
-      }')" 2>/dev/null)
-    local text
-    text=$(echo "$response" | jq -r '.choices[0].message.content // empty' 2>/dev/null)
-    if [[ -n "$text" ]]; then
-      echo "$text" > "$TMPDIR/gpt.txt"
-      return 0
-    fi
-    if [[ $attempt -eq 1 ]]; then
-      sleep 2
-    fi
-  done
-  echo "ERROR: GPT API 호출 실패 (2회 시도 후 실패)" > "$TMPDIR/gpt.txt"
-  return 1
+  call_api gpt https://api.openai.com/v1/chat/completions \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" '{
+      model: "gpt-4o",
+      messages: [{role: "system", content: $s}, {role: "user", content: $q}],
+      temperature: 0.7
+    }')"
 }
 
 call_gemini() {
-  local attempt
-  for attempt in 1 2; do
-    local response
-    response=$(curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n --arg q "$SYSTEM_PROMPT\n\n$QUESTION" '{
-        contents: [{parts: [{text: $q}]}]
-      }')" 2>/dev/null)
-    local text
-    text=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null)
-    if [[ -n "$text" ]]; then
-      echo "$text" > "$TMPDIR/gemini.txt"
-      return 0
-    fi
-    if [[ $attempt -eq 1 ]]; then
-      sleep 2
-    fi
-  done
-  echo "ERROR: Gemini API 호출 실패 (2회 시도 후 실패)" > "$TMPDIR/gemini.txt"
-  return 1
+  call_api gemini "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg q "$SYSTEM_PROMPT\n\n$QUESTION" '{
+      contents: [{parts: [{text: $q}]}]
+    }')"
 }
 
 AI_COUNT=${#AVAILABLE_AIS[@]}

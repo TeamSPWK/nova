@@ -87,71 +87,71 @@ skip() {
   COUNT_SKIPPED=$((COUNT_SKIPPED + 1))
 }
 
-# 커맨드 다운로드
-if $MINIMAL_MODE; then
-  echo -e "${BOLD}🔧 핵심 커맨드 설치 중...${NC} ${YELLOW}(minimal)${NC}"
-  COMMANDS=(next plan review)
-  for cmd in "${COMMANDS[@]}"; do
-    download ".claude/commands/${cmd}.md"
-  done
-else
-  echo -e "${BOLD}🔧 커맨드 설치 중...${NC}"
-  COMMANDS=(next init plan xv design gap review propose metrics)
-  for cmd in "${COMMANDS[@]}"; do
-    download ".claude/commands/${cmd}.md"
-  done
-fi
-echo ""
+# 모드별 파일 목록 결정
+COMMANDS_ALL=(next init plan xv design gap review propose metrics)
+COMMANDS_MINIMAL=(next plan review)
+SCRIPTS_ALL=(x-verify.sh gap-check.sh init.sh)
+SCRIPTS_MINIMAL=(init.sh)
+TEMPLATES_ALL=(cps-plan cps-design claude-md decision-record rule-proposal)
+GUIDES_ALL=(context-chain.md eval-checklist.md adoption-guide.md)
 
-# 스크립트 다운로드
 if $MINIMAL_MODE; then
-  echo -e "${BOLD}🚀 스크립트 설치 중...${NC} ${YELLOW}(minimal)${NC}"
-  download "scripts/init.sh"
-  chmod +x "${TARGET_DIR}/scripts/"*.sh 2>/dev/null
-else
-  echo -e "${BOLD}🚀 스크립트 설치 중...${NC}"
-  download "scripts/x-verify.sh"
-  download "scripts/gap-check.sh"
-  download "scripts/init.sh"
-  chmod +x "${TARGET_DIR}/scripts/"*.sh 2>/dev/null
-fi
-echo ""
-
-# 템플릿 다운로드
-if $MINIMAL_MODE; then
-  echo -e "${BOLD}📄 템플릿 건너뜀${NC} ${YELLOW}(minimal 모드)${NC}"
-  echo ""
+  COMMANDS=("${COMMANDS_MINIMAL[@]}")
+  SCRIPTS=("${SCRIPTS_MINIMAL[@]}")
+  TEMPLATES=()
+  GUIDES=()
 elif $UPDATE_MODE; then
-  echo -e "${BOLD}📄 템플릿 건너뜀${NC} ${YELLOW}(업데이트 모드)${NC}"
-  TEMPLATES=(cps-plan cps-design claude-md decision-record rule-proposal)
-  for tmpl in "${TEMPLATES[@]}"; do
-    skip "docs/templates/${tmpl}.md"
-  done
-  echo ""
+  COMMANDS=("${COMMANDS_ALL[@]}")
+  SCRIPTS=("${SCRIPTS_ALL[@]}")
+  TEMPLATES=()
+  GUIDES=()
 else
-  echo -e "${BOLD}📄 템플릿 설치 중...${NC}"
-  TEMPLATES=(cps-plan cps-design claude-md decision-record rule-proposal)
-  for tmpl in "${TEMPLATES[@]}"; do
-    download "docs/templates/${tmpl}.md"
-  done
-  echo ""
+  COMMANDS=("${COMMANDS_ALL[@]}")
+  SCRIPTS=("${SCRIPTS_ALL[@]}")
+  TEMPLATES=("${TEMPLATES_ALL[@]}")
+  GUIDES=("${GUIDES_ALL[@]}")
 fi
 
-# 가이드 다운로드 (선택)
-if $MINIMAL_MODE; then
-  echo -e "${BOLD}📚 가이드 문서 건너뜀${NC} ${YELLOW}(minimal 모드)${NC}"
-elif $UPDATE_MODE; then
-  echo -e "${BOLD}📚 가이드 문서 건너뜀${NC} ${YELLOW}(업데이트 모드)${NC}"
-  skip "docs/context-chain.md"
-  skip "docs/eval-checklist.md"
-  skip "docs/adoption-guide.md"
+# 섹션 다운로드 함수
+download_section() {
+  local label="$1" dir="$2" suffix="$3"
+  shift 3
+  local files=("$@")
+
+  if [[ ${#files[@]} -eq 0 ]]; then
+    echo -e "${BOLD}${label} 건너뜀${NC} ${YELLOW}(${MODE_LABEL})${NC}"
+  else
+    echo -e "${BOLD}${label} 설치 중...${NC}$( $MINIMAL_MODE && echo -e " ${YELLOW}(minimal)${NC}" || true )"
+    for f in "${files[@]}"; do
+      download "${dir}/${f}${suffix}"
+    done
+  fi
+  echo ""
+}
+
+# 모드 라벨
+if $UPDATE_MODE; then
+  MODE_LABEL="업데이트 모드"
+elif $MINIMAL_MODE; then
+  MODE_LABEL="minimal 모드"
 else
-  echo -e "${BOLD}📚 가이드 문서 설치 중...${NC}"
-  download "docs/context-chain.md"
-  download "docs/eval-checklist.md"
-  download "docs/adoption-guide.md"
+  MODE_LABEL="전체"
 fi
-echo ""
+
+download_section "🔧 커맨드" ".claude/commands" ".md" "${COMMANDS[@]}"
+download_section "🚀 스크립트" "scripts" "" "${SCRIPTS[@]}"
+chmod +x "${TARGET_DIR}/scripts/"*.sh 2>/dev/null
+if $UPDATE_MODE; then
+  echo -e "${BOLD}📄 템플릿 건너뜀${NC} ${YELLOW}(${MODE_LABEL})${NC}"
+  for tmpl in "${TEMPLATES_ALL[@]}"; do skip "docs/templates/${tmpl}.md"; done
+  echo ""
+  echo -e "${BOLD}📚 가이드 문서 건너뜀${NC} ${YELLOW}(${MODE_LABEL})${NC}"
+  for guide in "${GUIDES_ALL[@]}"; do skip "docs/${guide}"; done
+  echo ""
+else
+  download_section "📄 템플릿" "docs/templates" ".md" ${TEMPLATES[@]+"${TEMPLATES[@]}"}
+  download_section "📚 가이드 문서" "docs" "" ${GUIDES[@]+"${GUIDES[@]}"}
+fi
 
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 if $UPDATE_MODE; then
