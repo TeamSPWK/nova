@@ -57,9 +57,13 @@ if [[ ${#MISSING_KEYS[@]} -gt 0 ]]; then
   echo ""
 fi
 
+# 모델 기본값 (.env에서 오버라이드 가능)
+CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
+OPENAI_MODEL="${OPENAI_MODEL:-gpt-5.4}"
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-3-flash-preview}"
+
 # 옵션 처리
 SAVE_RESULT=true
-CLAUDE_MODEL="claude-sonnet-4-20250514"
 SELECTED_AIS=()
 while [[ "${1:-}" == --* ]]; do
   case "$1" in
@@ -69,9 +73,9 @@ while [[ "${1:-}" == --* ]]; do
       ;;
     --model)
       case "${2:-}" in
-        opus)  CLAUDE_MODEL="claude-opus-4-20250514" ;;
-        haiku) CLAUDE_MODEL="claude-haiku-4-5-20251001" ;;
-        sonnet) CLAUDE_MODEL="claude-sonnet-4-20250514" ;;
+        opus)  CLAUDE_MODEL="${CLAUDE_MODEL_OPUS:-claude-opus-4-6}" ;;
+        haiku) CLAUDE_MODEL="${CLAUDE_MODEL_HAIKU:-claude-haiku-4-5-20251001}" ;;
+        sonnet) CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" ;;
         *) echo -e "${RED}ERROR: 알 수 없는 모델: ${2:-}. (opus, sonnet, haiku 중 선택)${NC}"; exit 1 ;;
       esac
       shift 2
@@ -181,15 +185,15 @@ call_gpt() {
   call_api gpt https://api.openai.com/v1/chat/completions \
     -H "Authorization: Bearer $OPENAI_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" '{
-      model: "gpt-4o",
+    -d "$(jq -n --arg q "$QUESTION" --arg s "$SYSTEM_PROMPT" --arg m "$OPENAI_MODEL" '{
+      model: $m,
       messages: [{role: "system", content: $s}, {role: "user", content: $q}],
       temperature: 0.7
     }')"
 }
 
 call_gemini() {
-  call_api gemini "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+  call_api gemini "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=$GEMINI_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$(jq -n --arg q "$SYSTEM_PROMPT\n\n$QUESTION" '{
       contents: [{parts: [{text: $q}]}]
@@ -295,7 +299,7 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
 else
   ANALYSIS=""
   for _attempt in 1 2; do
-    _response=$(curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+    _response=$(curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=$GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
         contents: [{parts: [{text: $p}]}],

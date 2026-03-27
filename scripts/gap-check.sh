@@ -27,6 +27,11 @@ fi
 
 require_commands jq curl
 
+# 모델 기본값 (.env에서 오버라이드 가능)
+CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
+OPENAI_MODEL="${OPENAI_MODEL:-gpt-5.4}"
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-3-flash-preview}"
+
 # API 키 확인 (Gemini > GPT > Claude 우선순위로 fallback)
 SELECTED_AI=""
 if [[ -n "${GEMINI_API_KEY:-}" ]]; then
@@ -133,7 +138,7 @@ $CODE_SUMMARY
 
 # AI별 API 호출
 call_gemini_gap() {
-  curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+  curl -s --max-time 30 "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=$GEMINI_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
       contents: [{parts: [{text: $p}]}],
@@ -161,8 +166,8 @@ call_gpt_gap() {
   response=$(curl -s --max-time 30 "https://api.openai.com/v1/chat/completions" \
     -H "Authorization: Bearer $OPENAI_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
-      model: "gpt-4o",
+    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" --arg m "$OPENAI_MODEL" '{
+      model: $m,
       messages: [{role: "user", content: $p}],
       temperature: 0.1,
       response_format: {type: "json_object"}
@@ -176,8 +181,8 @@ call_claude_gap() {
     -H "x-api-key: $ANTHROPIC_API_KEY" \
     -H "anthropic-version: 2023-06-01" \
     -H "content-type: application/json" \
-    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
-      model: "claude-sonnet-4-20250514",
+    -d "$(jq -n --arg p "$ANALYSIS_PROMPT" --arg m "$CLAUDE_MODEL" '{
+      model: $m,
       max_tokens: 1024,
       messages: [{role: "user", content: $p}]
     }')")
