@@ -61,7 +61,7 @@ if $UNINSTALL_MODE; then
   COUNT_REMOVED=0
 
   # AXIS가 설치한 커맨드 파일 제거
-  COMMANDS_UNINSTALL=(next init plan xv design gap review propose metrics team axis-update)
+  COMMANDS_UNINSTALL=(next init plan xv design gap review propose metrics team auto axis-update)
   echo -e "${BOLD}🔧 커맨드 제거 중...${NC}"
   for cmd in "${COMMANDS_UNINSTALL[@]}"; do
     local_path="${TARGET_DIR}/.claude/commands/${cmd}.md"
@@ -185,7 +185,7 @@ skip() {
 }
 
 # 모드별 파일 목록 결정
-COMMANDS_ALL=(next init plan xv design gap review propose metrics team axis-update)
+COMMANDS_ALL=(next init plan xv design gap review propose metrics team auto axis-update)
 COMMANDS_MINIMAL=(next plan review)
 SCRIPTS_ALL=(.axis-version lib/common.sh x-verify.sh gap-check.sh init.sh)
 SCRIPTS_MINIMAL=(.axis-version lib/common.sh init.sh)

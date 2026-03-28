@@ -2,7 +2,7 @@
 
 > 처음부터 제대로. 매번 더 빠르게.
 >
-> 11개 커맨드 + 5개 전문가 에이전트 + CLI 스크립트의 상세 사용법
+> 12개 커맨드 + 5개 전문가 에이전트 + CLI 스크립트의 상세 사용법
 
 ---
 
@@ -25,7 +25,7 @@
 ### 설치
 
 ```bash
-# 전체 설치 (커맨드 10개 + 에이전트 5개 + 스크립트 + 템플릿 + 가이드)
+# 전체 설치 (커맨드 12개 + 에이전트 5개 + 스크립트 + 템플릿 + 가이드)
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash
 
 # 최소 설치 (핵심 커맨드 3개만)
@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh |
 
 | 구분 | 수량 | 내용 |
 |------|------|------|
-| 커맨드 | 10개 | `.claude/commands/*.md` |
+| 커맨드 | 12개 | `.claude/commands/*.md` |
 | 에이전트 | 5개 | `.claude/agents/*.md` |
 | 스크립트 | 5개 | `scripts/*.sh`, `scripts/lib/common.sh`, `scripts/.axis-version` |
 | 템플릿 | 5개 | `docs/templates/*.md` |
@@ -107,7 +107,7 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh |
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/axis-kit/main/install.sh | bash -s -- --update
 ```
 
-**갱신 대상:** 커맨드 10개, 에이전트 5개, 스크립트 3개 + 공통 유틸리티
+**갱신 대상:** 커맨드 12개, 에이전트 5개, 스크립트 3개 + 공통 유틸리티
 **보존 대상:** 템플릿, 가이드 문서 (사용자 커스터마이징 보호)
 
 ### Uninstall (`--uninstall`)
