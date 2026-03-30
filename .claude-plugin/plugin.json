@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "description": "AI 개발 하네스 프레임워크 — Generator-Evaluator 분리, 3단계 평가 레이어, 멀티 AI 다관점 수집, CPS 문서 체계로 재작업을 제거한다.",
   "author": {
     "name": "Spacewalk Engineering",

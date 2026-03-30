@@ -49,12 +49,13 @@ sedi() {
 # 1. Single source of truth
 echo "$NEW_VERSION" > "$VERSION_FILE"
 
-# 2. README.md 배지
-README="$ROOT/README.md"
-if [[ -f "$README" ]]; then
-  sedi "s/version-[0-9]*\.[0-9]*\.[0-9]*/version-$NEW_VERSION/" "$README"
-  echo "  ✅ README.md"
-fi
+# 2. README.md + README.ko.md 배지
+for readme in "$ROOT/README.md" "$ROOT/README.ko.md"; do
+  if [[ -f "$readme" ]]; then
+    sedi "s/version-[0-9]*\.[0-9]*\.[0-9]*/version-$NEW_VERSION/" "$readme"
+    echo "  ✅ $(basename "$readme")"
+  fi
+done
 
 # 3. plugin.json
 PLUGIN="$ROOT/.claude-plugin/plugin.json"
