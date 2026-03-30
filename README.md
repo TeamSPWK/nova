@@ -78,8 +78,11 @@ A — Adaptive       : 규칙이 프로젝트와 함께 진화한다
 **방법 A: Plugin으로 설치 (권장)**
 
 ```bash
-# Claude Code Plugin으로 설치 — 모든 커맨드/에이전트/스킬/훅 자동 활성화
-claude plugin install TeamSPWK/nova
+# 1. Nova 마켓플레이스 등록
+claude plugin marketplace add TeamSPWK/nova
+
+# 2. 플러그인 설치 — 모든 커맨드/에이전트/스킬 자동 활성화
+claude plugin install nova@nova-marketplace
 ```
 
 **방법 B: 스크립트로 설치**

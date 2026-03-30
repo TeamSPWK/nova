@@ -4,6 +4,7 @@
   "description": "AI 개발 하네스 프레임워크 — Generator-Evaluator 분리, 3단계 평가 레이어, 멀티 AI 교차검증, CPS 문서 체계로 재작업을 제거한다.",
   "author": {
     "name": "Spacewalk Engineering",
+    "email": "jay@spacewalk.dev",
     "url": "https://spacewalk.tech"
   },
   "homepage": "https://github.com/TeamSPWK/nova",
@@ -19,17 +20,17 @@
     "agent-teams",
     "development-methodology"
   ],
-  "commands": "./.claude/commands/",
-  "agents": "./.claude/agents/",
-  "skills": "./.claude/skills/",
-  "hooks": "./hooks/nova-hooks.json",
   "userConfig": {
     "OPENAI_API_KEY": {
+      "title": "OpenAI API Key",
       "description": "OpenAI API 키 (교차검증 /xv용, 선택)",
+      "type": "string",
       "sensitive": true
     },
     "GEMINI_API_KEY": {
+      "title": "Gemini API Key",
       "description": "Google Gemini API 키 (교차검증 /xv용, 선택)",
+      "type": "string",
       "sensitive": true
     }
   }

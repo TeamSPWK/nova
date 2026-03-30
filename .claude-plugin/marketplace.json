@@ -1,0 +1,35 @@
+{
+  "name": "nova-marketplace",
+  "owner": {
+    "name": "TeamSPWK",
+    "email": "jay@spacewalk.dev",
+    "url": "https://github.com/TeamSPWK"
+  },
+  "plugins": [
+    {
+      "name": "nova",
+      "description": "AI 개발 하네스 프레임워크 — Generator-Evaluator 분리, 3단계 평가 레이어, 멀티 AI 교차검증, CPS 문서 체계로 재작업을 제거한다. 12개 커맨드 + 5개 에이전트 + 5개 스킬 포함.",
+      "version": "2.0.0",
+      "author": {
+        "name": "Spacewalk Engineering",
+        "email": "jay@spacewalk.dev"
+      },
+      "repository": "https://github.com/TeamSPWK/nova",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/TeamSPWK/nova.git"
+      },
+      "category": "development",
+      "keywords": [
+        "harness",
+        "generator-evaluator",
+        "adversarial-evaluation",
+        "cross-verification",
+        "cps",
+        "code-review",
+        "agent-teams",
+        "development-methodology"
+      ]
+    }
+  ]
+}
