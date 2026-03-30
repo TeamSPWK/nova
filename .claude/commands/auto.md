@@ -30,12 +30,13 @@ Generator-Evaluator 분리 원칙에 따라 구현과 검증을 독립 에이전
 4. **Context Reset**: 스프린트 간 handoff artifact로 상태 전달, 컨텍스트 오염 방지
 
 # Options
-- `--fast` : 복잡도와 무관하게 1단계 승인 + Phase 분리 건너뜀
+- `--fast` : 검증 최소화 — Evaluator 생략, Senior Dev 단일 리뷰만 수행. 토큰/시간 절약.
+- `--strict` : 검증 최대화 — 복잡도와 무관하게 xv 교차검증 + 3단계 Evaluator + Mutation Test 풀가동.
 - `--careful` : 복잡도와 무관하게 2단계 승인
 - `--force` : Soft-Block 5개 이상에서도 계속 진행 (비권장)
 - `--optimize` : 비용 최적화 모드 — Planner는 Opus, Generator는 Sonnet, Evaluator는 Opus로 모델 라우팅
 - `--jury` : LLM Jury 모드 — Evaluator 대신 3인 Jury (Correctness/Design/User)로 다중 관점 평가
-- (기본) : 복잡도 자동 판단
+- (기본) : Risk Assessor가 자동 판단
 
 # Execution
 
@@ -60,6 +61,46 @@ Generator-Evaluator 분리 원칙에 따라 구현과 검증을 독립 에이전
 ```
 
 WARN은 진행 가능하지만, FAIL은 해결 후 재실행을 안내한다.
+
+## Phase 0.5: Risk Assessment (자동 검증 강도 결정)
+
+> `--fast` 또는 `--strict` 지정 시 이 Phase를 건너뛴다.
+
+Preflight 결과 + 사용자 요청을 분석하여 **Risk Score**를 산출한다.
+Risk Score에 따라 이후 Phase의 검증 강도가 자동 스케일링된다.
+
+### Risk 평가 기준
+
+| 신호 | Low (1) | Medium (2) | High (3) |
+|------|---------|------------|----------|
+| 변경 영역 | README, 설정, 스타일 | 새 컴포넌트, 내부 로직 | DB 스키마, 결제, 인증 |
+| 파일 수 | 1~2 | 3~7 | 8+ |
+| 외부 의존성 | 없음 | 추가 1개 | 추가 2개+ |
+| 기존 테스트 커버리지 | 높음 | 보통 | 낮거나 없음 |
+
+**Risk Score = 각 신호 합산 (4~12)**
+
+### Risk → 검증 강도 매핑
+
+| Risk | Score | 검증 수준 | 동작 |
+|------|-------|----------|------|
+| **Low** | 4~6 | Lite | Senior Dev 단일 리뷰, Evaluator 간소화 (Layer 1~2만) |
+| **Medium** | 7~9 | Standard | 현행 그대로 (Evaluator 3단계 + Independent Verifier) |
+| **High** | 10~12 | Full | xv 교차검증 자동 실행 + Mutation Test + 적대적 Evaluator 풀가동 |
+
+```
+━━━ Risk Assessment ━━━━━━━━━━━━━━━━━━━━━━━━
+  변경 영역: {영역} ({score})
+  파일 수: {N}개 ({score})
+  외부 의존성: {N}개 ({score})
+  테스트 커버리지: {수준} ({score})
+
+  Risk Score: {총점}/12 → {Low/Medium/High}
+  검증 강도: {Lite/Standard/Full}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+사용자가 Risk 판단에 동의하지 않으면 `--fast` 또는 `--strict`로 오버라이드할 수 있다.
 
 ## Phase 1: Plan 생성 (Planner)
 

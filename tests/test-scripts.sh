@@ -136,7 +136,56 @@ assert ".nova-version == README 배지 ($NOVA_VER)" "[ '$NOVA_VER' = '$README_VE
 echo ""
 
 # ═══════════════════════════════════════════
-# 7. bump-version.sh 동작 검증
+# 7. 마크다운 구조 검증
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[구조: 마크다운 콘텐츠]${NC}"
+
+# 커맨드: description + 최소 1개 헤딩
+for cmd_file in "$ROOT_DIR/.claude/commands/"*.md; do
+  cmd_name=$(basename "$cmd_file")
+  assert "$cmd_name: # 헤딩 존재" "grep -q '^#' '$cmd_file'"
+  # 빈 파일 아닌지
+  LINE_COUNT=$(wc -l < "$cmd_file" | tr -d ' ')
+  assert "$cmd_name: 최소 5줄 이상" "[ '$LINE_COUNT' -ge 5 ]"
+done
+
+# 에이전트: name + description + model + tools frontmatter
+for agent_file in "$ROOT_DIR/.claude/agents/"*.md; do
+  agent_name=$(basename "$agent_file")
+  assert "$agent_name: name frontmatter" "head -10 '$agent_file' | grep -q '^name:'"
+  assert "$agent_name: description frontmatter" "head -10 '$agent_file' | grep -q '^description:'"
+  assert "$agent_name: model frontmatter" "head -10 '$agent_file' | grep -q '^model:'"
+  assert "$agent_name: tools frontmatter" "head -10 '$agent_file' | grep -q '^tools:'"
+done
+
+# 스킬: name + description frontmatter
+for skill_dir in "$ROOT_DIR/.claude/skills/"*/; do
+  skill_file="$skill_dir/SKILL.md"
+  if [ -f "$skill_file" ]; then
+    skill_name=$(basename "$skill_dir")
+    assert "스킬 $skill_name: name frontmatter" "head -10 '$skill_file' | grep -q '^name:'"
+    assert "스킬 $skill_name: description frontmatter" "head -10 '$skill_file' | grep -q '^description:'"
+  fi
+done
+
+# LICENSE 파일 존재
+assert "LICENSE 파일 존재" "[ -f '$ROOT_DIR/LICENSE' ]"
+
+# README 내부 링크 유효성 (docs/ 참조)
+README_LINKS=$(grep -oE '\(docs/[^)]+\)' "$ROOT_DIR/README.md" 2>/dev/null | tr -d '()' || true)
+for link in $README_LINKS; do
+  assert "README 링크: $link" "[ -f '$ROOT_DIR/$link' ]"
+done
+
+README_KO_LINKS=$(grep -oE '\(docs/[^)]+\)' "$ROOT_DIR/README.ko.md" 2>/dev/null | tr -d '()' || true)
+for link in $README_KO_LINKS; do
+  assert "README.ko 링크: $link" "[ -f '$ROOT_DIR/$link' ]"
+done
+echo ""
+
+# ═══════════════════════════════════════════
+# 8. bump-version.sh 동작 검증
 # ═══════════════════════════════════════════
 
 echo -e "${YELLOW}[기능: bump-version.sh]${NC}"

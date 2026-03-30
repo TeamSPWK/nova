@@ -1,7 +1,7 @@
 # Nova
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Build Right the First Time. Faster Every Time.**
@@ -135,6 +135,48 @@ claude plugin update nova@nova-marketplace
 claude plugin uninstall nova@nova-marketplace
 claude plugin marketplace remove nova-marketplace
 ```
+
+## What Nova Catches
+
+Our CI runs a [self-verification test](tests/test-self-verify.sh) against intentionally flawed code. Here's what the gap detection finds in a simple auth module:
+
+| Defect | Type | Detection Method |
+|--------|------|-----------------|
+| Missing `GET /api/auth/me` endpoint | Design-Implementation Gap | Endpoint diff: design doc vs route handlers |
+| Plaintext password storage | Security | Design requires bcrypt, code has no hashing import |
+| No email duplicate check (missing 409) | Verification Contract Breach | Design specifies 409 response, code has no conflict handling |
+| No password min-length validation | Verification Contract Breach | Design requires 8+ chars, code has no length check |
+| JWT token missing userId | Data Contract Mismatch | Design specifies userId in token payload, code only includes email |
+| Hardcoded JWT secret key | Security Pattern | Static analysis: string literal in `jwt.sign()` |
+
+> These are **structural checks** that run without an AI model. When Nova's AI agents (`/nova:gap`, `/nova:review`) analyze code, they perform deeper semantic analysis on top of these structural patterns.
+
+## FAQ
+
+### When should I NOT use Nova?
+
+Nova adds value when design decisions matter. For these cases, just code directly:
+
+- **One-line fixes**: Typos, version bumps, config tweaks — no CPS needed.
+- **Well-defined bug fixes**: Stack trace points to the cause? Fix it. Don't write a Plan.
+- **Exploratory prototypes**: If you're going to throw it away, skip the process.
+- **Tasks under 30 minutes**: If the full cycle (Plan → Design → Gap) takes longer than the task itself, it's overhead, not help.
+
+**Rule of thumb**: If you can hold the entire change in your head, you don't need Nova.
+
+### Are the KPIs proven results?
+
+No. The KPIs in our methodology doc are **adoption targets**, not measured outcomes. We're transparent about this — Nova is a young project and we don't yet have statistically significant before/after data. If you run Nova on a real project and measure results, we'd love to hear about it.
+
+### Can `/nova:xv` multi-AI consensus be wrong?
+
+Yes. Known limitations:
+
+- **Shared training bias**: Claude, GPT, and Gemini share much of the same training corpus. Strong Consensus doesn't guarantee correctness — it may reflect a shared blind spot.
+- **Qualitative judgment**: Consensus levels (Strong/Partial/Divergent) are AI-generated assessments, not quantitative metrics.
+- **Not a substitute for expertise**: `/nova:xv` enriches your decision-making material. The final call is always yours — especially in domains where all LLMs lack depth (niche frameworks, internal systems, novel architectures).
+
+When all three models agree, ask yourself: *"Is this something they could all be wrong about?"* If yes, seek a human expert.
 
 ## Documentation
 

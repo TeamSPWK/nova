@@ -1,7 +1,7 @@
 # Nova
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **처음부터 제대로. 매번 더 빠르게.**
@@ -132,6 +132,48 @@ claude plugin update nova@nova-marketplace
 claude plugin uninstall nova@nova-marketplace
 claude plugin marketplace remove nova-marketplace
 ```
+
+## Nova가 잡아내는 것
+
+CI에서 의도적 결함이 주입된 코드를 대상으로 [자가 검증 테스트](tests/test-self-verify.sh)를 실행한다. 간단한 인증 모듈에서 탐지되는 갭 목록:
+
+| 결함 | 유형 | 탐지 방법 |
+|------|------|----------|
+| `GET /api/auth/me` 엔드포인트 누락 | 설계-구현 갭 | 설계 문서 vs 라우트 핸들러 엔드포인트 diff |
+| 비밀번호 평문 저장 | 보안 | 설계는 bcrypt 요구, 코드에 해싱 import 없음 |
+| 이메일 중복 체크 누락 (409 미구현) | 검증 계약 불이행 | 설계에 409 응답 명시, 코드에 충돌 처리 없음 |
+| 비밀번호 최소 길이 검증 누락 | 검증 계약 불이행 | 설계에 8자 이상 명시, 코드에 길이 검사 없음 |
+| JWT 토큰에 userId 누락 | 데이터 계약 불일치 | 설계에 userId 포함 명시, 코드는 email만 포함 |
+| JWT 시크릿 키 하드코딩 | 보안 패턴 | 정적 분석: `jwt.sign()`에 문자열 리터럴 |
+
+> 위는 AI 모델 없이 실행되는 **구조적 검사**다. Nova의 AI 에이전트(`/nova:gap`, `/nova:review`)는 이 구조적 패턴 위에 더 깊은 의미론적 분석을 수행한다.
+
+## FAQ
+
+### Nova를 쓰지 말아야 할 때는?
+
+Nova는 설계 판단이 중요할 때 가치를 발휘한다. 다음 경우엔 그냥 코딩하면 된다:
+
+- **한 줄 수정**: 오타, 버전 범프, 설정 변경 — CPS 불필요.
+- **원인이 명확한 버그**: 스택 트레이스가 원인을 가리키면 바로 고치면 된다. Plan을 쓸 필요 없다.
+- **버릴 프로토타입**: 어차피 버릴 거라면 프로세스를 건너뛰자.
+- **30분 이내 작업**: Plan → Design → Gap 전체 사이클이 작업 자체보다 오래 걸리면 그건 도움이 아니라 오버헤드다.
+
+**기준**: 변경 사항 전체를 머릿속에 담을 수 있으면 Nova가 필요 없다.
+
+### KPI는 실측 결과인가?
+
+아니다. 방법론 문서의 KPI는 **도입 목표**이지 측정된 결과가 아니다. Nova는 아직 젊은 프로젝트이며, 통계적으로 유의미한 before/after 데이터가 없다. 실제 프로젝트에서 Nova를 적용하고 결과를 측정하셨다면 공유해주시면 감사하겠다.
+
+### `/nova:xv` 다관점 합의가 틀릴 수 있나?
+
+그렇다. 알려진 한계:
+
+- **공유된 학습 편향**: Claude, GPT, Gemini는 학습 데이터의 상당 부분을 공유한다. Strong Consensus가 정확성을 보장하지 않는다 — 공유된 맹점일 수 있다.
+- **정성적 판단**: 합의 수준(Strong/Partial/Divergent)은 AI의 정성적 평가이며, 정량 메트릭이 아니다.
+- **전문성을 대체하지 않는다**: `/nova:xv`는 판단 재료를 풍부하게 할 뿐이다. 최종 결정은 항상 사람의 몫 — 특히 모든 LLM이 깊이가 부족한 영역(니치 프레임워크, 내부 시스템, 신규 아키텍처)에서는 더욱 그렇다.
+
+세 모델이 모두 동의할 때 스스로에게 물어보자: *"이건 셋 다 틀릴 수 있는 주제인가?"* 그렇다면 인간 전문가를 찾아라.
 
 ## 문서
 

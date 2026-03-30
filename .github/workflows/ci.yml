@@ -19,3 +19,6 @@ jobs:
 
       - name: Run tests
         run: bash tests/test-scripts.sh
+
+      - name: Run self-verification tests
+        run: bash tests/test-self-verify.sh

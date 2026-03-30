@@ -23,17 +23,26 @@ description: "새 프로젝트에 Nova을 초기 설정하고, 도메인 특화 
    - 테스트 프레임워크 존재 여부 확인
    - CI/CD 설정 확인 (`.github/workflows/`, `Dockerfile` 등)
 
-## Phase 2: Nova 구조 셋업
+## Phase 2: Nova 구조 셋업 (Progressive Disclosure — 최소 시작)
 
-3. 디렉토리 구조를 생성한다:
+> **원칙**: 처음부터 완벽한 구조를 강제하지 않는다. 최소한의 CLAUDE.md만 생성하고, 나머지는 프로젝트가 성장하며 필요할 때 제안한다.
+
+3. **최소 디렉토리만 생성한다**:
    ```bash
-   mkdir -p docs/plans docs/designs docs/decisions docs/verifications docs/templates
+   mkdir -p docs/plans docs/designs
    ```
+   > `docs/decisions`, `docs/verifications`, `docs/templates`는 처음에 생성하지 않는다.
+   > 이후 `/nova:gap` 실행 시 → "검증 결과를 저장할 `docs/verifications/`를 생성할까요?"
+   > `/nova:propose` 실행 시 → "의사결정 기록을 위한 `docs/decisions/`를 생성할까요?"
+   > 이런 식으로 **필요 시점에 제안**한다.
 
-4. `CLAUDE.md`를 프로젝트 루트에 생성한다:
-   - `docs/templates/claude-md.md` 템플릿을 참고하되, 사용자 정보로 채워서 생성한다.
+4. `CLAUDE.md`를 프로젝트 루트에 **경량 버전**으로 생성한다:
+   - `docs/templates/claude-md.md` 템플릿의 **필수 섹션만** 포함: Language, Nova Engineering (자동 적용 규칙), Tech Stack, Conventions, Credentials
+   - 선택 섹션(Project Structure, Human-AI Boundary 등)은 생략하고, CLAUDE.md 하단에 안내만 남긴다:
+     ```markdown
+     <!-- 프로젝트가 커지면 /nova:next가 추가 섹션을 제안합니다 -->
+     ```
    - `{중괄호}` 플레이스홀더를 사용자가 제공한 정보로 대체한다.
-   - 프로젝트 구조(Project Structure)는 실제 디렉토리를 확인해서 채운다.
 
 5. `.gitignore`에 다음 항목을 추가한다 (이미 있으면 스킵):
    ```
@@ -105,30 +114,40 @@ description: "새 프로젝트에 Nova을 초기 설정하고, 도메인 특화 
    | {팀명} | {패턴} | {역할1}, {역할2}, ... | {용도} |
    ```
 
-## Phase 4: 완료 보고
+## Phase 4: Quick Tour (첫 설치 시 가치 체감)
 
-9. 완료 후 요약을 출력한다:
+9. 초기화 완료 후 **Quick Tour**를 실행하여 Nova의 가치를 바로 체감하게 한다:
 
    ```
-   ✅ Nova 초기화 완료
+   ━━━ Nova 초기화 완료 ━━━━━━━━━━━━━━━━━━━━━━━
 
    생성된 파일:
-   - CLAUDE.md
+   - CLAUDE.md (경량 버전 — 프로젝트 성장에 따라 확장됩니다)
    - docs/plans/
    - docs/designs/
-   - docs/decisions/
-   - docs/verifications/
-   - docs/templates/
-   - docs/teams/{preset}.md  ← 도메인 특화 팀
+   - docs/teams/{preset}.md
    - .gitignore (업데이트)
 
    🏗️ 추천 팀 구성:
    - {팀명} ({패턴}): {역할1}, {역할2}, {역할3}
      용도: {설명}
      실행: /nova:team {preset-name} [대상]
-
-   다음 단계: /nova:next 로 시작하거나, /nova:plan 으로 첫 기능을 기획해 보세요.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
+
+10. Quick Tour를 제안한다:
+
+    ```
+    🚀 Quick Tour — Nova가 뭘 하는지 30초 안에 보여드립니다.
+
+    1️⃣ /nova:next  → 프로젝트 상태를 분석하고 다음 할 일을 추천합니다
+    2️⃣ /nova:review src/  → 기존 코드에서 숨겨진 문제를 찾아냅니다
+    3️⃣ /nova:plan 기능명  → 첫 기능의 CPS Plan을 작성합니다
+
+    → 어떤 걸 먼저 해볼까요? (또는 그냥 작업을 시작하셔도 됩니다 — Nova가 자동으로 따라갑니다)
+    ```
+
+    > 사용자가 투어를 건너뛰면 강제하지 않는다. "그냥 작업을 시작하셔도 됩니다"가 핵심.
 
 # Examples
 

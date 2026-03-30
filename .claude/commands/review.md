@@ -13,8 +13,25 @@ description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를
 > "깔끔해 보이는 코드일수록 더 의심하라."
 
 # Options
+- `--fast` : Lite 검증 — Step 1(정적 분석)만 수행 + 구조적 문제 Top 3만 보고. 오타/설정/README 수준의 변경에 적합.
+- `--strict` : Full 검증 — 3단계 평가 + Mutation Test + 보안 심층 스캔. DB 스키마/결제/인증 변경에 적합.
 - `--jury` : LLM Jury 모드 — 3인 심판(정확성/설계/사용자)으로 다중 관점 리뷰. nova-jury 스킬 참조.
-- (기본) : 단일 Skeptical Reviewer
+- (기본) : 변경 영역의 위험도를 자동 판단하여 검증 강도를 스케일링한다.
+
+## 자동 검증 강도 판단 (기본 모드)
+
+플래그 미지정 시 코드 변경의 위험도를 자동 평가한다:
+
+| 신호 | → Lite | → Standard | → Full |
+|------|--------|------------|--------|
+| 변경 영역 | README, 설정, 스타일 | 새 컴포넌트, 내부 로직 | DB, 결제, 인증, 아키텍처 |
+| 변경 파일 수 | 1~2개 | 3~7개 | 8개+ |
+| 보안 민감도 | 없음 | 보통 | 높음 |
+
+판단 결과를 리뷰 시작 시 표시한다:
+```
+[Nova Review] 위험도: {Low/Medium/High} → 검증 강도: {Lite/Standard/Full}
+```
 
 # Evaluation Stance (평가 자세)
 
@@ -38,16 +55,27 @@ description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를
 
 ## 3단계 평가 프로세스
 
+각 단계 시작 시 현재 진행 상황을 시각적으로 표시한다:
+
 ### Step 1: 정적 분석
+```
+[Skeptical Reviewer] Step 1/3: 정적 분석 중...
+```
 - lint/type-check 실행 결과 확인 (설정되어 있는 경우)
 - 미사용 import, 데드 코드, 타입 에러 탐지
 - 보안 취약점 패턴 스캔
 
 ### Step 2: 구조적 분석 (LLM)
+```
+[Skeptical Reviewer] Step 2/3: 구조적 분석 중... (Evaluation Criteria 기준)
+```
 - 위의 Evaluation Criteria 기준으로 심층 분석
 - 설계 문서가 있으면 Design Drift 검증
 
 ### Step 3: 실행 검증
+```
+[Skeptical Reviewer] Step 3/3: 실행 검증 중... (테스트 실행)
+```
 - 관련 테스트가 있으면 실행하여 통과 확인
 - 변경된 코드의 동작을 실제로 검증
 - 실행 불가 시 그 사유를 리포트에 명시
