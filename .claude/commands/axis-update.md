@@ -28,7 +28,8 @@ cat scripts/.axis-version
 
 # Notes
 - 커맨드, 에이전트, 스크립트는 최신으로 갱신된다.
-- 템플릿, 가이드, CLAUDE.md 등 사용자가 커스터마이징한 파일은 보존된다.
+- 템플릿, 가이드는 보존된다 (사용자 커스터마이징 보호).
+- CLAUDE.md의 AXIS 섹션이 구버전이면 v1.6+ 자동 적용 규칙으로 자동 교체된다 (AXIS 외 내용은 보존).
 - 업데이트 후 문제가 있으면 `git checkout -- .claude/ scripts/`로 복원 가능하다.
 
 # Input
