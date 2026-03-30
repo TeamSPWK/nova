@@ -14,6 +14,7 @@ BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 UPDATE_MODE=false
 MINIMAL_MODE=false
 UNINSTALL_MODE=false
+MIGRATE_MODE=false
 if [[ "${1:-}" == "--update" ]]; then
   UPDATE_MODE=true
   shift
@@ -22,6 +23,10 @@ elif [[ "${1:-}" == "--minimal" ]]; then
   shift
 elif [[ "${1:-}" == "--uninstall" ]]; then
   UNINSTALL_MODE=true
+  shift
+elif [[ "${1:-}" == "--migrate" ]]; then
+  MIGRATE_MODE=true
+  UPDATE_MODE=true
   shift
 fi
 
@@ -42,6 +47,8 @@ COUNT_SKIPPED=0
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 if $UNINSTALL_MODE; then
 echo -e "${CYAN}  🗑️  Nova Uninstaller${NC}"
+elif $MIGRATE_MODE; then
+echo -e "${CYAN}  🔄 AXIS → Nova Migrator${NC}"
 elif $UPDATE_MODE; then
 echo -e "${CYAN}  🔄 Nova Updater${NC}"
 elif $MINIMAL_MODE; then
@@ -59,6 +66,47 @@ if $UNINSTALL_MODE; then
   echo ""
 
   COUNT_REMOVED=0
+
+  # AXIS 잔여물 먼저 제거 (구 버전 호환)
+  AXIS_REMNANTS=(axis-update)
+  echo -e "${BOLD}🧹 AXIS 잔여물 제거 중...${NC}"
+  AXIS_FOUND=0
+  for cmd in "${AXIS_REMNANTS[@]}"; do
+    local_path="${TARGET_DIR}/.claude/commands/${cmd}.md"
+    if [[ -f "$local_path" ]]; then
+      rm "$local_path"
+      echo -e "  ${RED}✗${NC} ${CYAN}.claude/commands/${cmd}.md${NC} (AXIS 잔여)"
+      COUNT_REMOVED=$((COUNT_REMOVED + 1))
+      AXIS_FOUND=$((AXIS_FOUND + 1))
+    fi
+  done
+  # .axis-version 제거
+  if [[ -f "${TARGET_DIR}/scripts/.axis-version" ]]; then
+    rm "${TARGET_DIR}/scripts/.axis-version"
+    echo -e "  ${RED}✗${NC} ${CYAN}scripts/.axis-version${NC} (AXIS 잔여)"
+    COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    AXIS_FOUND=$((AXIS_FOUND + 1))
+  fi
+  # axis-engineering.md 제거
+  if [[ -f "${TARGET_DIR}/docs/axis-engineering.md" ]]; then
+    rm "${TARGET_DIR}/docs/axis-engineering.md"
+    echo -e "  ${RED}✗${NC} ${CYAN}docs/axis-engineering.md${NC} (AXIS 잔여)"
+    COUNT_REMOVED=$((COUNT_REMOVED + 1))
+    AXIS_FOUND=$((AXIS_FOUND + 1))
+  fi
+  # CLAUDE.md에서 AXIS 섹션 → Nova로 교체
+  CLAUDE_MD="${TARGET_DIR}/CLAUDE.md"
+  if [[ -f "$CLAUDE_MD" ]] && grep -q "AXIS Engineering" "$CLAUDE_MD" 2>/dev/null; then
+    sed -i '' 's/AXIS Engineering/Nova Engineering/g' "$CLAUDE_MD"
+    sed -i '' 's/AXIS Kit/Nova/g' "$CLAUDE_MD"
+    sed -i '' 's/AXIS/Nova/g' "$CLAUDE_MD"
+    echo -e "  ${GREEN}✓${NC} ${CYAN}CLAUDE.md${NC} AXIS → Nova 마이그레이션"
+    AXIS_FOUND=$((AXIS_FOUND + 1))
+  fi
+  if [[ $AXIS_FOUND -eq 0 ]]; then
+    echo -e "  ${YELLOW}→${NC} AXIS 잔여물 없음"
+  fi
+  echo ""
 
   # Nova가 설치한 커맨드 파일 제거
   COMMANDS_UNINSTALL=(next init plan xv design gap review propose metrics team auto nova-update)
@@ -89,7 +137,7 @@ if $UNINSTALL_MODE; then
   echo ""
 
   # Nova 스킬 제거
-  SKILLS_UNINSTALL=(nova-evaluator nova-context-chain)
+  SKILLS_UNINSTALL=(nova-evaluator nova-context-chain nova-mutation-test nova-context-engine nova-jury)
   echo -e "${BOLD}🧠 스킬 제거 중...${NC}"
   for skill in "${SKILLS_UNINSTALL[@]}"; do
     local_path="${TARGET_DIR}/.claude/skills/${skill}/SKILL.md"
@@ -172,6 +220,67 @@ if $UNINSTALL_MODE; then
   exit 0
 fi
 
+# ── Migrate 모드: AXIS → Nova 마이그레이션 ──
+if $MIGRATE_MODE; then
+  echo -e "${BOLD}🔄 AXIS → Nova 마이그레이션${NC}"
+  echo ""
+  MIGRATE_COUNT=0
+
+  # 1. axis-update.md → 제거 (nova-update.md로 대체됨)
+  if [[ -f "${TARGET_DIR}/.claude/commands/axis-update.md" ]]; then
+    rm "${TARGET_DIR}/.claude/commands/axis-update.md"
+    echo -e "  ${RED}✗${NC} ${CYAN}.claude/commands/axis-update.md${NC} → nova-update.md로 대체"
+    MIGRATE_COUNT=$((MIGRATE_COUNT + 1))
+  fi
+
+  # 2. .axis-version → .nova-version
+  if [[ -f "${TARGET_DIR}/scripts/.axis-version" ]]; then
+    mv "${TARGET_DIR}/scripts/.axis-version" "${TARGET_DIR}/scripts/.nova-version"
+    echo -e "  ${GREEN}✓${NC} ${CYAN}scripts/.axis-version${NC} → .nova-version"
+    MIGRATE_COUNT=$((MIGRATE_COUNT + 1))
+  fi
+
+  # 3. axis-engineering.md → 제거 (nova-engineering.md로 대체됨)
+  if [[ -f "${TARGET_DIR}/docs/axis-engineering.md" ]]; then
+    rm "${TARGET_DIR}/docs/axis-engineering.md"
+    echo -e "  ${RED}✗${NC} ${CYAN}docs/axis-engineering.md${NC} → nova-engineering.md로 대체"
+    MIGRATE_COUNT=$((MIGRATE_COUNT + 1))
+  fi
+
+  # 4. CLAUDE.md에서 AXIS → Nova 교체
+  CLAUDE_MD="${TARGET_DIR}/CLAUDE.md"
+  if [[ -f "$CLAUDE_MD" ]] && grep -q "AXIS" "$CLAUDE_MD" 2>/dev/null; then
+    sed -i '' 's/AXIS Engineering/Nova Engineering/g' "$CLAUDE_MD"
+    sed -i '' 's/AXIS Kit/Nova/g' "$CLAUDE_MD"
+    sed -i '' 's/TeamSPWK\/axis-kit/TeamSPWK\/nova/g' "$CLAUDE_MD"
+    sed -i '' 's/axis-kit/nova/g' "$CLAUDE_MD"
+    sed -i '' 's/\.axis-version/.nova-version/g' "$CLAUDE_MD"
+    # 독립적 AXIS 참조 (다른 단어의 일부가 아닌 경우)
+    sed -i '' 's/AXIS 섹션/Nova 섹션/g' "$CLAUDE_MD"
+    sed -i '' 's/AXIS Adaptive/Nova Adaptive/g' "$CLAUDE_MD"
+    sed -i '' 's/AXIS Harness/Nova Harness/g' "$CLAUDE_MD"
+    echo -e "  ${GREEN}✓${NC} ${CYAN}CLAUDE.md${NC} AXIS → Nova 전체 마이그레이션"
+    MIGRATE_COUNT=$((MIGRATE_COUNT + 1))
+  fi
+
+  # 5. .gitignore에서 AXIS → Nova
+  if [[ -f "${TARGET_DIR}/.gitignore" ]] && grep -q "AXIS" "${TARGET_DIR}/.gitignore" 2>/dev/null; then
+    sed -i '' 's/AXIS Engineering/Nova Engineering/g' "${TARGET_DIR}/.gitignore"
+    echo -e "  ${GREEN}✓${NC} ${CYAN}.gitignore${NC} AXIS → Nova"
+    MIGRATE_COUNT=$((MIGRATE_COUNT + 1))
+  fi
+
+  echo ""
+  if [[ $MIGRATE_COUNT -eq 0 ]]; then
+    echo -e "${YELLOW}  ℹ️  AXIS 잔여물이 없습니다. 이미 Nova입니다.${NC}"
+  else
+    echo -e "${GREEN}  ✅ ${MIGRATE_COUNT}개 항목 마이그레이션 완료${NC}"
+  fi
+  echo ""
+  echo -e "${BOLD}📦 Nova 최신 버전으로 업데이트 진행...${NC}"
+  echo ""
+fi
+
 # curl 확인
 if ! command -v curl &> /dev/null; then
   echo -e "${RED}ERROR: curl이 필요합니다.${NC}"
@@ -187,6 +296,9 @@ DIRS=(
   ".claude/agents"
   ".claude/skills/nova-evaluator"
   ".claude/skills/nova-context-chain"
+  ".claude/skills/nova-mutation-test"
+  ".claude/skills/nova-context-engine"
+  ".claude/skills/nova-jury"
   "scripts/lib"
   "docs/templates"
   "hooks"
@@ -224,7 +336,7 @@ SCRIPTS_MINIMAL=(.nova-version lib/common.sh init.sh)
 AGENTS_ALL=(architect senior-dev qa-engineer security-engineer devops-engineer)
 TEMPLATES_ALL=(cps-plan cps-design claude-md decision-record rule-proposal)
 GUIDES_ALL=(context-chain.md eval-checklist.md adoption-guide.md)
-SKILLS_ALL=(nova-evaluator/SKILL.md nova-context-chain/SKILL.md)
+SKILLS_ALL=(nova-evaluator/SKILL.md nova-context-chain/SKILL.md nova-mutation-test/SKILL.md nova-context-engine/SKILL.md nova-jury/SKILL.md)
 HOOKS_ALL=(nova-hooks.json)
 
 if $MINIMAL_MODE; then
