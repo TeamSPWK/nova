@@ -10,13 +10,42 @@ description: "현재 프로젝트 상태를 진단하고 다음에 실행할 Nov
 
 # Execution
 
-0. **NOVA-STATE.md 우선 확인** (있으면 가장 먼저 읽는다):
+0. **NOVA-STATE.md 확인 및 자동 생성**:
    - 프로젝트 루트의 `NOVA-STATE.md` 파일을 읽는다
-   - Blocker가 있으면 → 블로커 해결을 최우선 추천
-   - In Progress 작업이 있으면 → 해당 작업 이어가기 추천
-   - Phase가 `verifying`이면 → `/gap` 또는 `/review` 추천
-   - Phase가 `done`이면 → "새 기능 시작 준비 완료" 표시
-   - `NOVA-STATE.md`가 없으면 아래 기존 로직으로 진행
+   - **파일이 없으면**: 아래 진단(Step 1-2) 결과를 기반으로 `NOVA-STATE.md`를 자동 생성한다
+     - `git log --oneline -10`으로 최근 작업 방향 파악
+     - `docs/plans/`, `docs/designs/`, `docs/verifications/` 스캔
+     - 결과를 다음 템플릿으로 생성:
+       ```markdown
+       # Nova State
+
+       ## Current
+       - **Goal**: {진단에서 추론한 현재 목표}
+       - **Phase**: {planning|building|verifying|done 중 추론}
+       - **Blocker**: none
+
+       ## In Progress
+       | Task | Owner | Started | Status |
+       |------|-------|---------|--------|
+
+       ## Recently Done (최근 3개만)
+       | Task | Completed | Verdict | Ref |
+       |------|-----------|---------|-----|
+
+       ## Next Actions (최대 3개)
+       1. [ ] {추천 액션}
+
+       ## Refs
+       - Plan: {docs/plans/xxx.md 또는 none}
+       - Design: {docs/designs/xxx.md 또는 none}
+       - Last Verification: {docs/verifications/xxx.md 또는 none}
+       ```
+     - 생성 후 사용자에게 "📋 NOVA-STATE.md를 자동 생성했습니다." 안내
+   - **파일이 있으면**: 읽고 상태 기반 추천
+     - Blocker가 있으면 → 블로커 해결을 최우선 추천
+     - In Progress 작업이 있으면 → 해당 작업 이어가기 추천
+     - Phase가 `verifying`이면 → `/gap` 또는 `/review` 추천
+     - Phase가 `done`이면 → "새 기능 시작 준비 완료" 표시
 
 1. Nova 업데이트 체크:
    - `scripts/.nova-version` 파일에서 로컬 버전을 읽는다.
