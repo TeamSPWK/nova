@@ -10,6 +10,14 @@ description: "현재 프로젝트 상태를 진단하고 다음에 실행할 Nov
 
 # Execution
 
+0. **NOVA-STATE.md 우선 확인** (있으면 가장 먼저 읽는다):
+   - 프로젝트 루트의 `NOVA-STATE.md` 파일을 읽는다
+   - Blocker가 있으면 → 블로커 해결을 최우선 추천
+   - In Progress 작업이 있으면 → 해당 작업 이어가기 추천
+   - Phase가 `verifying`이면 → `/gap` 또는 `/review` 추천
+   - Phase가 `done`이면 → "새 기능 시작 준비 완료" 표시
+   - `NOVA-STATE.md`가 없으면 아래 기존 로직으로 진행
+
 1. Nova 업데이트 체크:
    - `scripts/.nova-version` 파일에서 로컬 버전을 읽는다.
    - `curl -fsSL --max-time 3 https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/.nova-version 2>/dev/null` 으로 최신 버전을 확인한다.

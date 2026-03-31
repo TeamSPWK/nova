@@ -79,6 +79,14 @@ Nova는 실행하지 않는다. 검증만 한다.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+## Phase 4: State Update
+
+`NOVA-STATE.md`가 프로젝트 루트에 있으면 검증 결과를 자동 반영한다:
+- Recently Done 테이블에 작업 추가 (판정 결과 + 검증 문서 링크)
+- In Progress 테이블에서 해당 작업 제거
+- Recently Done이 3개 초과 시 가장 오래된 항목 제거
+- Phase를 검증 결과에 따라 갱신 (PASS → done, FAIL → building)
+
 # Input
 
 $ARGUMENTS

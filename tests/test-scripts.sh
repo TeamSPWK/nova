@@ -188,7 +188,41 @@ done
 echo ""
 
 # ═══════════════════════════════════════════
-# 8. bump-version.sh 동작 검증
+# 8. Session State (NOVA-STATE.md) 검증
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Session State]${NC}"
+
+assert "nova-state 템플릿 존재" \
+  "[ -f '$ROOT_DIR/docs/templates/nova-state.md' ]"
+
+assert "nova-state 템플릿 50줄 이내" \
+  "[ \$(wc -l < '$ROOT_DIR/docs/templates/nova-state.md') -le 50 ]"
+
+assert "context-chain 스킬: 세션 시작 프로토콜" \
+  "grep -q '세션 시작 프로토콜' '$ROOT_DIR/.claude/skills/nova-context-chain/SKILL.md'"
+
+assert "context-chain 스킬: 자동 갱신 트리거" \
+  "grep -q '자동 갱신 트리거' '$ROOT_DIR/.claude/skills/nova-context-chain/SKILL.md'"
+
+assert "context-chain 스킬: NOVA-STATE.md 참조" \
+  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/skills/nova-context-chain/SKILL.md'"
+
+assert "CLAUDE.md: 세션 상태 유지 규칙" \
+  "grep -q '세션 상태 유지' '$ROOT_DIR/CLAUDE.md'"
+
+assert "/next: NOVA-STATE.md 우선 확인" \
+  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/next.md'"
+
+assert "/auto: State Update 단계" \
+  "grep -q 'State Update' '$ROOT_DIR/.claude/commands/auto.md'"
+
+assert "/init: NOVA-STATE.md 생성" \
+  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/init.md'"
+echo ""
+
+# ═══════════════════════════════════════════
+# 9. bump-version.sh 동작 검증
 # ═══════════════════════════════════════════
 
 echo -e "${YELLOW}[기능: bump-version.sh]${NC}"
