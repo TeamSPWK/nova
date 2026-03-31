@@ -28,6 +28,8 @@ description: Nova Context Chain — 세션 간 맥락 연속성 보장. NOVA-STA
 |--------|------------------------|
 | 작업 시작 | In Progress에 행 추가 |
 | git commit | 관련 Task의 Status 업데이트 |
+| `/nova:plan` 완료 | Current Goal/Phase 설정, Refs Plan 경로 기록 |
+| `/nova:design` 완료 | Phase → building 전환, Refs Design 경로 기록 |
 | `/nova:auto` 완료 | Recently Done에 추가 (Verdict + Ref) |
 | `/nova:review` 완료 | Refs의 Last Verification 갱신 |
 | `/nova:gap` 완료 | Refs의 Last Verification 갱신 |

@@ -68,6 +68,17 @@ Plan에 스프린트가 정의되어 있으면 스프린트별로, 없으면 기
 
 5. 작성된 문서를 `docs/designs/{slug}.md`에 저장한다.
 6. 저장 후, 원본 Plan 문서의 헤더에 `> Design: designs/{slug}.md` 경로를 추가한다.
+7. **NOVA-STATE.md 자동 갱신**: 프로젝트 루트의 `NOVA-STATE.md`를 업데이트한다 (없으면 `docs/templates/nova-state.md` 기반으로 생성).
+   - Current → Phase를 `building`으로 전환
+   - Refs → Design 경로 기록
+   - 마지막 활동 기록:
+     ```
+     ## 마지막 활동
+     - 커맨드: /nova:design
+     - 시각: {ISO 8601}
+     - 결과: 완료
+     - 대상: docs/designs/{slug}.md
+     ```
 
 # Design 반복 루프
 

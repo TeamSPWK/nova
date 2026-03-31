@@ -108,6 +108,17 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 4. 작성된 문서를 `docs/plans/{slug}.md`에 저장한다.
 5. 다관점 수집이 필요한 설계 판단이 있으면 `/xv` 사용을 제안한다.
 6. Plan 헤더의 `Design:` 필드는 비워둔다. `/design` 실행 시 자동으로 채워진다.
+7. **NOVA-STATE.md 자동 갱신**: 프로젝트 루트의 `NOVA-STATE.md`를 업데이트한다 (없으면 `docs/templates/nova-state.md` 기반으로 생성).
+   - Current → Goal을 Plan 제목으로, Phase를 `planning`으로 설정
+   - Refs → Plan 경로 기록
+   - 마지막 활동 기록:
+     ```
+     ## 마지막 활동
+     - 커맨드: /nova:plan
+     - 시각: {ISO 8601}
+     - 결과: 완료
+     - 대상: docs/plans/{slug}.md
+     ```
 
 # Notes
 - Plan은 "무엇을, 왜" — Design은 "어떻게"
