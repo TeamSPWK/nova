@@ -76,7 +76,7 @@ Generator 서브에이전트에 전달할 컨텍스트:
 
 ### Step 2: 구조적 리뷰 (Standard 이상)
 
-- /review와 동일한 관점: Over-Abstraction, Side Effect, 보안, 성능
+- /review의 Evaluation Criteria 전체 적용 (6개 구조적 문제 기준)
 - 적대적 자세: "이 코드에는 반드시 문제가 있다"
 
 ### Step 3: 설계 정합성 (Full만)

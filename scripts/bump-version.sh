@@ -20,11 +20,14 @@ case "${1:-}" in
   patch) PATCH=$((PATCH + 1)) ;;
   minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
   major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-  [0-9]*.[0-9]*.[0-9]*) IFS='.' read -r MAJOR MINOR PATCH <<< "$1" ;;
   *)
-    echo "사용법: bash scripts/bump-version.sh <patch|minor|major|X.Y.Z>"
-    echo "현재 버전: $CURRENT"
-    exit 1
+    if [[ "${1:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      IFS='.' read -r MAJOR MINOR PATCH <<< "${1:-}"
+    else
+      echo "사용법: bash scripts/bump-version.sh <patch|minor|major|X.Y.Z>"
+      echo "현재 버전: $CURRENT"
+      exit 1
+    fi
     ;;
 esac
 

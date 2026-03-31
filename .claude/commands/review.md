@@ -127,8 +127,8 @@ Before/After 코드 + 변경 요약
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-- **PASS**: Critical 0개, Warning 2개 이하
-- **CONDITIONAL**: Critical 0개, Warning 3개 이상
+- **PASS**: Critical 0개, Warning 0개
+- **CONDITIONAL**: Critical 0개, Warning 1개 이상
 - **FAIL**: Critical 1개 이상
 
 # FAIL 시 재검증 가이드 (v2.4)

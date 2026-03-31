@@ -10,8 +10,6 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 
 # Execution
 
-0. (버전 체크) `scripts/.nova-version` 파일이 있으면 `curl -fsSL --max-time 3 https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/.nova-version 2>/dev/null`로 최신 버전을 확인한다. 버전이 다르면 출력 마지막에 한 줄 안내한다: `🔄 Nova 업데이트 가능 (현재 → 최신) — /nova-update 를 실행하세요.`. 실패 시 조용히 건너뛴다.
-
 1. 사용자 입력에서 기능명/주제를 추출한다.
 2. `docs/templates/cps-plan.md`가 있으면 참고한다. **없으면 아래 인라인 구조를 사용한다** (템플릿 없음을 언급하지 않는다).
 3. 다음 구조를 반드시 채운다:
@@ -94,7 +92,7 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 
 ## Sprints (스프린트 분할)
 
-예상 수정 파일이 4개 이상이면 독립 검증 가능한 스프린트로 분할한다:
+예상 수정 파일이 8개 이상이면 독립 검증 가능한 스프린트로 분할한다:
 
 | Sprint | 기능 단위 | 예상 파일 | 의존성 | Done 조건 |
 |--------|----------|----------|--------|----------|
@@ -105,7 +103,7 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 - 의존성이 있으면 의존 순서대로 배치
 - Done 조건은 Evaluator가 검증할 수 있는 구체적 기준
 
-예상 수정 파일이 3개 이하면 스프린트 분할 없이 단일 구현으로 진행한다.
+예상 수정 파일이 7개 이하면 스프린트 분할 없이 단일 구현으로 진행한다.
 
 4. 작성된 문서를 `docs/plans/{slug}.md`에 저장한다.
 5. 다관점 수집이 필요한 설계 판단이 있으면 `/xv` 사용을 제안한다.

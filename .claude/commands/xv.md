@@ -18,12 +18,12 @@ description: "멀티 AI 다관점 수집을 실행한다. Claude + GPT + Gemini 
 
 > **권장**: API 키가 있으면 항상 Mode A를 사용한다. Mode A만이 진짜 독립적인 멀티 AI 교차검증이다.
 
-1. `$ROOT/scripts/x-verify.sh`를 실행한다.
+1. `scripts/x-verify.sh`를 실행한다. 경로는 프로젝트 루트 기준 상대경로다.
 2. 인자가 있으면 그대로 전달한다.
 3. 인자가 없으면 사용자에게 질문을 받는다.
 
 ```bash
-./scripts/x-verify.sh "질문 내용"
+bash scripts/x-verify.sh "질문 내용"
 ```
 
 4. 실행 결과를 사용자에게 보여준다.

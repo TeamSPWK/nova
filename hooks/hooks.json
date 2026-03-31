@@ -1,5 +1,4 @@
 {
-  "description": "Nova Engineering — 자동 적용 규칙 주입 + NOVA-STATE.md 자동 생성",
   "hooks": {
     "SessionStart": [
       {
