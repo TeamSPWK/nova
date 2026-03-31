@@ -21,6 +21,22 @@
 
 ## 이력
 
+### [2026-03-31] 플러그인 사용자 우선 검증
+- **변경**: 추가
+- **내용**: 모든 변경 시 "플러그인 사용자에게 전달되는가" 관점 검증 필수. session-start.sh 동기화 테스트로 강제.
+- **사유**: CLAUDE.md만 수정하고 session-start.sh 동기화 누락 3회, 신규 프로젝트 온보딩 실패 1회
+- **제안**: AI
+- **승인**: jay
+- **참조**: `docs/proposals/004-plugin-user-first.md`
+
+### [2026-03-31] 릴리스 전 /review 필수
+- **변경**: 추가
+- **내용**: Release Workflow에 `/review` 단계 추가 (patch: --fast, minor: 기본, major: --strict)
+- **사유**: v3.3.0 릴리스 직후 Critical 3건 발견 → v3.3.1 핫픽스 필요
+- **제안**: AI
+- **승인**: jay
+- **참조**: `docs/proposals/005-review-before-release.md`
+
 ### [2026-03-27] 공통 쉘 프리앰블 분리
 - **변경**: 추가
 - **내용**: `scripts/lib/common.sh` 생성 — 색상, `load_env`, `require_commands`, `banner`, `divider` 공통 함수
