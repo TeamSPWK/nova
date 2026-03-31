@@ -155,7 +155,7 @@ call_api() {
   local attempt
   for attempt in 1 2; do
     local response text
-    response=$(curl -s --max-time 30 "$@" 2>/dev/null)
+    response=$(curl -s --max-time 30 "$@" 2>/dev/null) || true
     text=$(extract_text "$name" "$response")
     if [[ -n "$text" ]]; then
       echo "$text" > "$outfile"
@@ -303,7 +303,7 @@ $RESPONSES
         -d "$(jq -n --arg p "$ANALYSIS_PROMPT" '{
           contents: [{parts: [{text: $p}]}],
           generationConfig: {temperature: 0.1}
-        }')" 2>/dev/null)
+        }')" 2>/dev/null) || true
       ANALYSIS=$(echo "$_response" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null)
       if [[ -n "$ANALYSIS" ]]; then
         break
