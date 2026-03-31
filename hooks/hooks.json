@@ -1,12 +1,12 @@
 {
-  "description": "Nova Engineering — 자동 적용 규칙을 매 세션에 주입",
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\""
+            "command": "\"$CLAUDE_PLUGIN_ROOT/scripts/init-nova-state.sh\""
           }
         ]
       }
