@@ -128,9 +128,11 @@ Before/After 코드 + 변경 요약
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-- **PASS**: Critical 0개, Warning 0개
-- **CONDITIONAL**: Critical 0개, Warning 1개 이상
+- **PASS**: Critical 0개, HIGH 0개, Warning 3개 미만
+- **CONDITIONAL**: Critical 0개, HIGH 1개 이상 또는 Warning 3개 이상
 - **FAIL**: Critical 1개 이상
+
+> 이 판정 기준은 /gap, /verify, /auto와 동일하다.
 
 # --fix 모드: 자동 수정 워크플로우
 
@@ -227,6 +229,13 @@ Critical 이슈가 발견되면 수정 후 재검증을 권고한다:
   - 시각: {ISO 8601}
   - 결과: {PASS/CONDITIONAL/FAIL}
   - 대상: {리뷰 대상 파일/디렉토리}
+  ```
+- **보안 이슈 발견 시**: `NOVA-STATE.md`의 "알려진 위험(Known Risks)" 테이블에 해당 이슈를 추가한다. 기존 항목과 중복되면 상태만 갱신한다.
+  ```
+  ## 알려진 위험 (Known Risks)
+  | 위험 | 심각도 | 상태 |
+  |------|--------|------|
+  | {보안 이슈 설명} | {Critical/HIGH/Warning} | 미해결 |
   ```
 
 # Notes

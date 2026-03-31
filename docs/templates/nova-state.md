@@ -16,6 +16,10 @@
 ## Next Actions (최대 3개)
 1. [ ] {다음 할 일}
 
+## 알려진 위험 (Known Risks)
+| 위험 | 심각도 | 상태 |
+|------|--------|------|
+
 ## Refs
 - Plan: none
 - Design: none

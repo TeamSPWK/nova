@@ -90,9 +90,11 @@ Generator 서브에이전트에 전달할 컨텍스트:
 
 | 판정 | 기준 | 후속 행동 |
 |------|------|----------|
-| PASS | Critical 이슈 0개 | 완료. 머지/배포 가능 |
-| CONDITIONAL | Critical 0개, Warning 존재 | **사용자에게 판단 위임**. Warning 목록과 권장 조치를 제시 |
+| PASS | Critical 0개, HIGH 0개, Warning 3개 미만 | 완료. 머지/배포 가능 |
+| CONDITIONAL | Critical 0개, HIGH 1개 이상 또는 Warning 3개 이상 | **사용자에게 판단 위임**. 이슈 목록과 권장 조치를 제시 |
 | FAIL | Critical 1개 이상 | Full Cycle이면 → Phase 5(재시도). Verify Only면 → 중단, 수정 필요 |
+
+> 판정 기준은 /review, /gap, /verify와 동일하다.
 
 출력 형식:
 

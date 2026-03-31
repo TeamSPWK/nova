@@ -163,9 +163,11 @@ Before/After 코드 + 변경 요약
 
 ### 판정 기준
 
-- **PASS**: Critical 이슈 0개 AND HIGH 갭 0개
-- **CONDITIONAL**: Critical 0개 AND (Warning 1개 이상 OR MEDIUM 갭 존재)
-- **FAIL**: Critical 1개 이상 OR HIGH 갭 1개 이상
+- **PASS**: Critical 0개, HIGH 갭 0개, Warning 3개 미만
+- **CONDITIONAL**: Critical 0개, HIGH 갭 1개 이상 또는 Warning 3개 이상
+- **FAIL**: Critical 1개 이상
+
+> 판정 기준은 /review, /gap, /auto와 동일하다.
 
 # FAIL 시 재검증 가이드
 
