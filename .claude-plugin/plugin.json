@@ -19,6 +19,7 @@
     "code-review",
     "gap-analysis",
     "session-hook",
-    "subagent"
+    "subagent",
+    "mcp-server"
   ]
 }
