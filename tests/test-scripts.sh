@@ -304,8 +304,8 @@ assert "/auto: --verify-only 플래그" \
 assert "/auto: Generator 서브에이전트 Phase" \
   "grep -q 'Phase 2: Generate' '$ROOT_DIR/.claude/commands/auto.md'"
 
-assert "/auto: Auto-Retry Phase" \
-  "grep -q 'Phase 5: Auto-Retry' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/auto: Auto-Fix Phase" \
+  "grep -q 'Phase 5: Auto-Fix' '$ROOT_DIR/.claude/commands/auto.md'"
 
 assert "/auto: 재시도 최대 1회" \
   "grep -q '최대 1회' '$ROOT_DIR/.claude/commands/auto.md'"

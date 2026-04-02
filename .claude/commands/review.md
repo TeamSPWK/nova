@@ -17,7 +17,40 @@ description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를
 - `--strict` : Full 검증 — 3단계 평가 + Mutation Test + 보안 심층 스캔. DB 스키마/결제/인증 변경에 적합.
 - `--jury` : LLM Jury 모드 — 3인 심판(정확성/설계/사용자)으로 다중 관점 리뷰. nova-jury 스킬 참조.
 - `--fix` : 자동 수정 모드 — 리뷰 후 Critical/Warning 이슈에 대해 수정 코드를 제안하고, 사용자 승인 시 자동 적용 + 재검증한다.
+- `--scope <영역>` : 리뷰 범위를 특정 관점으로 제한한다. 아래 스코프 참조.
 - (기본) : 변경 영역의 위험도를 자동 판단하여 검증 강도를 스케일링한다.
+
+## --scope: 리뷰 범위 제한
+
+전체 리뷰가 범위 과도할 때, 특정 관점으로 집중 리뷰한다.
+
+| 스코프 | 집중 영역 | 포함 기준 | 제외 기준 |
+|--------|----------|----------|----------|
+| `server` | 서버 로직, API, DB | 비즈니스 로직, 데이터 관통, 에러 처리 | UI/UX, 프론트엔드 스타일 |
+| `client` | 프론트엔드, UI/UX | 컴포넌트 구조, 상태 관리, 접근성 | 서버 로직, DB 쿼리 |
+| `security` | 보안 집중 | OWASP Top 10, 인증/인가, 입력 검증, 시크릿 | 스타일, 설계 정합성 |
+| `design` | 설계 정합성 | Design Drift, 아키텍처 일관성, Data Contract | 보안 스캔, 코드 스타일 |
+| `perf` | 성능 | N+1, 불필요 재렌더, 메모리 누수, 캐싱 | 기능 정확성, 보안 |
+
+### 스코프 사용 규칙
+
+1. `--scope` 지정 시, **해당 관점의 Evaluation Criteria만** 적용한다
+2. 다른 관점의 이슈는 발견해도 Info 등급으로만 보고한다 (Critical/Warning 아님)
+3. 스코프 외 심각한 보안 이슈(시크릿 노출 등)는 예외로 Critical 보고한다
+4. 판정 시작 시 스코프를 명시한다:
+   ```
+   [Nova Review] 스코프: {server/client/security/design/perf} | 위험도: {Low/Medium/High}
+   ```
+
+### --scope 조합 예시
+
+```
+/review --scope server backend/     # 서버 로직만 집중 리뷰
+/review --scope security auth/      # 보안 집중 리뷰
+/review --scope client --fix src/   # 프론트엔드 리뷰 + 자동 수정
+/review --scope design              # 설계 정합성만 확인
+/review --scope perf --strict api/  # 성능 Full 검증
+```
 
 ## 자동 검증 강도 판단 (기본 모드)
 
