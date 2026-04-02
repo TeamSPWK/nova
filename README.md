@@ -45,9 +45,80 @@ Nova is a **checkpoint inside the AI orchestrator loop**. It doesn't generate co
 
 The core principle is **Generator-Evaluator Separation**: the agent that writes code and the agent that verifies it are always different. This prevents the "reviewing your own homework" trap.
 
-## How It Works: Natural Language Is Enough
+## Architecture: Harness Engineering
+
+Nova works by engineering Claude Code's **harness layer** — the hooks, commands, agents, and skills system that wraps around the LLM. Instead of changing what the model knows, Nova controls **when, how, and under what rules** the model operates.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Claude Code Harness                                 │
+│                                                      │
+│  ┌─────────────────┐   SessionStart hook             │
+│  │ session-start.sh │──→ Injects 10 rules as         │
+│  │                  │    LLM context every session    │
+│  └─────────────────┘                                 │
+│                                                      │
+│  ┌─────────────────┐   12 slash commands             │
+│  │ .claude-plugin/  │──→ /nova:plan, /nova:review,    │
+│  │   *.md           │    /nova:gap, /nova:auto ...    │
+│  └─────────────────┘                                 │
+│                                                      │
+│  ┌─────────────────┐   5 specialist subagents        │
+│  │ .claude-plugin/  │──→ architect, senior-dev,       │
+│  │   agents/*.md    │    qa-engineer, security, devops │
+│  └─────────────────┘                                 │
+│                                                      │
+│  ┌─────────────────┐   4 complex skills              │
+│  │ skills/*/SKILL.md│──→ evaluator, jury,             │
+│  │                  │    context-chain, field-test    │
+│  └─────────────────┘                                 │
+└─────────────────────────────────────────────────────┘
+```
+
+| Layer | File | Mechanism | What It Does |
+|-------|------|-----------|-------------|
+| **Rules injection** | `hooks/session-start.sh` | SessionStart hook | Injects 10 auto-apply rules into every session as LLM context |
+| **Commands** | `.claude-plugin/*.md` | Slash commands | User-invocable workflows (`/nova:plan`, `/nova:review`, etc.) |
+| **Agents** | `.claude-plugin/agents/*.md` | Subagent types | Specialist agents with domain-specific checklists |
+| **Skills** | `skills/*/SKILL.md` | Skill system | Complex multi-step operations (evaluation, jury, context chain) |
+
+**Key distinction**: "Auto-apply rules" means `session-start.sh` injects rule text into Claude's context at session start. Claude then follows these rules as behavioral guidelines — it's prompt-level governance via the harness, not a code-level interceptor.
+
+## Workflow
+
+### Auto Workflow (Natural Language)
 
 Once installed, Nova's Quality Gate **automatically applies to every conversation** — no commands needed. Just describe your task in natural language.
+
+```
+"Build a feature" ──→ Auto complexity assessment
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+           [Simple]        [Medium]        [Complex]
+              │               │               │
+           Implement       Plan→Approve    Plan→Design
+              │               │            →Sprint split
+              │            Implement        →Approve
+              │               │               │
+              ▼               ▼               ▼
+        ┌──────────┐    ┌──────────┐    ┌──────────┐
+        │Evaluator │    │Evaluator │    │Evaluator │
+        │  Lite    │    │ Standard │    │  Full    │
+        └──────────┘    └──────────┘    └──────────┘
+              │               │               │
+           [PASS]          [PASS]          [PASS]
+              ↓               ↓               ↓
+            Done             Done            Done
+```
+
+### Manual Workflow (Commands)
+
+```
+/nova:plan → /nova:xv (if needed) → /nova:design → Build → /nova:gap → /nova:review
+```
+
+## How It Works: Examples
 
 ### Example: "Build a login API"
 
@@ -90,7 +161,7 @@ Nova auto-judges:
 
 ## Auto-Apply Rules (10 Rules)
 
-These rules apply to every conversation the moment Nova is installed.
+These rules apply to every conversation the moment Nova is installed. They are injected as LLM context via the `session-start.sh` hook.
 
 ### 1. Automatic Complexity Assessment
 
@@ -103,11 +174,13 @@ These rules apply to every conversation the moment Nova is installed.
 - Auth/DB/Payment domains escalate one level regardless of file count
 - Re-assess if file count exceeds initial estimate during work
 
-### 2. Generator-Evaluator Separation (Core)
+### 2. Generator-Evaluator Separation + Pre-Commit Gate (Core)
 
 - Implementation (Generator) and verification (Evaluator) are **always separate agents**
 - Evaluator takes an adversarial stance: "Find problems, don't rubber-stamp"
 - Lite verification by default; full verification only with `--strict`
+
+**Pre-commit gate**: Implementation complete → tsc/lint pass → Evaluator run → PASS → commit allowed. No deploy before Evaluator PASS (exception: `--emergency`).
 
 ### 3. Verification Criteria (5 Dimensions)
 
@@ -155,37 +228,16 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:metrics` | Measure Nova adoption level | Adoption tracking |
 | `/nova:explore` | Auto-analyze codebase, brief where to start | First time on a new project |
 
-## Workflow
+## Skills
 
-### Auto Workflow (Natural Language)
+Skills are multi-step operations that commands invoke internally. They can also be called directly.
 
-```
-"Build a feature" ──→ Auto complexity assessment
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-           [Simple]        [Medium]        [Complex]
-              │               │               │
-           Implement       Plan→Approve    Plan→Design
-              │               │            →Sprint split
-              │            Implement        →Approve
-              │               │               │
-              ▼               ▼               ▼
-        ┌──────────┐    ┌──────────┐    ┌──────────┐
-        │Evaluator │    │Evaluator │    │Evaluator │
-        │  Lite    │    │ Standard │    │  Full    │
-        └──────────┘    └──────────┘    └──────────┘
-              │               │               │
-           [PASS]          [PASS]          [PASS]
-              ↓               ↓               ↓
-            Done             Done            Done
-```
-
-### Manual Workflow (Commands)
-
-```
-/nova:plan → /nova:xv (if needed) → /nova:design → Build → /nova:gap → /nova:review
-```
+| Skill | Description | Invoked By |
+|-------|------------|------------|
+| **evaluator** | Adversarial 3-layer evaluation engine (static → semantic → runtime). The core verification engine behind all Nova checks | `/nova:review`, `/nova:gap`, `/nova:verify`, `/nova:auto` |
+| **jury** | Multi-perspective LLM Jury — corrects single-evaluator bias by running parallel assessments | `/nova:review --jury` |
+| **context-chain** | Session continuity via NOVA-STATE.md — preserves context across conversations | `/nova:next`, session start |
+| **field-test** | Live testing in real projects using isolated worktrees — leaves no trace | Manual invocation for validation |
 
 ## Specialist Agents (5 Types)
 
@@ -201,7 +253,7 @@ Each agent has a built-in Nova self-check checklist.
 
 ## Session State (NOVA-STATE.md)
 
-Nova maintains context across sessions via `NOVA-STATE.md`.
+Nova maintains context across sessions via `NOVA-STATE.md`. If it doesn't exist, it is auto-generated at session start.
 
 ```markdown
 # NOVA-STATE — project-name
@@ -242,6 +294,17 @@ Code review additional criteria:
 - User misjudgment (wrong amount/status displayed) → Hard-Block
 - Same failure repeated 2x → Forced blocker classification
 
+## What Nova Catches
+
+Our CI runs a [self-verification test](tests/test-self-verify.sh) against intentionally flawed code:
+
+| Defect | Type | Detection Method |
+|--------|------|-----------------|
+| Missing `GET /api/auth/me` endpoint | Design-Implementation Gap | Design doc vs route handler diff |
+| Plaintext password storage | Security | Design requires bcrypt, no hashing in code |
+| No email duplicate check (missing 409) | Verification Contract Breach | Design specifies 409, no conflict handling |
+| Hardcoded JWT secret key | Security Pattern | Static analysis: string literal |
+
 ## API Keys (Optional)
 
 Only `/nova:xv` (multi-perspective collection) requires API keys. Everything else works without them.
@@ -268,17 +331,6 @@ claude plugin uninstall nova@nova-marketplace
 claude plugin marketplace remove nova-marketplace
 ```
 
-## What Nova Catches
-
-Our CI runs a [self-verification test](tests/test-self-verify.sh) against intentionally flawed code:
-
-| Defect | Type | Detection Method |
-|--------|------|-----------------|
-| Missing `GET /api/auth/me` endpoint | Design-Implementation Gap | Design doc vs route handler diff |
-| Plaintext password storage | Security | Design requires bcrypt, no hashing in code |
-| No email duplicate check (missing 409) | Verification Contract Breach | Design specifies 409, no conflict handling |
-| Hardcoded JWT secret key | Security Pattern | Static analysis: string literal |
-
 ## FAQ
 
 ### When should I NOT use Nova?
@@ -294,9 +346,13 @@ Our CI runs a [self-verification test](tests/test-self-verify.sh) against intent
 
 Yes. Claude, GPT, and Gemini share much training data. Even unanimous agreement may reflect a shared blind spot. The final call is always yours.
 
-### How does Nova work with orchestrators like Paperclip?
+### How does Nova work with AI orchestrators?
 
-Nova is a Quality Gate — it verifies, not orchestrates. The orchestrator builds, Nova checks. It's the checkpoint inside their loop.
+Nova is a Quality Gate — it verifies, not orchestrates. The orchestrator builds, Nova checks. It's the checkpoint inside their loop, integrated via Claude Code's harness layer.
+
+### What is "harness engineering"?
+
+Prompt engineering shapes *what* the model says. Harness engineering shapes *when, how, and under what rules* the model runs — using hooks, plugins, commands, and agents. Nova is a harness engineering tool: it governs AI behavior through Claude Code's plugin system rather than through prompt manipulation.
 
 ## Documentation
 

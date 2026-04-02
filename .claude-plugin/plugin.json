@@ -12,10 +12,13 @@
   "license": "MIT",
   "keywords": [
     "quality-gate",
+    "harness-engineering",
     "adversarial-review",
     "cross-verification",
     "cps",
     "code-review",
-    "gap-analysis"
+    "gap-analysis",
+    "session-hook",
+    "subagent"
   ]
 }
