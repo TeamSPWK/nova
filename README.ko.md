@@ -216,7 +216,7 @@ Nova 자동 판단:
 | `/nova:next` | 프로젝트 상태 진단 + 다음 액션 추천 | 세션 시작 시, 방향 모를 때 |
 | `/nova:plan 기능명` | CPS Plan 문서 작성 | 새 기능 기획 시 |
 | `/nova:design 기능명` | CPS Design 문서 작성 | Plan 이후 기술 설계 시 |
-| `/nova:review src/` | 적대적 코드 리뷰 (`--fast` / `--strict` / `--fix` / `--jury`) | 코드 품질 점검 |
+| `/nova:review src/` | 적대적 코드 리뷰 (`--fast` / `--strict` / `--summary` / `--fix` / `--jury`) | 코드 품질 점검 |
 | `/nova:verify` | review + gap 통합 검증 (`--fast` / `--strict`) | 구현 완료 후 종합 검증 |
 | `/nova:gap 설계.md src/` | 설계↔구현 갭 탐지 (`--fast` / `--strict`) | 설계와 코드가 맞는지 확인 |
 | `/nova:xv "질문"` | 멀티 AI 다관점 수집 (Claude+GPT+Gemini, `--agent`로 API 키 없이) | 설계 판단, 아키텍처 선택 |

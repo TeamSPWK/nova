@@ -220,7 +220,7 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:next` | Diagnose project state + recommend next action | Session start, unsure what to do |
 | `/nova:plan feature` | Create CPS Plan document | Planning new features |
 | `/nova:design feature` | Create CPS Design document | Technical design after Plan |
-| `/nova:review src/` | Adversarial code review (`--fast` / `--strict` / `--fix` / `--jury`) | Code quality check |
+| `/nova:review src/` | Adversarial code review (`--fast` / `--strict` / `--summary` / `--fix` / `--jury`) | Code quality check |
 | `/nova:verify` | Combined review + gap (`--fast` / `--strict`) | Post-implementation check |
 | `/nova:gap design.md src/` | Design↔Implementation gap detection (`--fast` / `--strict`) | Verify design alignment |
 | `/nova:xv "question"` | Multi-AI perspective (Claude+GPT+Gemini, `--agent` for no API keys) | Design decisions, architecture choices |
