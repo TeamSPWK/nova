@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --target node18 --no-splitting",
+    "build": "tsup",
     "start": "node dist/index.js"
   },
   "dependencies": {
