@@ -17,6 +17,7 @@ description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를
 - `--strict` : Full 검증 — 3단계 평가 + Mutation Test + 보안 심층 스캔. DB 스키마/결제/인증 변경에 적합.
 - `--jury` : LLM Jury 모드 — 3인 심판(정확성/설계/사용자)으로 다중 관점 리뷰. nova-jury 스킬 참조.
 - `--fix` : 자동 수정 모드 — 리뷰 후 Critical/Warning 이슈에 대해 수정 코드를 제안하고, 사용자 승인 시 자동 적용 + 재검증한다.
+- `--summary` : 요약 모드 — 판정 + Critical/Warning 목록만 출력한다. 상세 분석(Rule Violation, Complexity, Refactoring, Nova Alignment)은 생략. 빠른 피드백 루프에 적합.
 - `--scope <영역>` : 리뷰 범위를 특정 관점으로 제한한다. 아래 스코프 참조.
 - (기본) : 변경 영역의 위험도를 자동 판단하여 검증 강도를 스케일링한다.
 
@@ -143,6 +144,31 @@ description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를
 - 실패 시 사용자에게 의미 있는 피드백이 가는가?
 
 # Output Format
+
+## --summary 모드 출력
+
+`--summary` 지정 시 아래 형식만 출력한다. 상세 섹션(Rule Violation, Complexity, Refactoring, Nova Alignment)은 전부 생략한다.
+
+```
+━━━ Review Summary ━━━━━━━━━━━━━━━━━━━━━━━━━
+  판정: {PASS / CONDITIONAL / FAIL}
+  검증 강도: {Lite / Standard / Full}
+
+  Critical ({N}건):
+    - {파일:라인} — {문제 한 줄 요약}
+    ...
+
+  Warning ({N}건):
+    - {파일:라인} — {문제 한 줄 요약}
+    ...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+- Critical/Warning이 0건이면 해당 섹션 자체를 생략한다
+- NOVA-STATE.md 갱신은 동일하게 수행한다 (생략 불가)
+- `--summary`는 다른 플래그와 조합 가능: `--fast --summary`, `--strict --summary`, `--scope server --summary` 등
+
+## 기본 모드 출력 (상세)
 
 ### 1. Critical Issues (반드시 수정)
 각 이슈: 파일:라인 + 문제 설명 + 수정 방향
