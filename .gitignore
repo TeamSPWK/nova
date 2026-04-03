@@ -29,6 +29,5 @@ docs/.pdca-status.json
 # Dependencies
 node_modules/
 
-# MCP server build outputs
-mcp-server/dist/
+# MCP server
 mcp-server/node_modules/
