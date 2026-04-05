@@ -31,3 +31,7 @@ node_modules/
 
 # MCP server
 mcp-server/node_modules/
+mcp-server/dist/
+
+# Nova Orbit (별도 프로젝트)
+nova-orbit/
