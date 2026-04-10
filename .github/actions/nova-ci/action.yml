@@ -1,0 +1,177 @@
+name: 'Nova CI'
+description: 'Nova Quality Gate — PR 코드 리뷰 자동 판정'
+
+inputs:
+  claude-api-key:
+    description: 'Anthropic API key for Claude CLI authentication'
+    required: true
+  review-level:
+    description: 'Review intensity (auto|lite|standard|full)'
+    required: false
+    default: 'auto'
+  fail-on-conditional:
+    description: 'Fail workflow on CONDITIONAL verdict'
+    required: false
+    default: 'false'
+  design-doc-path:
+    description: 'Path to design document for gap analysis'
+    required: false
+    default: ''
+
+outputs:
+  verdict:
+    description: 'PASS | CONDITIONAL | FAIL'
+    value: ${{ steps.nova-ci.outputs.verdict }}
+  critical-count:
+    description: 'Number of critical issues'
+    value: ${{ steps.nova-ci.outputs.critical-count }}
+  comment-url:
+    description: 'URL of the PR comment'
+    value: ${{ steps.comment.outputs.comment-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    # ── 0. 의존성 확인 ──
+    - name: Verify dependencies
+      shell: bash
+      run: |
+        for cmd in jq gh; do
+          if ! command -v "$cmd" &>/dev/null; then
+            echo "::error::Required dependency not found: $cmd"
+            exit 1
+          fi
+        done
+
+    # ── 1. PR 변경 파일 목록 수집 ──
+    - name: Collect PR changed files
+      id: changed-files
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "0" ]]; then
+          echo "::error::This action requires a pull_request event"
+          exit 1
+        fi
+        gh pr diff "$PR_NUMBER" --name-only > "$RUNNER_TEMP/nova-changed-files.txt"
+
+    # ── 2. diff 수집 ──
+    - name: Collect PR diff
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        gh pr diff "$PR_NUMBER" > "$RUNNER_TEMP/nova-pr-diff.txt"
+
+    # ── 3. nova-ci.sh 실행 (verdict JSON 생성) ──
+    - name: Run nova-ci
+      id: nova-ci
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.claude-api-key }}
+        INPUT_LEVEL: ${{ inputs.review-level }}
+        INPUT_DESIGN_DOC: ${{ inputs.design-doc-path }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        SCRIPT_DIR="${ACTION_PATH}/../../.."
+
+        ARGS=(--level "$INPUT_LEVEL")
+        ARGS+=(--changed-files "$RUNNER_TEMP/nova-changed-files.txt")
+        ARGS+=(--diff "$RUNNER_TEMP/nova-pr-diff.txt")
+
+        if [[ -n "$INPUT_DESIGN_DOC" ]]; then
+          ARGS+=(--design-doc "$INPUT_DESIGN_DOC")
+        fi
+
+        bash "${SCRIPT_DIR}/scripts/nova-ci.sh" "${ARGS[@]}" \
+          > "$RUNNER_TEMP/nova-verdict.json"
+
+        VERDICT=$(jq -r '.verdict // "UNKNOWN"' < "$RUNNER_TEMP/nova-verdict.json")
+        CRITICAL=$(jq -r '.counts.critical // 0' < "$RUNNER_TEMP/nova-verdict.json")
+
+        echo "verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
+        echo "critical-count=${CRITICAL}" >> "$GITHUB_OUTPUT"
+
+    # ── 4. 마크다운 변환 ──
+    - name: Format PR comment
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        SCRIPT_DIR="${ACTION_PATH}/../../.."
+        bash "${SCRIPT_DIR}/scripts/format-pr-comment.sh" \
+          < "$RUNNER_TEMP/nova-verdict.json" \
+          > "$RUNNER_TEMP/nova-comment-body.md"
+
+    # ── 5. 기존 nova-ci 코멘트 검색 ──
+    - name: Find existing nova-ci comment
+      id: find-comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        COMMENT_ID=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+          --paginate \
+          --jq '.[] | select(.body | startswith("<!-- nova-ci-verdict -->")) | .id' \
+          | head -1)
+
+        echo "comment-id=${COMMENT_ID:-}" >> "$GITHUB_OUTPUT"
+
+    # ── 6. 코멘트 생성 또는 업데이트 ──
+    - name: Create or update PR comment
+      id: comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        EXISTING_COMMENT_ID: ${{ steps.find-comment.outputs.comment-id }}
+      run: |
+        BODY=$(cat "$RUNNER_TEMP/nova-comment-body.md")
+        PAYLOAD=$(jq -n --arg body "$BODY" '{ body: $body }')
+
+        if [[ -n "$EXISTING_COMMENT_ID" ]]; then
+          RESPONSE=$(echo "$PAYLOAD" | gh api \
+            "repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}" \
+            -X PATCH --input -)
+        else
+          RESPONSE=$(echo "$PAYLOAD" | gh api \
+            "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --input -)
+        fi
+
+        COMMENT_URL=$(echo "$RESPONSE" | jq -r '.html_url // ""')
+        echo "comment-url=${COMMENT_URL}" >> "$GITHUB_OUTPUT"
+
+    # ── 7. Check Run 결론 설정 ──
+    - name: Set check conclusion
+      shell: bash
+      env:
+        VERDICT: ${{ steps.nova-ci.outputs.verdict }}
+        FAIL_ON_CONDITIONAL: ${{ inputs.fail-on-conditional }}
+      run: |
+        case "$VERDICT" in
+          PASS)
+            echo "::notice::Nova CI verdict: PASS"
+            ;;
+          CONDITIONAL)
+            if [[ "$FAIL_ON_CONDITIONAL" == "true" ]]; then
+              echo "::error::Nova CI verdict: CONDITIONAL (fail-on-conditional enabled)"
+              exit 1
+            fi
+            echo "::warning::Nova CI verdict: CONDITIONAL"
+            ;;
+          FAIL)
+            echo "::error::Nova CI verdict: FAIL"
+            exit 1
+            ;;
+          *)
+            echo "::error::Nova CI returned unknown verdict: ${VERDICT}"
+            exit 1
+            ;;
+        esac
