@@ -1,0 +1,29 @@
+name: Nova Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# PR당 1개 실행만 유지 — 새 commit push 시 이전 실행 자동 취소
+concurrency:
+  group: nova-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# PR 코멘트 작성 권한 필요
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  nova-review:
+    name: Nova CI Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nova CI Review
+        uses: ./.github/actions/nova-ci
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          review-level: auto
+          fail-on-conditional: 'false'
