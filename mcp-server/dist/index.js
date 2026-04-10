@@ -21165,12 +21165,41 @@ function registerGetCommands(server2, novaRoot) {
 // src/tools/get-state.ts
 import fs3 from "fs/promises";
 import path3 from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+var execFileAsync = promisify(execFile);
+async function buildAdvisory(targetDir, stateContent) {
+  const activityMatch = stateContent.match(
+    /\/nova:(?:verify|review).*\|\s*(\d{4}-\d{2}-\d{2})/
+  );
+  const lastVerifyDate = activityMatch?.[1] ?? null;
+  let commitsSinceVerify = 0;
+  try {
+    const sinceArg = lastVerifyDate ? `--since=${lastVerifyDate}` : "";
+    const args = ["log", "--oneline"];
+    if (sinceArg) args.push(sinceArg);
+    const { stdout } = await execFileAsync("git", args, {
+      cwd: targetDir,
+      timeout: 5e3
+    });
+    commitsSinceVerify = stdout.trim().split("\n").filter(Boolean).length;
+  } catch {
+    return null;
+  }
+  if (commitsSinceVerify < 3) return null;
+  const message = commitsSinceVerify >= 5 ? `\uB9C8\uC9C0\uB9C9 verify \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uB204\uC801. /nova:verify --fast \uC2E4\uD589\uC744 \uAD8C\uC7A5\uD569\uB2C8\uB2E4.` : `\uB9C8\uC9C0\uB9C9 verify \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uBC1C\uC0DD. \uAC80\uC99D \uC2DC\uC810\uC744 \uD655\uC778\uD558\uC138\uC694.`;
+  return {
+    message,
+    commits_since_last_verify: commitsSinceVerify,
+    last_verify_date: lastVerifyDate
+  };
+}
 function registerGetState(server2) {
   server2.registerTool(
     "get_state",
     {
-      title: "NOVA-STATE.md \uC77D\uAE30",
-      description: "\uC9C0\uC815\uB41C \uD504\uB85C\uC81D\uD2B8 \uACBD\uB85C\uC758 NOVA-STATE.md \uD30C\uC77C\uC744 \uC77D\uC5B4 \uBC18\uD658\uD569\uB2C8\uB2E4.",
+      title: "NOVA-STATE.md \uC77D\uAE30 + advisory",
+      description: "\uD504\uB85C\uC81D\uD2B8\uC758 NOVA-STATE.md\uB97C \uC77D\uACE0, \uAC80\uC99D \uB204\uB77D \uACBD\uACE0(advisory)\uB97C \uD568\uAED8 \uBC18\uD658\uD569\uB2C8\uB2E4.",
       inputSchema: external_exports.object({
         project_path: external_exports.string().optional().describe(
           "NOVA-STATE.md\uAC00 \uC704\uCE58\uD55C \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8 \uACBD\uB85C. \uBBF8\uC9C0\uC815 \uC2DC \uD604\uC7AC \uB514\uB809\uD1A0\uB9AC(process.cwd())"
@@ -21188,13 +21217,21 @@ function registerGetState(server2) {
       }
       try {
         const content = await fs3.readFile(statePath, "utf-8");
+        const advisory = await buildAdvisory(targetDir, content);
+        const advisorySection = advisory ? `
+
+---
+## Advisory
+- ${advisory.message}
+- \uB9C8\uC9C0\uB9C9 \uAC80\uC99D: ${advisory.last_verify_date ?? "\uAE30\uB85D \uC5C6\uC74C"}
+- \uC774\uD6C4 \uCEE4\uBC0B \uC218: ${advisory.commits_since_last_verify}` : "";
         return {
           content: [
             {
               type: "text",
               text: `# NOVA-STATE.md (${targetDir})
 
-${content}`
+${content}${advisorySection}`
             }
           ]
         };
