@@ -18,15 +18,13 @@ description: "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 
 
 > **권장**: API 키가 있으면 항상 Mode A를 사용한다. Mode A만이 진짜 독립적인 멀티 AI 교차검증이다.
 
-1. `scripts/x-verify.sh`를 실행한다. 경로는 프로젝트 루트 기준 상대경로다.
-2. 인자가 있으면 그대로 전달한다.
-3. 인자가 없으면 사용자에게 질문을 받는다.
-
-```bash
-bash scripts/x-verify.sh "질문 내용"
-```
-
-4. 실행 결과를 사용자에게 보여준다.
+1. 인자가 없으면 사용자에게 질문을 받는다.
+2. MCP 도구 `x_verify`를 호출한다:
+   - `question`: 질문 내용
+   - `no_save`: `--no-save` 옵션 시 true
+   - `selected_ais`: `--claude`, `--gpt`, `--gemini` 옵션에 해당하는 AI 배열 (미지정 시 생략)
+   - `claude_model`: `--model opus|sonnet|haiku` 옵션 (미지정 시 생략)
+3. 실행 결과를 사용자에게 보여준다.
 
 ## Mode B: 에이전트 다관점 수집 (API 키가 없거나 --agent 옵션 사용 시)
 
@@ -138,8 +136,8 @@ API 키 없이도 다관점 수집을 수행한다. 3개 병렬 에이전트를 
 ## 모드 판별 기준
 
 1. `--agent` 옵션이 있으면 → Mode B
-2. `.env` 파일이 없거나 API 키가 하나도 없으면 → Mode B
-3. 그 외 → Mode A
+2. MCP 도구 `x_verify`가 사용 불가능하면 → Mode B
+3. 그 외 → Mode A (MCP 도구 `x_verify` 사용)
 
 ## 합의 분석 후 행동 제안 (Mode A)
 
@@ -155,7 +153,7 @@ Mode A의 합의율 기반:
 - `--agent` 옵션으로 API 키가 있어도 에이전트 모드 강제 사용 가능
 - `--claude`, `--gpt`, `--gemini` 옵션으로 특정 AI만 호출 가능 (Mode A)
 - 설계 판단, 아키텍처 선택, 기술 스택 결정 등에 사용
-- `disableSkillShellExecution` 설정이 활성화된 환경에서는 Mode A(스크립트 실행)가 작동하지 않는다. 이 경우 자동으로 Mode B(에이전트 모드)로 전환한다.
+- `x_verify` MCP 도구가 사용 불가능한 환경에서는 자동으로 Mode B(에이전트 모드)로 전환한다.
 
 # Input
 $ARGUMENTS

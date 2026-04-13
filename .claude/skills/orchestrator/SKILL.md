@@ -14,6 +14,38 @@ description: Nova Orchestrator — 자연어 요청을 CPS 설계→에이전트
 - 구조화된 프롬프트가 자연어보다 낫다
 - 멀티 프로젝트 병렬 지원
 
+## 오케스트레이션 추적 (MCP 도구)
+
+각 Phase 진행 상황을 MCP 도구로 추적한다. 세션 중단 시에도 `.nova-orchestration.json`에 상태가 보존된다.
+
+| 시점 | MCP 도구 호출 |
+|------|--------------|
+| 오케스트레이션 시작 | `orchestration_start` — task, complexity, phases 등록 |
+| Phase 시작 | `orchestration_update` — status: "running" |
+| Phase 완료/실패 | `orchestration_update` — status: "completed"/"failed" + result |
+| 상태 확인 | `orchestration_status` — 현재 진행 상황 조회 |
+
+예시 (보통 복잡도):
+```
+orchestration_start({
+  task: "사용자 프로필 페이지 구현",
+  complexity: "medium",
+  phases: [
+    { name: "설계", role: "Architect" },
+    { name: "구현", role: "Generator" },
+    { name: "검증", role: "Evaluator" }
+  ]
+})
+→ orch-abc123
+
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "running" })
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "completed", result: "CPS 설계서 작성 완료" })
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "구현", status: "running" })
+...
+```
+
+> MCP 도구가 사용 불가능한 환경에서는 추적 없이 기존 방식대로 실행한다.
+
 ## Execution
 
 ### Phase 1: 요청 분석

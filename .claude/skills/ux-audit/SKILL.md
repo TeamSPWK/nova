@@ -24,6 +24,7 @@ description: "Nova UX Audit — 5인 적대적 평가자(Adversarial Jury)로 UI
 | (없음) | 5인 평가 + 종합 보고 |
 | `--target <경로>` | 평가 범위 지정 (기본: 프론트엔드 전체 자동 탐색) |
 | `--screenshot` | Puppeteer로 실제 화면 캡처 후 평가 (dev 서버 실행 필요) |
+| `--live <URL>` | Computer Use로 실제 브라우저에서 앱을 조작하며 평가 (예: `--live http://localhost:3000`) |
 | `--sprint` | 결과를 스프린트로 자동 분할 |
 | `--fix` | Critical/High 자동 수정 제안 (사용자 승인 필요) |
 | `--a11y` | 접근성 평가자를 Full 모드로 강제 (WCAG 전 항목 검사) |
@@ -36,6 +37,7 @@ description: "Nova UX Audit — 5인 적대적 평가자(Adversarial Jury)로 UI
 2. `--target` 지정 시 해당 경로, 미지정 시 프론트엔드 루트 자동 탐색
 3. i18n 파일, 테마/디자인 토큰, 라우트 구조, 컴포넌트 디렉토리 파악
 4. `--screenshot` 시: dev 서버 기동 확인 → Puppeteer MCP로 주요 화면 캡처 (미설치 시 경고 후 코드 분석만 수행)
+5. `--live <URL>` 시: Computer Use로 실제 브라우저에서 앱을 열고 인터랙션하며 평가 (아래 상세 참조)
 
 환경 분석 결과를 요약하여 표시한다:
 ```
@@ -281,6 +283,51 @@ Core Web Vitals 지표를 코드 레벨에서 진단하고, 대규모 데이터 
   {수정으로 영향받는 파일/모듈}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+## --live Computer Use 모드
+
+Claude Code의 Computer Use 기능으로 실제 브라우저에서 앱을 열고 인터랙션하며 평가한다.
+
+### 실행 절차
+
+1. 지정된 URL로 브라우저를 연다 (Computer Use)
+2. 주요 사용자 시나리오를 자동으로 실행한다:
+   - 메인 페이지 탐색 + 네비게이션 클릭
+   - 폼 입력 + 제출
+   - 에러 유발 (빈 제출, 잘못된 입력)
+   - 뒤로가기/되돌리기 동작
+3. 각 단계에서 스크린샷을 캡처하여 평가자 컨텍스트에 포함한다
+4. 코드 분석 결과 + 실제 렌더링/인터랙션 결과를 종합하여 평가한다
+
+### 평가자별 활용
+
+| 평가자 | --live에서 추가 확인 사항 |
+|--------|-------------------------|
+| Newcomer | 실제 첫 화면 인상, 온보딩 흐름 클릭 경로 |
+| Accessibility | 실제 탭 키 순서, 포커스 표시 가시성, 스크린 리더 영역 |
+| Cognitive Load | 실제 화면에서의 시각적 복잡도, 네비게이션 깊이 체감 |
+| Performance | 실제 로딩 시간, 인터랙션 반응 속도 |
+| Dark Pattern | 실제 버튼 크기/색상 비교, 해지 경로 클릭 수 |
+
+### 폴백 체인
+
+```
+--live (Computer Use)
+  │ 미지원 환경
+  ▼
+--screenshot (Puppeteer MCP)
+  │ 미설치/미연결
+  ▼
+코드 분석만 수행
+```
+
+각 폴백 시 경고를 출력한다:
+```
+[Nova UX Audit] Computer Use 미지원 — --screenshot 모드로 폴백합니다.
+[Nova UX Audit] Puppeteer MCP 미연결 — 코드 분석만 수행합니다.
+```
+
+> **주의**: Computer Use는 Research Preview 기능입니다. 프로덕션 환경이 아닌 로컬 개발 서버에서만 사용하세요.
 
 ## --screenshot 스크린샷 모드
 

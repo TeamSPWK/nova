@@ -1,12 +1,12 @@
 {
   "version": "4.4.1",
-  "generatedAt": "2026-04-13T02:51:40Z",
+  "generatedAt": "2026-04-13T23:44:32Z",
   "stats": {
     "commands": 12,
     "skills": 7,
     "agents": 5,
     "rules": 10,
-    "mcpTools": 6
+    "mcpTools": 8
   },
   "commands": [
     {"cmd": "/nova:auto", "description": "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능."},

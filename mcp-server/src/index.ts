@@ -10,6 +10,8 @@ import { registerGetState } from "./tools/get-state.js";
 import { registerCreatePlan } from "./tools/create-plan.js";
 import { registerOrchestrate } from "./tools/orchestrate.js";
 import { registerVerify } from "./tools/verify.js";
+import { registerXVerify } from "./tools/x-verify.js";
+import { registerOrchestrationTracker } from "./tools/orchestration-tracker.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // dist/ → mcp-server/ → nova root
@@ -40,6 +42,8 @@ registerGetState(server);
 registerCreatePlan(server);
 registerOrchestrate(server);
 registerVerify(server);
+registerXVerify(server);
+registerOrchestrationTracker(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

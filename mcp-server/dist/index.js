@@ -3221,8 +3221,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path5) {
-      let input = path5;
+    function removeDotSegments(path7) {
+      let input = path7;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3421,8 +3421,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path5, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
+        const [path7, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path7 && path7 !== "/" ? path7 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6784,12 +6784,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs5, exportName) {
+    function addFormats(ajv, list, fs7, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs5[f]);
+        ajv.addFormat(f, fs7[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -7275,8 +7275,8 @@ function getErrorMap() {
 
 // node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path5, errorMaps, issueData } = params;
-  const fullPath = [...path5, ...issueData.path || []];
+  const { data, path: path7, errorMaps, issueData } = params;
+  const fullPath = [...path7, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7392,11 +7392,11 @@ var errorUtil;
 
 // node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path5, key) {
+  constructor(parent, value, path7, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path5;
+    this._path = path7;
     this._key = key;
   }
   get path() {
@@ -11033,10 +11033,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path5) {
-  if (!path5)
+function getElementAtPath(obj, path7) {
+  if (!path7)
     return obj;
-  return path5.reduce((acc, key) => acc?.[key], obj);
+  return path7.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11356,11 +11356,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path5, issues) {
+function prefixIssues(path7, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path5);
+    iss.path.unshift(path7);
     return iss;
   });
 }
@@ -21011,8 +21011,8 @@ var StdioServerTransport = class {
 
 // src/index.ts
 import { fileURLToPath } from "url";
-import path4 from "path";
-import fs4 from "fs";
+import path6 from "path";
+import fs6 from "fs";
 
 // src/tools/get-rules.ts
 import fs from "fs/promises";
@@ -21045,7 +21045,10 @@ function registerGetRules(server2, novaRoot) {
         };
       }
       if (!section) {
-        return { content: [{ type: "text", text: content }] };
+        return {
+          content: [{ type: "text", text: content }],
+          _meta: { "anthropic/maxResultSizeChars": 1e5 }
+        };
       }
       const sectionPattern = new RegExp(
         `(## \xA7${section}\\..+?)(?=## \xA7|$)`,
@@ -21233,7 +21236,8 @@ function registerGetState(server2) {
 
 ${content}${advisorySection}`
             }
-          ]
+          ],
+          _meta: { "anthropic/maxResultSizeChars": 5e4 }
         };
       } catch {
         return {
@@ -21640,14 +21644,602 @@ function registerVerify(server2) {
   );
 }
 
+// src/tools/x-verify.ts
+import fs4 from "fs/promises";
+import path4 from "path";
+function parseEnv(content) {
+  const env = {};
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx < 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let value = trimmed.slice(eqIdx + 1).trim();
+    if (value.startsWith('"') && value.endsWith('"') || value.startsWith("'") && value.endsWith("'")) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
+  }
+  return env;
+}
+async function callApi(url, headers, body, extractFn) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(3e4)
+      });
+      const json = await res.json();
+      const text = extractFn(json);
+      if (text) return text;
+    } catch {
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 2e3));
+  }
+  throw new Error("API \uD638\uCD9C \uC2E4\uD328 (2\uD68C \uC2DC\uB3C4)");
+}
+async function callClaude(apiKey, model, systemPrompt, question) {
+  return callApi(
+    "https://api.anthropic.com/v1/messages",
+    {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01"
+    },
+    {
+      model,
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [{ role: "user", content: question }]
+    },
+    (json) => {
+      const j = json;
+      return j?.content?.[0]?.text;
+    }
+  );
+}
+async function callGpt(apiKey, model, systemPrompt, question) {
+  return callApi(
+    "https://api.openai.com/v1/chat/completions",
+    { Authorization: `Bearer ${apiKey}` },
+    {
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: question }
+      ],
+      temperature: 0.7
+    },
+    (json) => {
+      const j = json;
+      return j?.choices?.[0]?.message?.content;
+    }
+  );
+}
+async function callGemini(apiKey, model, systemPrompt, question) {
+  return callApi(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {},
+    {
+      contents: [{ parts: [{ text: `${systemPrompt}
+
+${question}` }] }]
+    },
+    (json) => {
+      const j = json;
+      return j?.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
+  );
+}
+async function analyzeConsensus(geminiKey, geminiModel, question, results) {
+  const responsesText = results.filter((r) => r.ok).map((r) => `## ${r.name} \uC751\uB2F5
+${r.text}`).join("\n\n");
+  const prompt = `\uB2E4\uC74C\uC740 \uAC19\uC740 \uC9C8\uBB38\uC5D0 \uB300\uD55C ${results.filter((r) => r.ok).length}\uAC1C AI\uC758 \uC751\uB2F5\uC785\uB2C8\uB2E4. \uD569\uC758 \uC218\uC900\uC744 \uBD84\uC11D\uD558\uC138\uC694.
+
+## \uC6D0\uB798 \uC9C8\uBB38
+${question}
+
+${responsesText}
+\uBC18\uB4DC\uC2DC \uC544\uB798 JSON \uD615\uC2DD\uC73C\uB85C\uB9CC \uC751\uB2F5\uD558\uC138\uC694. \uB2E4\uB978 \uD14D\uC2A4\uD2B8 \uC5C6\uC774 JSON\uB9CC:
+{
+  "consensus_rate": (0-100 \uC815\uC218. \uD575\uC2EC \uACB0\uB860\uC758 \uBC29\uD5A5\uC131\uC774 \uC77C\uCE58\uD558\uB294 \uC815\uB3C4),
+  "common_points": ["\uACF5\uD1B5 \uC758\uACAC1", "\uACF5\uD1B5 \uC758\uACAC2"],
+  "differences": ["\uCC28\uC774\uC8101", "\uCC28\uC774\uC8102"],
+  "verdict": "auto_approve \uB610\uB294 human_review \uB610\uB294 redefine",
+  "summary": "\uD55C\uC904 \uC694\uC57D"
+}`;
+  const raw = await callApi(
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`,
+    {},
+    {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1 }
+    },
+    (json) => {
+      const j = json;
+      return j?.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
+  );
+  const cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+  return JSON.parse(cleaned);
+}
+function formatOutput(question, results, analysis, availableAis) {
+  const aiLabels = {
+    claude: "\u{1F7E3} Claude (Anthropic)",
+    gpt: "\u{1F7E2} GPT (OpenAI)",
+    gemini: "\u{1F535} Gemini (Google)"
+  };
+  let output = `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+  Nova X-Verification v2 \u2014 \uBA40\uD2F0 AI \uB2E4\uAD00\uC810 \uC790\uBB38
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+
+  \u2753 \uC9C8\uBB38: ${question}
+
+`;
+  for (const ai of ["claude", "gpt", "gemini"]) {
+    const result = results.find((r) => r.name === ai);
+    if (result) {
+      output += `\u2501\u2501\u2501 ${aiLabels[ai]} \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+`;
+      output += result.ok ? result.text : `ERROR: ${result.text}`;
+      output += "\n\n";
+    } else if (!availableAis.includes(ai)) {
+      output += `\u2501\u2501\u2501 ${aiLabels[ai]} \u2501\u2501\u2501 [\uAC74\uB108\uB700: API \uD0A4 \uC5C6\uC74C] \u2501\u2501\u2501
+
+`;
+    }
+  }
+  if (analysis) {
+    const verdictMap = {
+      auto_approve: "\u2705 AUTO APPROVE",
+      human_review: "\u26A0\uFE0F  HUMAN REVIEW",
+      agent_review: "\u{1F916} AGENT REVIEW",
+      redefine: "\u{1F504} REDEFINE"
+    };
+    const verdictLabel = verdictMap[analysis.verdict] ?? `\u2753 ${analysis.verdict}`;
+    const rateStr = typeof analysis.consensus_rate === "number" ? `${analysis.consensus_rate}%` : String(analysis.consensus_rate);
+    output += `\u2501\u2501\u2501 \u{1F4CA} \uD569\uC758 \uBD84\uC11D \uACB0\uACFC \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+
+  \uD569\uC758\uC728:  ${rateStr}
+  \uD310\uC815:    ${verdictLabel}
+  \uC694\uC57D:    ${analysis.summary}
+
+`;
+    if (analysis.common_points.length > 0) {
+      output += `  \uACF5\uD1B5\uC810:
+`;
+      for (const p of analysis.common_points) output += `    \u2022 ${p}
+`;
+      output += "\n";
+    }
+    if (analysis.differences.length > 0) {
+      output += `  \uCC28\uC774\uC810:
+`;
+      for (const d of analysis.differences) output += `    \u2022 ${d}
+`;
+      output += "\n";
+    }
+  } else {
+    output += `\u{1F4A1} AI 1\uAC1C + \uD604\uC7AC \uC5D0\uC774\uC804\uD2B8 = \uAD50\uCC28\uAC80\uC99D (\uD569\uC758 \uBD84\uC11D \uAC74\uB108\uB700)
+
+`;
+  }
+  output += `\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501`;
+  return output;
+}
+function buildSaveContent(question, results, analysis, availableAis) {
+  const date3 = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  const rateStr = analysis ? typeof analysis.consensus_rate === "number" ? `${analysis.consensus_rate}%` : String(analysis.consensus_rate) : "N/A";
+  const verdict = analysis?.verdict ?? "agent_review";
+  let md = `# X-Verification: ${question.slice(0, 80)}
+
+> \uB0A0\uC9DC: ${date3}
+> \uD569\uC758\uC728: ${rateStr}
+> \uD310\uC815: ${verdict}
+> AI: ${availableAis.join(", ")}
+
+## \uC9C8\uBB38
+${question}
+
+`;
+  for (const r of results) {
+    md += `## ${r.name}
+${r.ok ? r.text : `ERROR: ${r.text}`}
+
+`;
+  }
+  if (analysis) {
+    md += `## \uD569\uC758 \uBD84\uC11D
+- **\uD569\uC758\uC728**: ${rateStr}
+- **\uD310\uC815**: ${verdict}
+- **\uC694\uC57D**: ${analysis.summary}
+
+### \uACF5\uD1B5\uC810
+${analysis.common_points.map((p) => `- ${p}`).join("\n")}
+
+### \uCC28\uC774\uC810
+${analysis.differences.map((d) => `- ${d}`).join("\n")}
+`;
+  }
+  return md;
+}
+function registerXVerify(server2) {
+  server2.registerTool(
+    "x_verify",
+    {
+      title: "\uBA40\uD2F0 AI \uAD50\uCC28\uAC80\uC99D (X-Verification)",
+      description: "3\uAC1C AI(Claude, GPT, Gemini)\uC5D0 \uB3D9\uC2DC \uC9C8\uC758\uD558\uACE0 \uD569\uC758\uC728\uC744 \uC790\uB3D9 \uC0B0\uCD9C\uD569\uB2C8\uB2E4. \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8\uC758 .env\uC5D0\uC11C API \uD0A4\uB97C \uC77D\uC2B5\uB2C8\uB2E4.",
+      inputSchema: external_exports.object({
+        question: external_exports.string().describe("\uAD50\uCC28\uAC80\uC99D\uD560 \uC9C8\uBB38"),
+        no_save: external_exports.boolean().optional().describe("true\uC774\uBA74 \uACB0\uACFC\uB97C \uD30C\uC77C\uB85C \uC800\uC7A5\uD558\uC9C0 \uC54A\uC74C"),
+        selected_ais: external_exports.array(external_exports.enum(["claude", "gpt", "gemini"])).optional().describe("\uD2B9\uC815 AI\uB9CC \uD638\uCD9C (\uBBF8\uC9C0\uC815 \uC2DC \uD0A4\uAC00 \uC788\uB294 \uBAA8\uB4E0 AI)"),
+        claude_model: external_exports.enum(["opus", "sonnet", "haiku"]).optional().describe("Claude \uBAA8\uB378 \uC120\uD0DD (\uAE30\uBCF8: sonnet)")
+      })
+    },
+    async ({ question, no_save, selected_ais, claude_model }) => {
+      let envVars = {};
+      try {
+        const envContent = await fs4.readFile(
+          path4.join(process.cwd(), ".env"),
+          "utf-8"
+        );
+        envVars = parseEnv(envContent);
+      } catch {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "ERROR: \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8\uC5D0 .env \uD30C\uC77C\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. API \uD0A4\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4."
+            }
+          ]
+        };
+      }
+      const keys = {
+        claude: envVars.ANTHROPIC_API_KEY,
+        gpt: envVars.OPENAI_API_KEY,
+        gemini: envVars.GEMINI_API_KEY
+      };
+      let availableAis = Object.entries(keys).filter(([, v]) => !!v).map(([k]) => k);
+      if (selected_ais && selected_ais.length > 0) {
+        const missing = selected_ais.filter(
+          (ai) => !availableAis.includes(ai)
+        );
+        if (missing.length > 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `ERROR: ${missing.join(", ")} API \uD0A4\uAC00 .env\uC5D0 \uC5C6\uC2B5\uB2C8\uB2E4.`
+              }
+            ]
+          };
+        }
+        availableAis = selected_ais;
+      }
+      if (availableAis.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "ERROR: \uC0AC\uC6A9 \uAC00\uB2A5\uD55C AI\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. .env\uC5D0 ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY \uC911 \uCD5C\uC18C 1\uAC1C\uB97C \uC124\uC815\uD558\uC138\uC694."
+            }
+          ]
+        };
+      }
+      const claudeModelMap = {
+        opus: envVars.CLAUDE_MODEL_OPUS ?? "claude-opus-4-6",
+        sonnet: envVars.CLAUDE_MODEL ?? "claude-sonnet-4-6",
+        haiku: envVars.CLAUDE_MODEL_HAIKU ?? "claude-haiku-4-5-20251001"
+      };
+      const resolvedClaudeModel = claudeModelMap[claude_model ?? "sonnet"];
+      const openaiModel = envVars.OPENAI_MODEL ?? "gpt-5.4";
+      const geminiModel = envVars.GEMINI_MODEL ?? "gemini-3-flash-preview";
+      const systemPrompt = "\uB2F9\uC2E0\uC740 \uC18C\uD504\uD2B8\uC6E8\uC5B4 \uC544\uD0A4\uD14D\uCC98 \uC804\uBB38\uAC00\uC785\uB2C8\uB2E4. \uC9C8\uBB38\uC5D0 \uB300\uD574 \uBA85\uD655\uD558\uACE0 \uAD6C\uC870\uD654\uB41C \uC758\uACAC\uC744 \uD55C\uAD6D\uC5B4\uB85C \uC81C\uC2DC\uD558\uC138\uC694. \uB2F5\uBCC0\uC740 500\uC790 \uC774\uB0B4\uB85C \uD575\uC2EC\uB9CC \uAC04\uACB0\uD558\uAC8C.";
+      const calls = availableAis.map(
+        async (ai) => {
+          try {
+            let text;
+            switch (ai) {
+              case "claude":
+                text = await callClaude(
+                  keys.claude,
+                  resolvedClaudeModel,
+                  systemPrompt,
+                  question
+                );
+                break;
+              case "gpt":
+                text = await callGpt(
+                  keys.gpt,
+                  openaiModel,
+                  systemPrompt,
+                  question
+                );
+                break;
+              case "gemini":
+                text = await callGemini(
+                  keys.gemini,
+                  geminiModel,
+                  systemPrompt,
+                  question
+                );
+                break;
+            }
+            return { name: ai, text, ok: true };
+          } catch (e) {
+            return {
+              name: ai,
+              text: e instanceof Error ? e.message : String(e),
+              ok: false
+            };
+          }
+        }
+      );
+      const results = await Promise.all(calls);
+      const successCount = results.filter((r) => r.ok).length;
+      if (successCount === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "ERROR: \uBAA8\uB4E0 AI \uD638\uCD9C\uC774 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uB124\uD2B8\uC6CC\uD06C \uBC0F API \uD0A4\uB97C \uD655\uC778\uD558\uC138\uC694.\n\n" + results.map((r) => `${r.name}: ${r.text}`).join("\n")
+            }
+          ]
+        };
+      }
+      let analysis = null;
+      if (successCount >= 2 && keys.gemini) {
+        try {
+          analysis = await analyzeConsensus(
+            keys.gemini,
+            geminiModel,
+            question,
+            results
+          );
+        } catch {
+        }
+      }
+      const output = formatOutput(question, results, analysis, availableAis);
+      let savedPath = "";
+      if (!no_save) {
+        try {
+          const date3 = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+          const slug = question.slice(0, 40).replace(/[^a-zA-Z0-9가-힣]/g, "-").replace(/-+/g, "-").replace(/-$/, "");
+          const verifyDir = path4.join(process.cwd(), "docs", "verifications");
+          await fs4.mkdir(verifyDir, { recursive: true });
+          const filePath = path4.join(verifyDir, `${date3}-${slug}.md`);
+          await fs4.writeFile(
+            filePath,
+            buildSaveContent(question, results, analysis, availableAis),
+            "utf-8"
+          );
+          savedPath = filePath;
+        } catch {
+        }
+      }
+      const footer = savedPath ? `
+
+\u{1F4C1} \uACB0\uACFC \uC800\uC7A5: ${savedPath}` : "";
+      return {
+        content: [{ type: "text", text: output + footer }]
+      };
+    }
+  );
+}
+
+// src/tools/orchestration-tracker.ts
+import fs5 from "fs/promises";
+import path5 from "path";
+var orchestrations = /* @__PURE__ */ new Map();
+async function saveToDisk() {
+  try {
+    const data = Object.fromEntries(orchestrations);
+    const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
+    await fs5.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch {
+  }
+}
+async function loadFromDisk() {
+  try {
+    const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
+    const content = await fs5.readFile(filePath, "utf-8");
+    const data = JSON.parse(content);
+    for (const [id, orch] of Object.entries(data)) {
+      if (orch.status === "running") {
+        orchestrations.set(id, orch);
+      }
+    }
+  } catch {
+  }
+}
+function generateId() {
+  return `orch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+function formatStatus(orch) {
+  const statusIcon = {
+    pending: "\u23F3",
+    running: "\u{1F504}",
+    completed: "\u2705",
+    failed: "\u274C",
+    skipped: "\u23ED\uFE0F"
+  };
+  let output = `# Orchestration: ${orch.task}
+`;
+  output += `ID: ${orch.id} | \uBCF5\uC7A1\uB3C4: ${orch.complexity} | \uC0C1\uD0DC: ${orch.status}
+`;
+  output += `\uC0DD\uC131: ${orch.createdAt} | \uAC31\uC2E0: ${orch.updatedAt}
+
+`;
+  output += `## Phases
+`;
+  for (const phase of orch.phases) {
+    const icon = statusIcon[phase.status];
+    output += `${icon} ${phase.name} (${phase.role}) \u2014 ${phase.status}`;
+    if (phase.result) output += ` \u2014 ${phase.result}`;
+    output += "\n";
+  }
+  return output;
+}
+function registerOrchestrationTracker(server2) {
+  loadFromDisk();
+  server2.registerTool(
+    "orchestration_start",
+    {
+      title: "\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 \uC2DC\uC791",
+      description: "\uC0C8 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 \uC138\uC158\uC744 \uC0DD\uC131\uD558\uACE0 Phase\uB97C \uB4F1\uB85D\uD569\uB2C8\uB2E4. \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uD130 \uC2A4\uD0AC\uC774 \uC791\uC5C5 \uC2DC\uC791 \uC2DC \uD638\uCD9C\uD569\uB2C8\uB2E4.",
+      inputSchema: external_exports.object({
+        task: external_exports.string().describe("\uC218\uD589\uD560 \uD0DC\uC2A4\uD06C \uC124\uBA85"),
+        complexity: external_exports.enum(["simple", "medium", "complex"]).describe("\uBCF5\uC7A1\uB3C4"),
+        phases: external_exports.array(
+          external_exports.object({
+            name: external_exports.string().describe("Phase \uC774\uB984 (\uC608: \uC124\uACC4, \uAD6C\uD604, \uAC80\uC99D)"),
+            role: external_exports.string().describe("\uB2F4\uB2F9 \uC5D0\uC774\uC804\uD2B8 \uC5ED\uD560 (\uC608: Architect, Generator, Evaluator)")
+          })
+        ).describe("Phase \uBAA9\uB85D (\uC2E4\uD589 \uC21C\uC11C\uB300\uB85C)")
+      })
+    },
+    async ({ task, complexity, phases }) => {
+      const id = generateId();
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      const orch = {
+        id,
+        task,
+        complexity,
+        status: "running",
+        phases: phases.map((p) => ({
+          name: p.name,
+          role: p.role,
+          status: "pending"
+        })),
+        createdAt: now,
+        updatedAt: now
+      };
+      orchestrations.set(id, orch);
+      await saveToDisk();
+      return {
+        content: [
+          {
+            type: "text",
+            text: `\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 \uC2DC\uC791: ${id}
+
+${formatStatus(orch)}`
+          }
+        ]
+      };
+    }
+  );
+  server2.registerTool(
+    "orchestration_update",
+    {
+      title: "\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 Phase \uC5C5\uB370\uC774\uD2B8",
+      description: "\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158\uC758 \uD2B9\uC815 Phase \uC0C1\uD0DC\uB97C \uC5C5\uB370\uC774\uD2B8\uD569\uB2C8\uB2E4.",
+      inputSchema: external_exports.object({
+        orchestration_id: external_exports.string().describe("\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 ID"),
+        phase_name: external_exports.string().describe("\uC5C5\uB370\uC774\uD2B8\uD560 Phase \uC774\uB984"),
+        status: external_exports.enum(["running", "completed", "failed", "skipped"]).describe("\uC0C8 \uC0C1\uD0DC"),
+        result: external_exports.string().optional().describe("\uACB0\uACFC \uC694\uC57D (\uC608: 'PASS', '3\uAC1C \uD30C\uC77C \uC218\uC815', 'FAIL: \uD0C0\uC785 \uC5D0\uB7EC')")
+      })
+    },
+    async ({ orchestration_id, phase_name, status, result }) => {
+      const orch = orchestrations.get(orchestration_id);
+      if (!orch) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `ERROR: \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 ${orchestration_id}\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.`
+            }
+          ]
+        };
+      }
+      const phase = orch.phases.find((p) => p.name === phase_name);
+      if (!phase) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `ERROR: Phase "${phase_name}"\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.`
+            }
+          ]
+        };
+      }
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      phase.status = status;
+      if (result) phase.result = result;
+      if (status === "running") phase.startedAt = now;
+      if (status === "completed" || status === "failed") phase.completedAt = now;
+      orch.updatedAt = now;
+      const allDone = orch.phases.every(
+        (p) => p.status === "completed" || p.status === "skipped"
+      );
+      const anyFailed = orch.phases.some((p) => p.status === "failed");
+      if (anyFailed) orch.status = "failed";
+      else if (allDone) orch.status = "completed";
+      await saveToDisk();
+      return {
+        content: [
+          { type: "text", text: formatStatus(orch) }
+        ]
+      };
+    }
+  );
+  server2.registerTool(
+    "orchestration_status",
+    {
+      title: "\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 \uC0C1\uD0DC \uC870\uD68C",
+      description: "\uD65C\uC131 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158\uC758 \uD604\uC7AC \uC0C1\uD0DC\uB97C \uC870\uD68C\uD569\uB2C8\uB2E4.",
+      inputSchema: external_exports.object({
+        orchestration_id: external_exports.string().optional().describe("\uD2B9\uC815 ID \uC870\uD68C. \uBBF8\uC9C0\uC815 \uC2DC \uD65C\uC131 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 \uC804\uCCB4 \uBAA9\uB85D")
+      })
+    },
+    async ({ orchestration_id }) => {
+      if (orchestration_id) {
+        const orch = orchestrations.get(orchestration_id);
+        if (!orch) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `\uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158 ${orchestration_id}\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.`
+              }
+            ]
+          };
+        }
+        return {
+          content: [{ type: "text", text: formatStatus(orch) }]
+        };
+      }
+      const running = [...orchestrations.values()].filter(
+        (o) => o.status === "running"
+      );
+      if (running.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "\uD65C\uC131 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."
+            }
+          ]
+        };
+      }
+      const list = running.map((o) => formatStatus(o)).join("\n---\n\n");
+      return {
+        content: [{ type: "text", text: list }]
+      };
+    }
+  );
+}
+
 // src/index.ts
-var __dirname = path4.dirname(fileURLToPath(import.meta.url));
-var NOVA_ROOT = path4.resolve(__dirname, "../..");
+var __dirname = path6.dirname(fileURLToPath(import.meta.url));
+var NOVA_ROOT = path6.resolve(__dirname, "../..");
 function readVersion() {
   try {
     const pluginJson = JSON.parse(
-      fs4.readFileSync(
-        path4.join(NOVA_ROOT, ".claude-plugin", "plugin.json"),
+      fs6.readFileSync(
+        path6.join(NOVA_ROOT, ".claude-plugin", "plugin.json"),
         "utf-8"
       )
     );
@@ -21666,5 +22258,7 @@ registerGetState(server);
 registerCreatePlan(server);
 registerOrchestrate(server);
 registerVerify(server);
+registerXVerify(server);
+registerOrchestrationTracker(server);
 var transport = new StdioServerTransport();
 await server.connect(transport);
