@@ -171,6 +171,19 @@ NOVA-STATE.md 갱신 시 Last Activity는 **반드시 1줄**로 기록한다:
 - 긴급 모드라도 검증 자체를 생략하지는 않는다. 시점만 사후로 미룰 뿐이다.
 - 긴급 수정이 누적되면 `/nova:next`에서 사후 검증 미완료 건을 우선 추천한다.
 
+## Generator-Evaluator 시스템 레벨 분리
+
+Nova의 핵심 원칙: Evaluator는 코드를 **절대 수정하지 않는다**.
+이 원칙은 3중으로 보장된다:
+
+| 레벨 | 메커니즘 | 적용 |
+|------|---------|------|
+| **프롬프트** | "코드를 직접 수정하지 않는다" 명시 | SKILL.md, agents/*.md |
+| **도구 거버넌스** | `disallowedTools: Edit, Write, NotebookEdit` | agents/*.md frontmatter |
+| **훅 조건** | `agent_type` 기반 PreToolUse 훅으로 쓰기 도구 차단 | hooks.json (가용 시) |
+
+검증 전용 에이전트(qa-engineer, security-engineer, architect)가 `Agent` 도구로 spawn될 때, `disallowedTools` frontmatter가 쓰기 도구 접근을 하드 블록한다.
+
 ## 평가 자세
 - "통과시키지 마라. 문제를 찾아라."
 - 코드가 존재하는 것과 동작하는 것은 다르다

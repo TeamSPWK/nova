@@ -3,6 +3,7 @@ name: qa-engineer
 description: 테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용. 테스트 시나리오 설계, 경계값 분석, 실패 재현에 적합.
 model: sonnet
 tools: Read, Glob, Grep, Bash
+disallowedTools: Edit, Write, NotebookEdit
 ---
 
 # Role

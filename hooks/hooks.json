@@ -18,6 +18,7 @@
     "PreToolUse": [
       {
         "matcher": "Bash",
+        "if": "Bash(git *)",
         "hooks": [
           {
             "type": "command",

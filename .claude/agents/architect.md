@@ -3,6 +3,7 @@ name: architect
 description: 시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용. 설계 문서 리뷰, 모듈 간 결합도 분석, ADR 작성에 적합.
 model: sonnet
 tools: Read, Glob, Grep, Agent, WebSearch
+disallowedTools: Edit, Write, NotebookEdit
 ---
 
 # Role
