@@ -211,19 +211,22 @@ Nova 자동 판단:
 
 커맨드는 자동 적용 규칙 위에 **추가 제어**가 필요할 때 사용한다.
 
-| 커맨드 | 설명 | 사용 시점 |
-|--------|------|----------|
-| `/nova:next` | 프로젝트 상태 진단 + 다음 액션 추천 | 세션 시작 시, 방향 모를 때 |
-| `/nova:plan 기능명` | CPS Plan 문서 작성 | 새 기능 기획 시 |
-| `/nova:design 기능명` | CPS Design 문서 작성 | Plan 이후 기술 설계 시 |
-| `/nova:review src/` | 적대적 코드 리뷰 (`--fast` / `--strict` / `--summary` / `--fix` / `--jury`) | 코드 품질 점검 |
-| `/nova:verify` | 통합 검증 (갭 탐지 + 리뷰, `--fast` / `--strict`) | 구현 완료 후 종합 검증 |
-| `/nova:consult "질문"` | 멀티 AI 다관점 수집 (Claude+GPT+Gemini, `--agent`로 API 키 없이) | 설계 판단, 아키텍처 선택 |
-| `/nova:auto 기능명` | 구현→검증 자율 실행 (`--verify-only` / `--emergency`) | 한방에 끝내고 싶을 때 |
-| `/nova:init 프로젝트명` | Nova 초기 설정 + 커스텀 에이전트 생성 | 새 프로젝트 시작 시 |
-| `/nova:init --check` | Nova 도입 수준 측정 | 도입 수준 점검 |
-| `/nova:explore` | 코드베이스 자동 분석, 어디부터 볼지 브리핑 | 새 프로젝트 첫 투입 시 |
-| `/nova:orchestrate 작업` | 설계→구현→검증→수정 전체 사이클 자동화 (`--design-only` / `--skip-qa` / `--strict`) | 복잡한 멀티 스텝 작업 |
+<!-- AUTO-GEN:commands -->
+| Command | Description |
+|---------|------------|
+| `/nova:auto` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
+| `/nova:consult` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
+| `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
+| `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
+| `/nova:explore` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
+| `/nova:init` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
+| `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
+| `/nova:orchestrate` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator) |
+| `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
+| `/nova:review` | 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. |
+| `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
+| `/nova:verify` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
+<!-- /AUTO-GEN:commands -->
 
 ## Self-Evolution (자동 진화)
 
@@ -288,25 +291,31 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 
 스킬은 커맨드가 내부적으로 호출하는 복합 작업이다. 직접 호출도 가능하다.
 
-| 스킬 | 설명 | 호출되는 곳 |
-|------|------|-----------|
-| **evaluator** | 적대적 3레이어 평가 엔진 (정적 분석 → 의미론 분석 → 실행 검증). 모든 Nova 검증의 핵심 | `/nova:review`, `/nova:verify`, `/nova:auto` |
-| **jury** | 멀티 관점 LLM 배심원 — 단일 Evaluator의 편향을 병렬 평가로 보정 | `/nova:review --jury` |
-| **context-chain** | NOVA-STATE.md 기반 세션 연속성 — 대화가 끊겨도 맥락 유지 | `/nova:next`, 세션 시작 |
-| **field-test** | 워크트리 격리로 실제 프로젝트에서 실전 테스트 — 흔적 없이 진행 | 수동 호출 |
-| **orchestrator** | 자동 오케스트레이션 엔진 — 자연어를 CPS 설계 → 에이전트 편성 → 병렬 구현 → QA → 자동 수정으로 변환 | `/nova:orchestrate` |
+<!-- AUTO-GEN:skills -->
+| Skill | Description |
+|-------|------------|
+| **context-chain** | Nova Context Chain — 세션 간 맥락 연속성 보장. NOVA-STATE.md 기반 상태 관리. |
+| **evaluator** | Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. |
+| **evolution** | Nova Self-Evolution 엔진 — 기술 동향 스캔, 관련성 필터, 자율 범위 구현까지 전체 파이프라인 |
+| **field-test** | 실제 프로젝트에서 Nova를 사용해보며 개선 포인트를 찾는 실전 테스트. 워크트리 격리로 흔적 없이 진행. |
+| **jury** | Nova LLM Jury — 다중 관점 평가로 단일 Evaluator의 편향을 보정 |
+| **orchestrator** | Nova Orchestrator — 자연어 요청을 CPS 설계→에이전트 편성→구현→검증→수정 전체 사이클로 자동 실행 |
+| **ux-audit** | Nova UX Audit — 5인 적대적 평가자(Adversarial Jury)로 UI/UX를 다관점 심층 평가. 코드 기반 분석 + 선택적 화면 캡처. |
+<!-- /AUTO-GEN:skills -->
 
 ## 전문 에이전트 (5종)
 
 각 에이전트는 역할별 Nova 자가 점검 체크리스트를 내장하고 있다.
 
-| 에이전트 | 전문 영역 | 내장 체크리스트 |
-|----------|----------|---------------|
-| `architect` | 시스템 설계, 기술 선택, 확장성 | 설계 정합성, 비기능 요구사항 문서화 |
-| `senior-dev` | 코드 품질, 리팩토링, 기술 부채 | 실행 검증, 환경 변경 3단계, 경계값 |
-| `qa-engineer` | 테스트 전략, 엣지 케이스, 품질 검증 | 경계값, Known Gaps, Hard-Block 분류 |
-| `security-engineer` | 취약점, 위협 모델링, 인증/인가 | 인증·시크릿 Hard-Block, Known Gaps |
-| `devops-engineer` | CI/CD, 인프라, 배포 전략 | 배포 후 체크리스트, 블로커 분류 |
+<!-- AUTO-GEN:agents -->
+| Agent | Description |
+|-------|------------|
+| `architect` | 시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용 |
+| `devops-engineer` | CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용 |
+| `qa-engineer` | 테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용 |
+| `security-engineer` | 보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용 |
+| `senior-dev` | 코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용 |
+<!-- /AUTO-GEN:agents -->
 
 ## 세션 상태 관리 (NOVA-STATE.md)
 

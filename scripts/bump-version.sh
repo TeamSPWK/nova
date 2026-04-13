@@ -74,4 +74,11 @@ if [[ -f "$PLUGIN" ]]; then
   echo "  ✅ plugin.json"
 fi
 
+# 4. nova-meta.json 재생성
+META_SCRIPT="$ROOT/scripts/generate-meta.sh"
+if [[ -f "$META_SCRIPT" ]]; then
+  bash "$META_SCRIPT"
+  echo "  ✅ nova-meta.json"
+fi
+
 echo "✅ 버전 범프 완료: $NEW_VERSION"

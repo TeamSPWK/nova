@@ -469,6 +469,61 @@ rm -rf "$BUMP_DIR"
 echo ""
 
 # ═══════════════════════════════════════════
+# 10. generate-meta.sh + nova-meta.json 검증
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[메타데이터: nova-meta.json]${NC}"
+
+assert "generate-meta.sh 존재" \
+  "[ -f '$ROOT_DIR/scripts/generate-meta.sh' ]"
+
+# 실행하여 JSON 생성
+bash "$ROOT_DIR/scripts/generate-meta.sh" > /dev/null 2>&1
+
+META="$ROOT_DIR/docs/nova-meta.json"
+
+assert "nova-meta.json 생성됨" \
+  "[ -f '$META' ]"
+
+assert "nova-meta.json JSON 유효" \
+  "python3 -m json.tool '$META' > /dev/null 2>&1"
+
+# 버전 일치
+META_VER=$(jq -r '.version' "$META")
+assert "meta.version == .nova-version ($NOVA_VER)" \
+  "[ '$META_VER' = '$NOVA_VER' ]"
+
+# 커맨드 수 일치
+META_CMD_COUNT=$(jq '.commands | length' "$META")
+ACTUAL_CMD_COUNT=$(ls -1 "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
+assert "meta.commands 수 == 실제 커맨드 수 ($ACTUAL_CMD_COUNT)" \
+  "[ '$META_CMD_COUNT' = '$ACTUAL_CMD_COUNT' ]"
+
+# 스킬 수 일치
+META_SKILL_COUNT=$(jq '.skills | length' "$META")
+ACTUAL_SKILL_COUNT=$(ls -1d "$ROOT_DIR/.claude/skills/"*/SKILL.md 2>/dev/null | wc -l | tr -d ' ')
+assert "meta.skills 수 == 실제 스킬 수 ($ACTUAL_SKILL_COUNT)" \
+  "[ '$META_SKILL_COUNT' = '$ACTUAL_SKILL_COUNT' ]"
+
+# 에이전트 수 일치
+META_AGENT_COUNT=$(jq '.agents | length' "$META")
+ACTUAL_AGENT_COUNT=$(ls -1 "$ROOT_DIR/.claude/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')
+assert "meta.agents 수 == 실제 에이전트 수 ($ACTUAL_AGENT_COUNT)" \
+  "[ '$META_AGENT_COUNT' = '$ACTUAL_AGENT_COUNT' ]"
+
+# stats 일치
+assert "meta.stats.commands == 커맨드 수" \
+  "[ '$(jq '.stats.commands' "$META")' = '$ACTUAL_CMD_COUNT' ]"
+
+assert "meta.stats.skills == 스킬 수" \
+  "[ '$(jq '.stats.skills' "$META")' = '$ACTUAL_SKILL_COUNT' ]"
+
+assert "meta.stats.agents == 에이전트 수" \
+  "[ '$(jq '.stats.agents' "$META")' = '$ACTUAL_AGENT_COUNT' ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

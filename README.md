@@ -215,19 +215,22 @@ These rules apply to every conversation the moment Nova is installed. They are i
 
 Commands provide **additional control** on top of auto-apply rules.
 
-| Command | Description | When To Use |
-|---------|------------|-------------|
-| `/nova:next` | Diagnose project state + recommend next action | Session start, unsure what to do |
-| `/nova:plan feature` | Create CPS Plan document | Planning new features |
-| `/nova:design feature` | Create CPS Design document | Technical design after Plan |
-| `/nova:review src/` | Adversarial code review (`--fast` / `--strict` / `--summary` / `--fix` / `--jury`) | Code quality check |
-| `/nova:verify` | Combined review + gap (`--fast` / `--strict`) | Post-implementation check |
-| `/nova:consult "question"` | Multi-AI perspective (Claude+GPT+Gemini, `--agent` for no API keys) | Design decisions, architecture choices |
-| `/nova:auto feature` | Implement→verify cycle (`--verify-only` / `--emergency`) | End-to-end automation |
-| `/nova:init project` | Initialize Nova + create custom agents | New project setup |
-| `/nova:init --check` | Measure Nova adoption level | Adoption tracking |
-| `/nova:explore` | Auto-analyze codebase, brief where to start | First time on a new project |
-| `/nova:orchestrate task` | Auto-orchestrate: design→implement→verify→fix cycle (`--design-only` / `--skip-qa` / `--strict`) | Complex multi-step tasks |
+<!-- AUTO-GEN:commands -->
+| Command | Description |
+|---------|------------|
+| `/nova:auto` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
+| `/nova:consult` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
+| `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
+| `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
+| `/nova:explore` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
+| `/nova:init` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
+| `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
+| `/nova:orchestrate` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator) |
+| `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
+| `/nova:review` | 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. |
+| `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
+| `/nova:verify` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
+<!-- /AUTO-GEN:commands -->
 
 ## Self-Evolution
 
@@ -292,25 +295,31 @@ The MCP server reads files directly from the Nova installation directory. No API
 
 Skills are multi-step operations that commands invoke internally. They can also be called directly.
 
-| Skill | Description | Invoked By |
-|-------|------------|------------|
-| **evaluator** | Adversarial 3-layer evaluation engine (static → semantic → runtime). The core verification engine behind all Nova checks | `/nova:review`, `/nova:verify`, `/nova:auto` |
-| **jury** | Multi-perspective LLM Jury — corrects single-evaluator bias by running parallel assessments | `/nova:review --jury` |
-| **context-chain** | Session continuity via NOVA-STATE.md — preserves context across conversations | `/nova:next`, session start |
-| **field-test** | Live testing in real projects using isolated worktrees — leaves no trace | Manual invocation for validation |
-| **orchestrator** | Auto-orchestration engine — converts natural language to CPS design → agent team formation → parallel implementation → QA → auto-fix | `/nova:orchestrate` |
+<!-- AUTO-GEN:skills -->
+| Skill | Description |
+|-------|------------|
+| **context-chain** | Nova Context Chain — 세션 간 맥락 연속성 보장. NOVA-STATE.md 기반 상태 관리. |
+| **evaluator** | Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. |
+| **evolution** | Nova Self-Evolution 엔진 — 기술 동향 스캔, 관련성 필터, 자율 범위 구현까지 전체 파이프라인 |
+| **field-test** | 실제 프로젝트에서 Nova를 사용해보며 개선 포인트를 찾는 실전 테스트. 워크트리 격리로 흔적 없이 진행. |
+| **jury** | Nova LLM Jury — 다중 관점 평가로 단일 Evaluator의 편향을 보정 |
+| **orchestrator** | Nova Orchestrator — 자연어 요청을 CPS 설계→에이전트 편성→구현→검증→수정 전체 사이클로 자동 실행 |
+| **ux-audit** | Nova UX Audit — 5인 적대적 평가자(Adversarial Jury)로 UI/UX를 다관점 심층 평가. 코드 기반 분석 + 선택적 화면 캡처. |
+<!-- /AUTO-GEN:skills -->
 
 ## Specialist Agents (5 Types)
 
 Each agent has a built-in Nova self-check checklist.
 
-| Agent | Expertise | Built-in Checklist |
-|-------|----------|-------------------|
-| `architect` | System design, tech selection, scalability | Design alignment, non-functional requirements |
-| `senior-dev` | Code quality, refactoring, tech debt | Execution verification, env change 3-step, boundary values |
-| `qa-engineer` | Test strategy, edge cases, quality verification | Boundary values, Known Gaps, Hard-Block classification |
-| `security-engineer` | Vulnerability scanning, threat modeling, auth | Auth/secret Hard-Block, Known Gaps |
-| `devops-engineer` | CI/CD, infrastructure, deployment | Post-deploy checklist, blocker classification |
+<!-- AUTO-GEN:agents -->
+| Agent | Description |
+|-------|------------|
+| `architect` | 시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용 |
+| `devops-engineer` | CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용 |
+| `qa-engineer` | 테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용 |
+| `security-engineer` | 보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용 |
+| `senior-dev` | 코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용 |
+<!-- /AUTO-GEN:agents -->
 
 ## Session State (NOVA-STATE.md)
 
