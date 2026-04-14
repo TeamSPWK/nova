@@ -42,7 +42,7 @@ description: "현재 프로젝트 상태를 진단하고 다음에 실행할 Nov
    - **파일이 있으면**: 읽고 상태 기반 추천
      - Blocker가 있으면 → 블로커 해결을 최우선 추천
      - Tasks에 doing 작업이 있으면 → 해당 작업 이어가기 추천
-     - Phase가 `verifying`이면 → `/verify` 또는 `/review` 추천
+     - Phase가 `verifying`이면 → `/check` 또는 `/review` 추천
      - Phase가 `done`이면 → "새 기능 시작 준비 완료" 표시
 
 1. 다음 항목을 모두 확인한다:
@@ -67,10 +67,10 @@ description: "현재 프로젝트 상태를 진단하고 다음에 실행할 Nov
    b. Plan은 있지만 Design이 없다 → `/design` 추천
       "Plan이 준비되었습니다. 기술 설계를 진행하세요."
 
-   c. Design이 있고 최근 코드 커밋이 있지만 Verification이 없다 → `/verify` 추천
+   c. Design이 있고 최근 코드 커밋이 있지만 Verification이 없다 → `/check` 추천
       "구현이 진행되었습니다. 코드 품질과 설계 정합성을 확인하세요."
 
-   d. Verification이 있고 이슈가 발견된 상태다 (verification 파일 내용에 FAIL/미완/TODO 등) → 수정 후 `/verify` 재실행 추천
+   d. Verification이 있고 이슈가 발견된 상태다 (verification 파일 내용에 FAIL/미완/TODO 등) → 수정 후 `/check` 재실행 추천
       "검증에서 이슈가 발견되었습니다. 수정 후 재검증하세요."
 
    e. Verification이 완료되고 이슈가 없다 → `/review` 추천
@@ -113,8 +113,8 @@ NOVA-STATE.md에 `## Quality Metrics` 섹션이 있으면 추세를 분석하여
 
 # Notes
 - 워크플로우 전체 흐름:
-  - 수동: `/plan` → `/consult` (필요시) → `/design` → 구현 → `/verify` → `/review`
-  - 자동: `/auto` → (Plan→Design→승인→구현→독립검증→완료)
+  - 수동: `/plan` → `/ask` (필요시) → `/design` → 구현 → `/check` → `/review`
+  - 자동: `/run` → (Plan→Design→승인→구현→독립검증→완료)
   - 하네스: CLAUDE.md 자동 적용 규칙에 따라 복잡도별 자동 워크플로우 진입
 - "이후 흐름"에는 추천 커맨드 이후 남은 단계를 보여준다
 - 디렉토리가 존재하지 않으면 0개로 처리한다

@@ -59,8 +59,8 @@ echo ""
 echo -e "${YELLOW}[구조: 커맨드]${NC}"
 
 EXPECTED_COMMANDS=(
-  auto design explore evolve init next
-  orchestrate plan review verify consult ux-audit
+  run design scan evolve setup next
+  auto plan review check ask ux-audit
 )
 CMD_COUNT=$(ls "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
 assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 12 ]"
@@ -73,7 +73,7 @@ done
 assert "gap.md 삭제 확인" "[ ! -f '$ROOT_DIR/.claude/commands/gap.md' ]"
 assert "propose.md 삭제 확인" "[ ! -f '$ROOT_DIR/.claude/commands/propose.md' ]"
 assert "metrics.md 삭제 확인" "[ ! -f '$ROOT_DIR/.claude/commands/metrics.md' ]"
-assert "xv.md 삭제 확인 (consult.md로 대체)" "[ ! -f '$ROOT_DIR/.claude/commands/xv.md' ]"
+assert "xv.md 삭제 확인 (ask.md로 대체)" "[ ! -f '$ROOT_DIR/.claude/commands/xv.md' ]"
 echo ""
 
 # ═══════════════════════════════════════════
@@ -235,42 +235,42 @@ assert "CLAUDE.md: 세션 상태 유지 규칙" \
 assert "/next: NOVA-STATE.md 우선 확인" \
   "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/next.md'"
 
-assert "/auto: State Update 단계" \
-  "grep -q 'State Update' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: State Update 단계" \
+  "grep -q 'State Update' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/init: NOVA-STATE.md 생성" \
-  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/init.md'"
+assert "/setup: NOVA-STATE.md 생성" \
+  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/setup.md'"
 
 assert "/review: NOVA-STATE.md 갱신 섹션 존재" \
   "grep -q 'CRITICAL.*NOVA-STATE.md' '$ROOT_DIR/.claude/commands/review.md'"
 
-assert "/verify: NOVA-STATE.md 갱신 섹션 존재" \
-  "grep -q 'CRITICAL.*NOVA-STATE.md' '$ROOT_DIR/.claude/commands/verify.md'"
+assert "/check: NOVA-STATE.md 갱신 섹션 존재" \
+  "grep -q 'CRITICAL.*NOVA-STATE.md' '$ROOT_DIR/.claude/commands/check.md'"
 
 assert "/review: 다음 도구 호출로 갱신 지시" \
   "grep -q '다음 도구 호출로' '$ROOT_DIR/.claude/commands/review.md'"
 
-assert "/verify: 다음 도구 호출로 갱신 지시" \
-  "grep -q '다음 도구 호출로' '$ROOT_DIR/.claude/commands/verify.md'"
+assert "/check: 다음 도구 호출로 갱신 지시" \
+  "grep -q '다음 도구 호출로' '$ROOT_DIR/.claude/commands/check.md'"
 echo ""
 
 # ═══════════════════════════════════════════
-# 8-1. /nova:explore 커맨드 검증
+# 8-1. /nova:scan 커맨드 검증
 # ═══════════════════════════════════════════
 
-echo -e "${YELLOW}[커맨드: explore]${NC}"
+echo -e "${YELLOW}[커맨드: scan]${NC}"
 
-assert "explore: 기술 부채 수집 (TODO/FIXME)" \
-  "grep -q 'TODO.*FIXME\|FIXME.*TODO\|기술 부채' '$ROOT_DIR/.claude/commands/explore.md'"
+assert "scan: 기술 부채 수집 (TODO/FIXME)" \
+  "grep -q 'TODO.*FIXME\|FIXME.*TODO\|기술 부채' '$ROOT_DIR/.claude/commands/scan.md'"
 
-assert "explore: 진입점 식별 키워드" \
-  "grep -q '진입점' '$ROOT_DIR/.claude/commands/explore.md'"
+assert "scan: 진입점 식별 키워드" \
+  "grep -q '진입점' '$ROOT_DIR/.claude/commands/scan.md'"
 
-assert "explore: NOVA-STATE.md 브리핑 언급" \
-  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/explore.md'"
+assert "scan: NOVA-STATE.md 브리핑 언급" \
+  "grep -q 'NOVA-STATE.md' '$ROOT_DIR/.claude/commands/scan.md'"
 
-assert "explore: lockfile 자동 감지 언급" \
-  "grep -q 'lockfile' '$ROOT_DIR/.claude/commands/explore.md'"
+assert "scan: lockfile 자동 감지 언급" \
+  "grep -q 'lockfile' '$ROOT_DIR/.claude/commands/scan.md'"
 echo ""
 
 # ═══════════════════════════════════════════
@@ -294,24 +294,24 @@ assert "CLAUDE.md: 복잡도 재판단 규칙" \
 assert "CLAUDE.md: 고위험 영역 상향 규칙" \
   "grep -q '한 단계 상향' '$ROOT_DIR/docs/nova-rules.md'"
 
-# /auto: Full Cycle + Verify Only 모드
-assert "/auto: Full Cycle 모드" \
-  "grep -q 'Full Cycle' '$ROOT_DIR/.claude/commands/auto.md'"
+# /run: Full Cycle + Verify Only 모드
+assert "/run: Full Cycle 모드" \
+  "grep -q 'Full Cycle' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/auto: --verify-only 플래그" \
-  "grep -q '\-\-verify-only' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: --verify-only 플래그" \
+  "grep -q '\-\-verify-only' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/auto: Generator 서브에이전트 Phase" \
-  "grep -q 'Phase 2: Generate' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: Generator 서브에이전트 Phase" \
+  "grep -q 'Phase 2: Generate' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/auto: Auto-Fix Phase" \
-  "grep -q 'Phase 5: Auto-Fix' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: Auto-Fix Phase" \
+  "grep -q 'Phase 5: Auto-Fix' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/auto: 재시도 최대 1회" \
-  "grep -q '최대 1회' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: 재시도 최대 1회" \
+  "grep -q '최대 1회' '$ROOT_DIR/.claude/commands/run.md'"
 
-assert "/auto: CONDITIONAL 사용자 판단" \
-  "grep -q '사용자에게 판단 위임' '$ROOT_DIR/.claude/commands/auto.md'"
+assert "/run: CONDITIONAL 사용자 판단" \
+  "grep -q '사용자에게 판단 위임' '$ROOT_DIR/.claude/commands/run.md'"
 
 # Evaluator 재검증 프로토콜
 assert "evaluator: FAIL만 자동 재시도" \
@@ -339,14 +339,14 @@ assert "field-test: P-레벨 분류" \
 assert "field-test: 워크트리 정리 단계" \
   "grep -q 'worktree remove' '$ROOT_DIR/.claude/skills/field-test/SKILL.md'"
 
-# 복잡도 기준 통일 검증 (CLAUDE.md와 auto.md 동일 기준)
+# 복잡도 기준 통일 검증 (CLAUDE.md와 run.md 동일 기준)
 CLAUDE_SMALL=$(grep -c '1~2 파일' "$ROOT_DIR/docs/nova-rules.md" || true)
-AUTO_SMALL=$(grep -c '1~2 파일' "$ROOT_DIR/.claude/commands/auto.md" || true)
+AUTO_SMALL=$(grep -c '1~2 파일' "$ROOT_DIR/.claude/commands/run.md" || true)
 assert "복잡도 기준 통일: Small 1~2 파일" \
   "[ '$CLAUDE_SMALL' -ge 1 ] && [ '$AUTO_SMALL' -ge 1 ]"
 
 CLAUDE_MED=$(grep -c '3~7 파일' "$ROOT_DIR/docs/nova-rules.md" || true)
-AUTO_MED=$(grep -c '3~7 파일' "$ROOT_DIR/.claude/commands/auto.md" || true)
+AUTO_MED=$(grep -c '3~7 파일' "$ROOT_DIR/.claude/commands/run.md" || true)
 assert "복잡도 기준 통일: Medium 3~7 파일" \
   "[ '$CLAUDE_MED' -ge 1 ] && [ '$AUTO_MED' -ge 1 ]"
 echo ""

@@ -60,7 +60,7 @@ Nova works by engineering Claude Code's **harness layer** — the hooks, command
 │                                                      │
 │  ┌─────────────────┐   slash commands                │
 │  │ .claude-plugin/  │──→ /nova:plan, /nova:review,    │
-│  │   *.md           │    /nova:verify, /nova:auto ... │
+│  │   *.md           │    /nova:check, /nova:run ... │
 │  └─────────────────┘                                 │
 │                                                      │
 │  ┌─────────────────┐   5 specialist subagents        │
@@ -79,7 +79,7 @@ Nova works by engineering Claude Code's **harness layer** — the hooks, command
 | Layer | File | Mechanism | What It Does |
 |-------|------|-----------|-------------|
 | **Rules injection** | `hooks/session-start.sh` | SessionStart hook | Injects 10 auto-apply rules into every session as LLM context |
-| **Commands** | `.claude-plugin/*.md` | Slash commands | User-invocable workflows (`/nova:plan`, `/nova:review`, `/nova:verify`, etc.) |
+| **Commands** | `.claude-plugin/*.md` | Slash commands | User-invocable workflows (`/nova:plan`, `/nova:review`, `/nova:check`, etc.) |
 | **Agents** | `.claude-plugin/agents/*.md` | Subagent types | Specialist agents with domain-specific checklists |
 | **Skills** | `skills/*/SKILL.md` | Skill system | Complex multi-step operations (evaluation, jury, context chain, orchestration) |
 | **MCP Server** | `mcp-server/` | stdio MCP | Exposes Nova rules, state, and tools to any Claude Code session |
@@ -117,7 +117,7 @@ Once installed, Nova's Quality Gate **automatically applies to every conversatio
 ### Manual Workflow (Commands)
 
 ```
-/nova:plan → /nova:consult (if needed) → /nova:design → Build → /nova:verify
+/nova:plan → /nova:ask (if needed) → /nova:design → Build → /nova:check
 ```
 
 ## How It Works: Examples
@@ -218,18 +218,18 @@ Commands provide **additional control** on top of auto-apply rules.
 <!-- AUTO-GEN:commands -->
 | Command | Description |
 |---------|------------|
-| `/nova:auto` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
-| `/nova:consult` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
+| `/nova:ask` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
+| `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator) |
+| `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
 | `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
 | `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
-| `/nova:explore` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
-| `/nova:init` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
 | `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
-| `/nova:orchestrate` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator) |
 | `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
 | `/nova:review` | 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. |
+| `/nova:run` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
+| `/nova:scan` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
+| `/nova:setup` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
 | `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
-| `/nova:verify` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
 <!-- /AUTO-GEN:commands -->
 
 ## Self-Evolution
@@ -377,7 +377,7 @@ Our CI runs a [self-verification test](tests/test-self-verify.sh) against intent
 
 ## API Keys (Optional)
 
-Only `/nova:consult` (multi-perspective collection) requires API keys. Everything else works without them.
+Only `/nova:ask` (multi-perspective collection) requires API keys. Everything else works without them.
 
 ```bash
 cat > .env << 'EOF'
@@ -412,7 +412,7 @@ claude plugin marketplace remove nova-marketplace
 
 **Rule of thumb**: If you can hold the entire change in your head, you don't need Nova.
 
-### Can `/nova:consult` multi-AI consensus be wrong?
+### Can `/nova:ask` multi-AI consensus be wrong?
 
 Yes. Claude, GPT, and Gemini share much training data. Even unanimous agreement may reflect a shared blind spot. The final call is always yours.
 
@@ -437,7 +437,7 @@ Prompt engineering shapes *what* the model says. Harness engineering shapes *whe
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI
-- API keys: OpenAI + Google AI Studio (optional, for `/nova:consult` only)
+- API keys: OpenAI + Google AI Studio (optional, for `/nova:ask` only)
 
 ## License
 

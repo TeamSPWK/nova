@@ -170,7 +170,7 @@ Before/After 코드 + 변경 요약
 - **CONDITIONAL**: Critical 0개, HIGH 갭 1개 이상 또는 Warning 3개 이상
 - **FAIL**: Critical 1개 이상
 
-> 판정 기준은 /review, /auto와 동일하다.
+> 판정 기준은 /review, /run와 동일하다.
 
 # FAIL 시 재검증 가이드
 
@@ -179,7 +179,7 @@ Before/After 코드 + 변경 요약
   판정: FAIL
   Critical: {N}개  |  HIGH 갭: {N}개
 
-  ⚠️ Critical/HIGH 이슈 수정 후 `/nova:verify`를 재실행하여 검증하세요.
+  ⚠️ Critical/HIGH 이슈 수정 후 `/nova:check`를 재실행하여 검증하세요.
   재검증 대상: {이슈가 있는 파일 목록}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -193,7 +193,7 @@ Before/After 코드 + 변경 요약
 - Last Activity 갱신:
   ```
   ## Last Activity
-  - /nova:verify → {PASS/CONDITIONAL/FAIL} — {검증 대상 파일/디렉토리} | {ISO 8601}
+  - /nova:check → {PASS/CONDITIONAL/FAIL} — {검증 대상 파일/디렉토리} | {ISO 8601}
   ```
 - **Critical 이슈 발견 시**: `NOVA-STATE.md`의 "Known Gaps" 테이블에 미커버 영역을 추가한다.
   ```
@@ -204,7 +204,7 @@ Before/After 코드 + 변경 요약
   ```
 
 # Notes
-- **Generator-Evaluator 분리 원칙**: `/auto`에서 호출될 때는 반드시 독립 서브에이전트로 실행된다.
+- **Generator-Evaluator 분리 원칙**: `/run`에서 호출될 때는 반드시 독립 서브에이전트로 실행된다.
 - **개별 리뷰**: 코드 품질만 빠르게 점검하려면 `/review`를 단독 실행할 수 있다.
 - 감정, 위트 없이 객관적으로
 - 사소한 스타일은 린터에 위임, 구조적 문제만 지적

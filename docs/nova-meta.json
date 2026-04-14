@@ -1,6 +1,6 @@
 {
   "version": "4.5.0",
-  "generatedAt": "2026-04-13T23:48:16Z",
+  "generatedAt": "2026-04-14T02:12:40Z",
   "stats": {
     "commands": 12,
     "skills": 7,
@@ -9,22 +9,22 @@
     "mcpTools": 8
   },
   "commands": [
-    {"cmd": "/nova:auto", "description": "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능."},
-    {"cmd": "/nova:consult", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다."},
+    {"cmd": "/nova:ask", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다."},
+    {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator)"},
+    {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후."},
     {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다."},
     {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다."},
-    {"cmd": "/nova:explore", "description": "새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다."},
-    {"cmd": "/nova:init", "description": "새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade)."},
     {"cmd": "/nova:next", "description": "현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다."},
-    {"cmd": "/nova:orchestrate", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator)"},
     {"cmd": "/nova:plan", "description": "CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다."},
     {"cmd": "/nova:review", "description": "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. — MUST TRIGGER: 커밋 전(로직 변경 시), PR 생성 전, 버그 수정 후 회귀 확인 시."},
-    {"cmd": "/nova:ux-audit", "description": "5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석."},
-    {"cmd": "/nova:verify", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후."}
+    {"cmd": "/nova:run", "description": "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능."},
+    {"cmd": "/nova:scan", "description": "새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다."},
+    {"cmd": "/nova:setup", "description": "새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade)."},
+    {"cmd": "/nova:ux-audit", "description": "5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석."}
   ],
   "skills": [
     {"name": "context-chain", "description": "Nova Context Chain — 세션 간 맥락 연속성 보장. NOVA-STATE.md 기반 상태 관리. — MUST TRIGGER: 세션 시작 시 NOVA-STATE.md 읽기, 커밋 후 상태 갱신, 스프린트 전환 시."},
-    {"name": "evaluator", "description": "Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. — MUST TRIGGER: /auto, /verify, /review에서 서브에이전트로 호출. 스프린트 완료 시 필수."},
+    {"name": "evaluator", "description": "Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. — MUST TRIGGER: /run, /check, /review에서 서브에이전트로 호출. 스프린트 완료 시 필수."},
     {"name": "evolution", "description": "Nova Self-Evolution 엔진 — 기술 동향 스캔, 관련성 필터, 자율 범위 구현까지 전체 파이프라인"},
     {"name": "field-test", "description": "실제 프로젝트에서 Nova를 사용해보며 개선 포인트를 찾는 실전 테스트. 워크트리 격리로 흔적 없이 진행."},
     {"name": "jury", "description": "Nova LLM Jury — 다중 관점 평가로 단일 Evaluator의 편향을 보정"},

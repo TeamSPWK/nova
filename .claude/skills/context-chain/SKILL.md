@@ -32,7 +32,7 @@ description: "Nova Context Chain — 세션 간 맥락 연속성 보장. NOVA-ST
 | `/nova:design` 완료 | Phase → building 전환, Refs Design 경로 기록 |
 | `/nova:auto` 완료 | Recently Done에 추가 (Verdict + Ref) |
 | `/nova:review` 완료 | Refs의 Last Verification 갱신 |
-| `/nova:verify` 완료 | Refs의 Last Verification 갱신 |
+| `/nova:check` 완료 | Refs의 Last Verification 갱신 |
 | 작업 완료 | Tasks에서 제거 → Recently Done 이동 |
 
 ## Last Activity 포맷

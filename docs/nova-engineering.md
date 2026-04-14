@@ -337,9 +337,9 @@ Act     → Adaptive 사이클로 규칙 갱신, 개선 반영
 
 ### Phase 2: Verification (3~4주) ✅
 - [x] 멀티 AI 다관점 수집 파이프라인 구축 (X-Verification)
-- [x] 역방향 검증(갭 탐지) 자동화 (→ `/nova:verify`에 통합)
+- [x] 역방향 검증(갭 탐지) 자동화 (→ `/nova:check`에 통합)
 - [x] 합의 프로토콜 임계치 설정
-- 산출물: `/nova:consult`, `/nova:verify` 커맨드
+- 산출물: `/nova:ask`, `/nova:check` 커맨드
 
 ### Phase 3: Context Chain (5~6주) ✅
 - [x] 3계층 메모리 아키텍처 구축 — 파일 기반 컨텍스트 체계

@@ -109,7 +109,7 @@ git worktree add /tmp/nova-field-test-{프로젝트명}-{timestamp} -b nova-fiel
 ```
 작업 디렉토리: {워크트리_경로}
 주의사항:
-- 이 프로젝트에는 Nova Quality Gate가 설치되어 있어. Nova 커맨드(/plan, /review, /verify, /consult 등)를 적극 활용해.
+- 이 프로젝트에는 Nova Quality Gate가 설치되어 있어. Nova 커맨드(/plan, /review, /check, /ask 등)를 적극 활용해.
 - 작업 완료 시 반드시 아래 형식으로 피드백을 보고하라. 이 보고가 없으면 작업 미완료로 간주한다.
 
 ## 피드백 보고 형식 (필수)

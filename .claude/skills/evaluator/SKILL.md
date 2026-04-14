@@ -1,6 +1,6 @@
 ---
 name: evaluator
-description: "Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. — MUST TRIGGER: /auto, /verify, /review에서 서브에이전트로 호출. 스프린트 완료 시 필수."
+description: "Nova Adversarial Evaluator — Nova Quality Gate의 핵심 검증 엔진. 독립 서브에이전트로 코드를 적대적 관점에서 검증. — MUST TRIGGER: /run, /check, /review에서 서브에이전트로 호출. 스프린트 완료 시 필수."
 ---
 
 # Nova Adversarial Evaluator
@@ -106,14 +106,14 @@ NOVA-STATE.md 갱신 시 Last Activity는 **반드시 1줄**로 기록한다:
 
 | 이전 판정 | 재검증 모드 | 후속 행동 |
 |-----------|------------|----------|
-| FAIL | Full Re-verification (Layer 1~3) | `/nova:auto` Full Cycle에서 **1회 자동 재시도**. 그 외에는 사용자 판단 |
+| FAIL | Full Re-verification (Layer 1~3) | `/nova:run` Full Cycle에서 **1회 자동 재시도**. 그 외에는 사용자 판단 |
 | CONDITIONAL | 사용자 판단 | Warning 목록과 권장 조치를 제시. 자동 재시도 안 함 |
 
 ### 자동 재시도 조건 (FAIL → Retry)
 
 자동 재시도는 다음 조건을 **모두** 충족할 때만 수행한다:
 
-1. `/nova:auto` Full Cycle 모드에서 호출됨
+1. `/nova:run` Full Cycle 모드에서 호출됨
 2. 판정이 FAIL (Critical 이슈 존재)
 3. 이전 재시도 횟수가 0회
 4. Critical 이슈가 구체적이고 수정 범위가 명확함

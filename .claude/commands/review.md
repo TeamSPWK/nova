@@ -205,7 +205,7 @@ Before/After 코드 + 변경 요약
 
 ### 5. Nova Alignment
 - 설계 문서 존재 여부 확인
-- 갭이 의심되면 `/verify` 실행하여 설계-구현 정합성도 함께 확인
+- 갭이 의심되면 `/check` 실행하여 설계-구현 정합성도 함께 확인
 
 ### 6. 판정
 
@@ -225,7 +225,7 @@ Before/After 코드 + 변경 요약
 - **CONDITIONAL**: Critical 0개, HIGH 1개 이상 또는 Warning 3개 이상
 - **FAIL**: Critical 1개 이상
 
-> 이 판정 기준은 /verify, /auto와 동일하다.
+> 이 판정 기준은 /check, /run와 동일하다.
 
 # --fix 모드: 자동 수정 워크플로우
 
@@ -344,7 +344,7 @@ Critical 이슈가 발견되면 수정 후 재검증을 권고한다:
 ```
 
 - FAIL 판정 시 반드시 재검증 안내를 포함한다
-- `/auto` 내부에서 호출된 경우, Orchestrator가 자동으로 재검증 루프를 실행한다
+- `/run` 내부에서 호출된 경우, Orchestrator가 자동으로 재검증 루프를 실행한다
 
 # CRITICAL: NOVA-STATE.md 갱신 (이 단계를 건너뛰지 마라)
 
@@ -366,7 +366,7 @@ Critical 이슈가 발견되면 수정 후 재검증을 권고한다:
   ```
 
 # Notes
-- **Generator-Evaluator 분리 원칙**: 이 커맨드가 `/auto`에서 호출될 때는 반드시 독립 서브에이전트로 실행된다.
+- **Generator-Evaluator 분리 원칙**: 이 커맨드가 `/run`에서 호출될 때는 반드시 독립 서브에이전트로 실행된다.
 - 감정, 위트 없이 객관적으로
 - 리팩토링 제안은 구체적 코드로
 - 사소한 스타일은 린터에 위임, 구조적 문제만 지적

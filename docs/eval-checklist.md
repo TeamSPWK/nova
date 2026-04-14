@@ -52,9 +52,9 @@
 
 | # | 항목 | 체크 |
 |---|------|------|
-| X1 | 중요한 설계 판단에 멀티 AI 다관점 수집(/consult)을 사용한다 | [ ] |
+| X1 | 중요한 설계 판단에 멀티 AI 다관점 수집(/ask)을 사용한다 | [ ] |
 | X2 | 합의 프로토콜(Strong Consensus / Partial Consensus / Divergent)에 따라 결과를 처리한다 | [ ] |
-| X3 | 구현 후 통합 검증(/verify)으로 설계-구현 갭을 확인한다 | [ ] |
+| X3 | 구현 후 통합 검증(/check)으로 설계-구현 갭을 확인한다 | [ ] |
 | X4 | 다관점 수집 결과가 docs/verifications/에 기록된다 | [ ] |
 | X5 | 검증 시 요구사항 원문(CLAUDE.md 또는 NOVA-STATE.md)과 실제 구현을 대조한다 | [ ] |
 | X6 | 데이터 관통(입력→저장→로드→표시)이 완전한지 확인한다 | [ ] |
@@ -111,5 +111,5 @@
 1. **Structured가 낮으면** → CLAUDE.md 정비, 린터 설정
 2. **Idempotent가 낮으면** → 문서화 강화, 컨텍스트 체인 구축
 3. **NOVA-STATE 운영이 낮으면** → 즉시 업데이트 트리거 습관화, Known Gaps 기록 루틴 도입
-4. **X-Verification이 낮으면** → `/nova:consult` 다관점 수집 습관화, `/nova:verify` 루틴화, 경계값 검증 추가
+4. **X-Verification이 낮으면** → `/nova:ask` 다관점 수집 습관화, `/nova:check` 루틴화, 경계값 검증 추가
 5. **Adaptive가 낮으면** → CLAUDE.md에 반복 패턴 기록 프로세스 도입, 블로커 분류 기준 적용

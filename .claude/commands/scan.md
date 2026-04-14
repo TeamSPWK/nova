@@ -63,7 +63,7 @@ grep -rn "TODO\|FIXME\|HACK\|XXX\|DEPRECATED" --include="*.ts" --include="*.tsx"
 # Output Format
 
 ```
-━━━ Nova Explore: {프로젝트명} ━━━━━━━━━━━━━━━━
+━━━ Nova Scan: {프로젝트명} ━━━━━━━━━━━━━━━━
 
 ## 기술 스택
   언어:      {언어}
@@ -101,7 +101,7 @@ grep -rn "TODO\|FIXME\|HACK\|XXX\|DEPRECATED" --include="*.ts" --include="*.tsx"
 - 존재하지 않는 항목은 "해당 없음"으로 표시하고 설명 생략
 - TODO/FIXME가 0건이면 "부채 없음 (또는 주석 미사용)" 표시
 - NOVA-STATE.md가 없으면 "현재 상태" 섹션 생략
-- 브리핑은 간결하게 — 상세 분석은 /verify, /review에 위임
+- 브리핑은 간결하게 — 상세 분석은 /check, /review에 위임
 
 # Input
 $ARGUMENTS

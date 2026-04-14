@@ -245,7 +245,7 @@ Fix 에이전트에 반드시 포함할 컨텍스트:
 
 NOVA-STATE.md가 있으면 Last Activity를 갱신한다:
 ```
-- /nova:orchestrate → {PASS/FAIL} — {프로젝트명} | {ISO 8601 타임스탬프}
+- /nova:auto → {PASS/FAIL} — {프로젝트명} | {ISO 8601 타임스탬프}
 ```
 
 ## 플래그

@@ -106,7 +106,7 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 예상 수정 파일이 7개 이하면 스프린트 분할 없이 단일 구현으로 진행한다.
 
 4. 작성된 문서를 `docs/plans/{slug}.md`에 저장한다.
-5. 다관점 수집이 필요한 설계 판단이 있으면 `/consult` 사용을 제안한다.
+5. 다관점 수집이 필요한 설계 판단이 있으면 `/ask` 사용을 제안한다.
 6. Plan 헤더의 `Design:` 필드는 비워둔다. `/design` 실행 시 자동으로 채워진다.
 # CRITICAL: NOVA-STATE.md 갱신 (이 단계를 건너뛰지 마라)
 

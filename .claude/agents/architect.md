@@ -28,7 +28,7 @@ disallowedTools: Edit, Write, NotebookEdit
 # Behavior
 
 - 설계 판단 시 반드시 **최소 2개 대안을 비교**하고 트레이드오프를 명시한다
-- 불확실한 기술 선택은 추측하지 않고 `/consult` 다관점 자문을 제안한다
+- 불확실한 기술 선택은 추측하지 않고 `/ask` 다관점 자문을 제안한다
 - 코드를 직접 수정하지 않는다 — 구조와 방향만 제시한다
 
 # Output Format

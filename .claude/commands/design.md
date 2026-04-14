@@ -57,7 +57,7 @@ Plan에 스프린트가 정의되어 있으면 스프린트별로, 없으면 기
 
 ### Sprint Contract → Evaluator 연동
 
-- `/auto` 실행 시, Evaluator는 Sprint Contract의 Done 조건을 **체크리스트**로 사용한다
+- `/run` 실행 시, Evaluator는 Sprint Contract의 Done 조건을 **체크리스트**로 사용한다
 - 검증 명령이 있는 조건은 자동 실행하여 PASS/FAIL을 판정한다
 - 검증 명령이 없는 조건은 LLM 판단으로 검증하되, "수동 검증 필요" 경고를 포함한다
 
@@ -96,7 +96,7 @@ Plan에 스프린트가 정의되어 있으면 스프린트별로, 없으면 기
 
 # Design 반복 루프
 
-E2E 테스트나 `/verify` 검증에서 설계 자체의 문제가 발견되면:
+E2E 테스트나 `/check` 검증에서 설계 자체의 문제가 발견되면:
 - Design 문서를 수정하고 Sprint Contract를 업데이트한다
 - 수정된 Design을 기준으로 재구현한다
 - "Design은 한 번 쓰고 끝나는 것이 아니다"
@@ -105,7 +105,7 @@ E2E 테스트나 `/verify` 검증에서 설계 자체의 문제가 발견되면:
 - Design은 "어떻게" — 구체적 기술 상세
 - Sprint Contract는 Generator-Evaluator 패턴의 핵심: 구현자와 검증자가 **사전에** 합의
 - Plan의 모든 요구사항이 Design에 반영되었는지 확인
-- 아키텍처 판단이 어려우면 `/consult`로 다관점 자문
+- 아키텍처 판단이 어려우면 `/ask`로 다관점 자문
 
 # Input
 $ARGUMENTS
