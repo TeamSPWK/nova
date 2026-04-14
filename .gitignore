@@ -17,6 +17,7 @@ docs/verifications/
 
 # 세션 상태 파일 (사용자별, 커밋 금지)
 NOVA-STATE.md
+.nova-orchestration.json
 
 # bkit generated files
 docs/.bkit-memory.json
