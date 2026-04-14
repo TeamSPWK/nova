@@ -1,6 +1,6 @@
 {
-  "version": "4.5.0",
-  "generatedAt": "2026-04-14T02:12:40Z",
+  "version": "5.0.0",
+  "generatedAt": "2026-04-14T02:15:20Z",
   "stats": {
     "commands": 12,
     "skills": 7,
@@ -10,7 +10,7 @@
   },
   "commands": [
     {"cmd": "/nova:ask", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다."},
-    {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다 (Nova Orchestrator)"},
+    {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다."},
     {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후."},
     {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다."},
     {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다."},
