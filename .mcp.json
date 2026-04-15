@@ -1,9 +1,3 @@
 {
-  "mcpServers": {
-    "nova": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-server/dist/index.js"]
-    }
-  }
+  "mcpServers": {}
 }
