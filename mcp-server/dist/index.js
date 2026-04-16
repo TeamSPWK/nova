@@ -21190,7 +21190,7 @@ async function buildAdvisory(targetDir, stateContent) {
     return null;
   }
   if (commitsSinceVerify < 3) return null;
-  const message = commitsSinceVerify >= 5 ? `\uB9C8\uC9C0\uB9C9 verify \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uB204\uC801. /nova:verify --fast \uC2E4\uD589\uC744 \uAD8C\uC7A5\uD569\uB2C8\uB2E4.` : `\uB9C8\uC9C0\uB9C9 verify \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uBC1C\uC0DD. \uAC80\uC99D \uC2DC\uC810\uC744 \uD655\uC778\uD558\uC138\uC694.`;
+  const message = commitsSinceVerify >= 5 ? `\uB9C8\uC9C0\uB9C9 \uAC80\uC99D \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uB204\uC801. /nova:review --fast \uC2E4\uD589\uC744 \uAD8C\uC7A5\uD569\uB2C8\uB2E4.` : `\uB9C8\uC9C0\uB9C9 \uAC80\uC99D \uC774\uD6C4 ${commitsSinceVerify}\uAC1C \uCEE4\uBC0B \uBC1C\uC0DD. \uAC80\uC99D \uC2DC\uC810\uC744 \uD655\uC778\uD558\uC138\uC694.`;
   return {
     message,
     commits_since_last_verify: commitsSinceVerify,

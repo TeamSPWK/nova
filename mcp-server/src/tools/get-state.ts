@@ -41,8 +41,8 @@ async function buildAdvisory(targetDir: string, stateContent: string): Promise<A
 
   const message =
     commitsSinceVerify >= 5
-      ? `마지막 verify 이후 ${commitsSinceVerify}개 커밋 누적. /nova:verify --fast 실행을 권장합니다.`
-      : `마지막 verify 이후 ${commitsSinceVerify}개 커밋 발생. 검증 시점을 확인하세요.`;
+      ? `마지막 검증 이후 ${commitsSinceVerify}개 커밋 누적. /nova:review --fast 실행을 권장합니다.`
+      : `마지막 검증 이후 ${commitsSinceVerify}개 커밋 발생. 검증 시점을 확인하세요.`;
 
   return {
     message,
