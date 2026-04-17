@@ -4,12 +4,24 @@
 [![Version](https://img.shields.io/badge/version-5.3.1-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**Claude Code를 위한 AI Agent Ops 프레임워크.**
 **출시 전에 검증한다. 매번.**
 
 [English](README.md)
 
 > AI가 코드를 빠르게 만들어줘도, 잘못된 판단 하나가 4주 뒤 전체 리팩토링으로 돌아온다.
-> Nova는 AI가 만든 코드의 **품질 게이트** 역할을 하는 Claude Code 플러그인이다. 실행이 아닌 검증에 집중한다.
+> Nova는 AI 에이전트가 **안정적으로 일하도록 만드는 운영 환경**을 제공하는 Claude Code 플러그인이다.
+> 품질 게이트에서 출발해 다섯 기둥으로 확장됐다.
+
+| 기둥 | 역할 |
+|------|------|
+| **환경** | Worktree·시크릿 공유·격리된 에이전트 작업 공간 |
+| **맥락** | 세션 간 상태 연속성 (`NOVA-STATE.md`) |
+| **품질** | Generator-Evaluator 분리, 커밋 전 하드 게이트 |
+| **협업** | 설계→구현→검증 오케스트레이션, 멀티 AI 자문 |
+| **진화** | 자기 진단, 자동 업그레이드 |
+
+품질 기둥은 여전히 가장 강력하다. 독립 검증, 멀티 AI 교차 확인, 설계-구현 갭 탐지는 매 세션 자동 주입된다.
 
 ## 빠른 시작
 

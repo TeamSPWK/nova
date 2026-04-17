@@ -4,15 +4,26 @@
 [![Version](https://img.shields.io/badge/version-5.3.1-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**AI Agent Ops Framework for Claude Code.**
 **Verify Before You Ship. Every Time.**
 
 [한국어](README.ko.md)
 
 > AI coding tools make you type faster — but the real bottleneck isn't typing.
 > A single wrong decision in week 1 compounds into a full rewrite by week 4.
-> Nova **structures design decisions** to eliminate rework.
+> Nova gives AI agents the **operating environment** they need to work reliably.
 
-Nova is a [Claude Code](https://claude.ai/code) plugin that acts as a **Quality Gate** for AI-assisted development. It verifies generated code and orchestrates complex multi-project workflows. Independent evaluation, multi-AI cross-verification, and design-implementation gap detection.
+Nova is a [Claude Code](https://claude.ai/code) plugin that makes AI agents operate **dependably** in real projects. It started as a Quality Gate — and that's still the strongest pillar — but it now spans five:
+
+| Pillar | Purpose |
+|--------|---------|
+| **Environment** | Worktree, secret-sharing, isolated agent workspaces |
+| **Context** | Session-to-session state continuity (`NOVA-STATE.md`) |
+| **Quality** | Generator-Evaluator separation, pre-commit hard gate |
+| **Collaboration** | Design→build→verify orchestration, multi-AI consulting |
+| **Evolution** | Self-diagnosis and auto-upgrade |
+
+The Quality pillar remains load-bearing: independent evaluation, multi-AI cross-verification, and design-implementation gap detection are injected into every session automatically.
 
 ## Quick Start
 
