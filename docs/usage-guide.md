@@ -137,6 +137,30 @@ Nova 디렉토리 구조와 CLAUDE.md를 자동 생성합니다.
 
 ---
 
+### `/nova:worktree-setup` — worktree 환경 자동 연결 (환경 기둥)
+
+git worktree를 만들었을 때 메인 레포의 `.env`·`.secret/`·`.npmrc`를 자동으로 심볼릭 링크합니다. **SessionStart 훅이 자동 실행되므로 보통 직접 호출할 필요 없습니다** — 수동 재시도·디버깅용입니다.
+
+```bash
+/nova:worktree-setup              # 현재 worktree에서 즉시 링크 재시도
+/nova:worktree-setup --dry-run    # 링크 예정 / 스킵 / 이미 존재를 미리 확인
+```
+
+**언제 수동으로 호출하나:**
+- `.env`나 시크릿이 보이지 않는데 SessionStart 훅이 놓쳤을 때
+- 메인 레포에 파일이 나중에 추가됐을 때
+- 깨진 심링크 경고(`⚠️ Nova worktree-setup: 깨진 심링크 ...`)를 점검한 뒤 재시도할 때
+
+**오버라이드 (선택):** 메인 레포 루트에 `.claude/worktree-sync.json` 배치
+
+```json
+{ "links": [".env", ".env.local", ".envrc", "config/secrets.json"] }
+```
+
+> 자세한 Quick Start·시나리오·트러블슈팅은 **[docs/guides/worktree-setup.md](guides/worktree-setup.md)** 를 참고하세요.
+
+---
+
 ### `/nova:plan 기능명` — CPS Plan 작성
 
 CPS(Context → Problem → Solution) 구조로 기능 계획서를 작성합니다.

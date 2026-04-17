@@ -64,8 +64,13 @@ git worktree는 기본적으로 **gitignored 파일**(`.env`, `.secret/`, `.npmr
 - direnv 자동 `allow` — 별도 스킬로 분리 예정
 - worktree 생성 자체 (`git worktree add`) — 이 스킬은 셋업만 담당, 생성은 사용자·Claude의 `EnterWorktree` 도구가 수행
 
+## 사용자 가이드
+
+사용자가 "어떻게 쓰는지" 질문하면 먼저 **[docs/guides/worktree-setup.md](../../docs/guides/worktree-setup.md)** 를 안내한다. Quick Start, 오버라이드 예제, 트러블슈팅(깨진 심링크·jq 미설치·Windows 한계), 보안 모델까지 사용자 관점에서 정리되어 있다.
+
 ## 참고
 
 - `hooks/worktree-setup.sh` — 실제 스크립트
 - `commands/worktree-setup.md` — `/nova:worktree-setup` 수동 실행
+- `docs/guides/worktree-setup.md` — 사용자 가이드 (Quick Start · 오버라이드 예제 · 트러블슈팅)
 - `CONDUCTOR_ROOT_PATH` — Conductor 워크스페이스 환경에서 자동 제공되는 메인 레포 경로

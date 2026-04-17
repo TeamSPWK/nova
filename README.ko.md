@@ -15,7 +15,7 @@
 
 | 기둥 | 역할 |
 |------|------|
-| **환경** | Worktree·시크릿 공유·격리된 에이전트 작업 공간 |
+| **환경** | Worktree·시크릿 공유·격리된 에이전트 작업 공간 — [Worktree Setup 가이드](docs/guides/worktree-setup.md) |
 | **맥락** | 세션 간 상태 연속성 (`NOVA-STATE.md`) |
 | **품질** | Generator-Evaluator 분리, 커밋 전 하드 게이트 |
 | **협업** | 설계→구현→검증 오케스트레이션, 멀티 AI 자문 |
