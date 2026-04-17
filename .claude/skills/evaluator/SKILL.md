@@ -108,7 +108,7 @@ NOVA-STATE.md 갱신 시 Last Activity는 **반드시 1줄**로 기록한다:
 | 이전 판정 | 재검증 모드 | 후속 행동 |
 |-----------|------------|----------|
 | FAIL | Full Re-verification (Layer 1~3) | `/nova:run` Full Cycle에서 **1회 자동 재시도**. 그 외에는 사용자 판단 |
-| CONDITIONAL | 사용자 판단 | Warning 목록과 권장 조치를 제시. 자동 재시도 안 함 |
+| CONDITIONAL | 사용자 판단 | Warning 목록과 권장 조치를 제시. CONDITIONAL 자동 재시도 없음 (자동 재시도 안 함) — 사용자가 명시적으로 재시도를 요청할 때만 진행 |
 
 ### 자동 재시도 조건 (FAIL → Retry)
 

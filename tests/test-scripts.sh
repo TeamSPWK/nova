@@ -576,6 +576,35 @@ done
 echo ""
 
 # ═══════════════════════════════════════════
+# 14. 의미 불일치 검증 (Sprint 3)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[의미: 문서 간 일관성]${NC}"
+
+# A) §5 경량화 원칙 ↔ review.md 기본값
+assert "session-start §5 기본 Lite 존재" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q '기본 Lite'"
+assert "review.md 기본 강도 Lite 선언 존재" \
+  "grep -q '기본 강도는 Lite' '$ROOT_DIR/.claude/commands/review.md'"
+
+# B) §1 재판단 조항 동기화 (nova-rules.md ↔ session-start.sh ↔ run.md)
+assert "nova-rules.md: '작업 중 재판단' 조항" \
+  "grep -q '작업 중 재판단' '$ROOT_DIR/docs/nova-rules.md'"
+assert "session-start.sh: '자가 완화 금지' 조항" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q '자가 완화 금지'"
+assert "run.md: '복잡도 재판단' Phase 2 Checkpoint" \
+  "grep -q '복잡도 재판단' '$ROOT_DIR/.claude/commands/run.md'"
+
+# C) run.md ↔ evaluator/SKILL.md CONDITIONAL 일관성
+# run.md Phase 5 Auto-Fix는 FAIL만 대상, CONDITIONAL은 보고만
+assert "run.md Phase 5: CONDITIONAL 자동 재시도 없음 명시" \
+  "grep -qE '(CONDITIONAL.*자동 재시도 (없음|안 함|하지 않))|(CONDITIONAL.*보고)' '$ROOT_DIR/.claude/commands/run.md'"
+assert "evaluator SKILL.md: CONDITIONAL 자동 재시도 없음 명시" \
+  "grep -qE 'CONDITIONAL.*(자동 재시도 없음|자동 재시도 안 함|자동 수정하지 않)' '$ROOT_DIR/.claude/skills/evaluator/SKILL.md'"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 10. 환경 기둥: worktree-setup
 # ═══════════════════════════════════════════
 
@@ -600,7 +629,7 @@ assert "session-start.sh: /nova:worktree-setup 포함" \
 
 # 런타임 동작: 메인 레포에서 실행 시 skip
 WT_TMP=$(mktemp -d)
-(cd "$WT_TMP" && git init -q && echo x > f && git add -A && git commit -q -m init) 2>/dev/null
+(cd "$WT_TMP" && git init -q && echo x > f && git add -A && git commit -q -m init)
 assert "worktree-setup: 메인 레포에서 skip (exit 0)" \
   "(cd '$WT_TMP' && bash '$WT_HOOK'); [ \$? -eq 0 ]"
 
@@ -611,10 +640,10 @@ assert "worktree-setup: 메인 레포에서 skip (exit 0)" \
   echo "FOO=bar" > .env && \
   mkdir -p .secret && echo "tok" > .secret/s && \
   echo "//r=x" > .npmrc && \
-  git worktree add -b nova-test-wt wt1 -q) 2>/dev/null
+  git worktree add -b nova-test-wt wt1 -q)
 
 if [ -d "$WT_TMP/wt1" ]; then
-  (cd "$WT_TMP/wt1" && bash "$WT_HOOK" >/dev/null 2>&1)
+  WT1_ERR=$( (cd "$WT_TMP/wt1" && bash "$WT_HOOK" >/dev/null) 2>&1 )
   assert "worktree-setup: .env 심링크 생성" \
     "[ -L '$WT_TMP/wt1/.env' ]"
   assert "worktree-setup: .secret 심링크 생성" \
@@ -623,7 +652,7 @@ if [ -d "$WT_TMP/wt1" ]; then
     "[ -L '$WT_TMP/wt1/.npmrc' ]"
 
   # 멱등성: 재실행해도 깨지지 않음
-  (cd "$WT_TMP/wt1" && bash "$WT_HOOK" >/dev/null 2>&1)
+  WT1_ERR=$( (cd "$WT_TMP/wt1" && bash "$WT_HOOK" >/dev/null) 2>&1 )
   assert "worktree-setup: 재실행 멱등 (.env 링크 유지)" \
     "[ -L '$WT_TMP/wt1/.env' ]"
 
@@ -634,6 +663,10 @@ if [ -d "$WT_TMP/wt1" ]; then
     "[ -L '$WT_TMP/wt1/.npmrc' ] && [ ! -e '$WT_TMP/wt1/.npmrc' ]"
   assert "worktree-setup: 깨진 심링크 경고 출력" \
     "echo \"\$BROKEN_OUT\" | grep -q '깨진 심링크'"
+else
+  echo "[DIAG wt1] worktree 생성 실패 — 환경: $(uname -a), git: $(git --version)" >&2
+  echo "[DIAG wt1] WT_TMP 내용: $(ls -la "$WT_TMP" 2>&1)" >&2
+  echo "[DIAG wt1] hook stderr: ${WT1_ERR:-<캡처 안됨>}" >&2
 fi
 
 # 악성 경로 주입 차단 (worktree-sync.json override)
@@ -644,16 +677,19 @@ WT_TMP2=$(mktemp -d)
 {"links":["/etc/passwd","../../../etc/shadow",".env"]}
 JSON
   echo "FOO=bar" > .env && \
-  git worktree add -b nova-sec-wt wt2 -q) 2>/dev/null
+  git worktree add -b nova-sec-wt wt2 -q)
 
 if [ -d "$WT_TMP2/wt2" ] && command -v jq >/dev/null 2>&1; then
-  (cd "$WT_TMP2/wt2" && bash "$WT_HOOK" >/dev/null 2>&1)
+  WT2_ERR=$( (cd "$WT_TMP2/wt2" && bash "$WT_HOOK" >/dev/null) 2>&1 )
   assert "worktree-setup: 절대 경로(/etc/passwd) 차단" \
     "[ ! -e '$WT_TMP2/wt2/etc/passwd' ] && [ ! -L '$WT_TMP2/wt2/etc' ]"
   assert "worktree-setup: 상위 이동(../../..) 차단" \
     "[ ! -L '$WT_TMP2/wt2/../../../etc/shadow' ]"
   assert "worktree-setup: 정당한 경로(.env)는 링크됨" \
     "[ -L '$WT_TMP2/wt2/.env' ]"
+elif [ ! -d "$WT_TMP2/wt2" ]; then
+  echo "[DIAG wt2] worktree 생성 실패 — 환경: $(uname -a), git: $(git --version)" >&2
+  echo "[DIAG wt2] WT_TMP2 내용: $(ls -la "$WT_TMP2" 2>&1)" >&2
 fi
 
 # 파일명에 ..가 포함된 정당한 경로는 허용되어야 함 (경로 세그먼트 ..만 차단)
@@ -664,12 +700,24 @@ WT_TMP3=$(mktemp -d)
 {"links":[".env..backup"]}
 JSON
   echo "BAK=1" > .env..backup && \
-  git worktree add -b nova-dotdot-wt wt3 -q) 2>/dev/null
+  git worktree add -b nova-dotdot-wt wt3 -q)
 
 if [ -d "$WT_TMP3/wt3" ] && command -v jq >/dev/null 2>&1; then
-  (cd "$WT_TMP3/wt3" && bash "$WT_HOOK" >/dev/null 2>&1)
-  assert "worktree-setup: 파일명 내 ..는 허용 (.env..backup 링크됨)" \
-    "[ -L '$WT_TMP3/wt3/.env..backup' ]"
+  WT3_LOG=$( (cd "$WT_TMP3/wt3" && NOVA_WORKTREE_DEBUG=1 bash "$WT_HOOK" 2>&1) )
+  if [ -L "$WT_TMP3/wt3/.env..backup" ]; then
+    assert "worktree-setup: 파일명 내 ..는 허용 (.env..backup 링크됨)" "true"
+  else
+    echo "[DIAG wt3] 링크 실패 — 환경: $(uname -a)" >&2
+    echo "[DIAG wt3] hook log: $WT3_LOG" >&2
+    echo "[DIAG wt3] main file: $(ls -la "$WT_TMP3/.env..backup" 2>&1)" >&2
+    echo "[DIAG wt3] wt3 dir: $(ls -la "$WT_TMP3/wt3" 2>&1)" >&2
+    echo "[DIAG wt3] worktree list: $(git -C "$WT_TMP3/wt3" worktree list 2>&1)" >&2
+    assert "worktree-setup: 파일명 내 ..는 허용 (.env..backup 링크됨)" "false"
+  fi
+elif [ -d "$WT_TMP3/wt3" ]; then
+  echo "[DIAG wt3] jq 없음 — 테스트 skip (이 환경에서는 정상)" >&2
+else
+  echo "[DIAG wt3] worktree 생성 실패 — 환경: $(uname -a)" >&2
 fi
 
 rm -rf "$WT_TMP3"
