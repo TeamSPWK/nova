@@ -152,9 +152,20 @@ Generator 완료 시 다음 정보를 Evaluator에게 전달한다:
 - 변경 의도: {한줄 요약}
 - 주요 결정: {트레이드오프 선택 이유}
 - 알려진 제한: {미구현/의도적 생략 항목}
+- self_verify: (선택 — Sprint 1부터 권장)
+  - confident: {확신 영역 + 한줄 근거(테스트/로직 단순성 등)}
+  - uncertain: {불확실 영역 + 사유(경계값/에러 처리/동시성/외부 의존)}
+  - not_tested: {실행 검증 미수행 영역 + 사유}
 ```
 
 > Evaluator는 코드 diff뿐 아니라 이 핸드오프 아티팩트를 참조하여, Generator의 의도와 실제 구현의 정합성을 검증한다.
+
+**self_verify 필드 원칙** (Sprint 1부터):
+- 선택 필드 — 없어도 기존 검증 동작 (하위호환).
+- confident에는 **"왜 확신하는지" 한 줄 근거**를 반드시 포함. 근거 없는 확신은 자기 과신으로 간주.
+- uncertain/not_tested가 **0건**이면 오히려 의심 시그널 — Generator에게 경계값·에러 처리·외부 의존을 다시 점검하도록 지시한다.
+- 근거: *LLM Evaluators Recognize and Favor Their Own Generations* (arXiv 2404.13076) — self-preference bias는 구조적으로 방어 필요.
+- Sprint 1에서는 **신호 수집만**. Layer 배분 최적화는 Sprint 2, 충돌 학습은 Sprint 3, Jury 참여는 Sprint 4.
 
 #### Evaluator → Generator (Fix) 핸드오프 포맷
 

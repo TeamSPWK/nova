@@ -44,6 +44,11 @@ tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 
 ## 검증
 - {확인 방법}
+
+## self_verify (핸드오프 시 포함 — Sprint 1)
+- confident: {확신 영역 + 한줄 근거(예: "테스트 3케이스 통과, 로직 단순")}
+- uncertain: {불확실 영역 + 사유(예: "5분 경계 race condition 가능성")}
+- not_tested: {실행 검증 미수행 영역 + 사유(예: "DB 롤백 — 로컬 실행 불가")}
 ```
 
 리뷰 시:
@@ -64,6 +69,7 @@ tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 - [ ] 환경 변경 시 3단계(현재값 확인→변경→반영 확인)를 거쳤는가?
 - [ ] 크래시/데이터 손상/사용자 오판단 유발 이슈를 Hard-Block으로 분류했는가?
 - [ ] 경계값(0, 음수, 빈 값)에서 핵심 로직이 크래시하지 않는지 확인했는가?
+- [ ] 핸드오프 시 self_verify 필드를 포함했는가? uncertain/not_tested 0건이면 자기 과신 의심 — 경계값·에러 처리·외부 의존 재점검
 
 # Anti-goals
 

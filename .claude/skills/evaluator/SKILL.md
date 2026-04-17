@@ -225,8 +225,16 @@ Orchestrator 또는 `/run`에서 호출될 때, Generator의 핸드오프 아티
 1. **의도 vs 구현 정합성**: Generator의 "변경 의도"와 실제 코드가 일치하는지 검증
 2. **주요 결정 타당성**: 트레이드오프 선택이 합리적인지 평가
 3. **알려진 제한 확인**: 의도적 생략이 Known Gaps로 기록되었는지 확인
+4. **Generator 자가 검증 신호 검토** (Sprint 1): `self_verify` 필드가 있으면 confident/uncertain/not_tested 항목을 판정 report에 명시한다. **Sprint 1에서는 참고용으로만 사용** — Layer 배분에 영향 주지 않음 (Sprint 2 이관). Generator의 `confident` 영역에서 Critical 이슈를 발견하면 **self-preference bias 시그널**로 별도 표기한다:
+   ```
+   ## self-preference bias 시그널
+   - Generator confident: "{인용}"
+   - Evaluator 발견: "{Critical 내용}"
+   - 해석: Generator 자기 확신 영역에 blind spot 존재. 향후 동일 도메인 변경 시 `--strict` 승격 검토 권장.
+   ```
+   근거: *LLM Evaluators Recognize and Favor Their Own Generations* (arXiv 2404.13076). Sprint 3에서 자동 승격 로직으로 확장 예정.
 
-아티팩트가 없으면 기존 방식(코드 diff 기반 검증)으로 동작한다.
+아티팩트가 없으면 기존 방식(코드 diff 기반 검증)으로 동작한다. `self_verify` 필드만 없는 경우에도 1~3번은 그대로 수행하고 4번만 생략한다 (하위호환).
 
 ## 평가 자세
 - "통과시키지 마라. 문제를 찾아라."
