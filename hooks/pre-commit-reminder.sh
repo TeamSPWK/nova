@@ -8,6 +8,61 @@ INPUT="${TOOL_INPUT:-}"
 
 # git commit 패턴 감지 (git commit, git -c ... commit 등)
 if echo "$INPUT" | grep -qE '^\s*git\s+(.*\s+)?commit(\s|$)'; then
+
+  # ------ Evaluator Hard Gate (Sprint 1) ------
+  check_evaluator_pass() {
+    # 출력: PASS | MISSING | EMPTY | NO_PASS | STALE | TIMESTAMP_BROKEN
+
+    [ ! -f "NOVA-STATE.md" ] && echo "MISSING" && return
+
+    # ## Last Activity 섹션 첫 줄 추출 (헤더 다음 첫 번째 "- " 라인)
+    LAST_LINE=$(awk '/^## Last Activity/{flag=1; next} flag && /^- /{print; exit}' NOVA-STATE.md)
+
+    [ -z "$LAST_LINE" ] && echo "EMPTY" && return
+
+    # PASS 포함 여부 — 화살표 이후 PASS/CONDITIONAL만 인정 (서술형 오탐 방지)
+    echo "$LAST_LINE" | grep -qE '→\s*(PASS|CONDITIONAL)' || { echo "NO_PASS"; return; }
+
+    # 타임스탬프 추출: "| YYYY-MM-DD" 패턴
+    TS=$(echo "$LAST_LINE" | grep -oE '\| [0-9]{4}-[0-9]{2}-[0-9]{2}' | sed 's/| //')
+    [ -z "$TS" ] && echo "TIMESTAMP_BROKEN" && return
+
+    # 오늘 날짜와 비교 (Sprint 1은 당일 기준)
+    TODAY=$(date +%Y-%m-%d)
+    [ "$TS" = "$TODAY" ] && echo "PASS" || echo "STALE"
+  }
+
+  # --emergency 감지 (플래그 또는 환경변수)
+  EMERGENCY=0
+  if echo "$INPUT" | grep -q -- "--emergency" || [ "${NOVA_EMERGENCY:-0}" = "1" ]; then
+    EMERGENCY=1
+  fi
+
+  if [ "$EMERGENCY" = "1" ]; then
+    echo "[Nova Hard Gate] --emergency 우회 감지 — Evaluator 검증 없이 커밋 진행" >&2
+  else
+    EVAL_STATUS=$(check_evaluator_pass)
+    if [ "$EVAL_STATUS" != "PASS" ]; then
+      cat >&2 << EOF
+[Nova Hard Gate] COMMIT BLOCKED
+이유: Evaluator PASS 미확인 (상태: ${EVAL_STATUS})
+
+상태별 조치:
+  MISSING           -> NOVA-STATE.md 없음. /nova:check 실행 후 커밋.
+  EMPTY             -> Last Activity 섹션 비어있음. 검증 기록 추가 필요.
+  NO_PASS           -> 최근 활동에 PASS 없음. /nova:review 또는 /nova:check 실행.
+  STALE             -> 마지막 PASS가 오늘 날짜가 아님. 재검증 필요.
+  TIMESTAMP_BROKEN  -> 타임스탬프 파싱 실패. NOVA-STATE.md 포맷 확인.
+
+긴급 우회:
+  git commit -m "메시지 --emergency"
+  또는 NOVA_EMERGENCY=1 git commit ...
+EOF
+      exit 2
+    fi
+  fi
+  # ------ End Evaluator Hard Gate ------
+
   # NOVA-STATE.md 갱신 여부 확인
   STATE_STALE=""
   if [ -f "NOVA-STATE.md" ]; then
