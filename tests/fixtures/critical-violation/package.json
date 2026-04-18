@@ -1,0 +1,5 @@
+{
+  "name": "critical-violation-fixture",
+  "version": "1.0.0",
+  "description": "Nova test fixture — intentional Critical accessibility violations"
+}

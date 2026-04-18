@@ -766,6 +766,81 @@ assert "ux-audit 디자인 항목 출력 제한 + 8건 전체 제한 명시" \
 echo ""
 
 # ═══════════════════════════════════════════
+# Sprint B: UI 감지 + 메트릭 + 캐시
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint B: UI 감지 + 메트릭 + 캐시]${NC}"
+
+# 헬퍼 스크립트 존재 확인
+assert "detect-ui-change.sh 존재 + 실행 가능" \
+  "[ -f '$ROOT_DIR/scripts/detect-ui-change.sh' ] && [ -x '$ROOT_DIR/scripts/detect-ui-change.sh' ]"
+assert "detect-design-system.sh 존재 + 실행 가능" \
+  "[ -f '$ROOT_DIR/scripts/detect-design-system.sh' ] && [ -x '$ROOT_DIR/scripts/detect-design-system.sh' ]"
+assert "log-metric.sh 존재 + 실행 가능" \
+  "[ -f '$ROOT_DIR/scripts/log-metric.sh' ] && [ -x '$ROOT_DIR/scripts/log-metric.sh' ]"
+
+# fixture 존재 확인
+for fixture in react-component backend-only logic-only monorepo css-in-js critical-violation; do
+  assert "fixture: $fixture 존재" "[ -d '$ROOT_DIR/tests/fixtures/$fixture' ]"
+done
+
+# detect-ui-change.sh 출력 JSON 스키마 (react-component fixture)
+# 주의: Nova 레포 내 fixture는 독립 git 레포가 필요하므로 run-fixture-detect.sh로 위임
+assert "detect-ui-change.sh --post-impl 출력은 valid JSON" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' react-component --post-impl | jq -e . > /dev/null 2>&1"
+
+# Done 조건 1: UI 단독 변경 트리거
+assert "Sprint B #1: UI 단독 변경(react-component)에서 is_ui=true" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' react-component --post-impl | jq -e '.is_ui == true' > /dev/null 2>&1"
+
+# Done 조건 2: 백엔드 트리거 안 됨
+assert "Sprint B #2: backend-only fixture에서 is_ui=false" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' backend-only --post-impl | jq -e '.is_ui == false' > /dev/null 2>&1"
+
+# Done 조건 3: 순수 로직 스킵
+assert "Sprint B #3: logic-only fixture에서 is_ui=false (no UI keywords)" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' logic-only --post-impl | jq -e '.is_ui == false' > /dev/null 2>&1"
+
+# Done 조건 9: monorepo 매칭
+assert "Sprint B #9: monorepo fixture에서 is_ui=true" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' monorepo --post-impl | jq -e '.is_ui == true' > /dev/null 2>&1"
+
+# Done 조건 10: CSS-in-JS .ts 승격
+assert "Sprint B #10: css-in-js fixture(.ts)에서 is_ui=true" \
+  "bash '$ROOT_DIR/tests/run-fixture-detect.sh' css-in-js --post-impl | jq -e '.is_ui == true' > /dev/null 2>&1"
+
+# detect-design-system.sh: 미정의 시 detected=false
+assert "Sprint B: detect-design-system.sh — 미정의 시 detected=false" \
+  "(cd /tmp && bash '$ROOT_DIR/scripts/detect-design-system.sh') | jq -e '.detected == false' > /dev/null 2>&1"
+
+# log-metric.sh: .nova/metrics.jsonl 1줄 append
+assert "Sprint B: log-metric.sh가 .nova/metrics.jsonl에 1줄 append" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && bash '$ROOT_DIR/scripts/log-metric.sh' --event test_event --files 1 && [ \"\$(wc -l < .nova/metrics.jsonl | tr -d ' ')\" = '1' ]); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# orchestrator SKILL.md: Phase 5.5 삽입 확인
+assert "Sprint B: orchestrator SKILL.md에 Phase 5.5 포함" \
+  "grep -q 'Phase 5.5' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "Sprint B: orchestrator SKILL.md에 UI 변경 감지 분기 포함" \
+  "grep -q 'detect-ui-change.sh' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "Sprint B: orchestrator SKILL.md에 ux-audit Lite 언급" \
+  "grep -q 'ux-audit Lite' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "Sprint B: orchestrator Phase 1에 UI 사전 감지 추가" \
+  "grep -q 'UI 변경 사전 감지' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+# Done 조건 6/7: notice + cache hit (별도 스크립트 위임)
+assert "Sprint B #6: 사전 고지 첫 트리거 vs 이후" "bash '$ROOT_DIR/tests/test-ui-audit-notice.sh' > /dev/null 2>&1"
+assert "Sprint B #7: 동일 변경 캐시 hit" "bash '$ROOT_DIR/tests/test-cache-hit.sh' > /dev/null 2>&1"
+
+# Done 조건 11 (Nice-to-have): metrics 회전
+assert "Sprint B #11 (Nice): metrics.jsonl 1000줄 초과 시 회전" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\"; mkdir -p .nova; for i in \$(seq 1 1001); do echo '{}' >> .nova/metrics.jsonl; done; bash '$ROOT_DIR/scripts/log-metric.sh' --event rotation_test; ls .nova/metrics.*.jsonl > /dev/null 2>&1); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

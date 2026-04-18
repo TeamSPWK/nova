@@ -60,6 +60,10 @@ orchestration_update({ orchestration_id: "orch-abc123", phase_name: "구현", st
 
 NOVA-STATE.md가 있으면 현재 스프린트 컨텍스트와 Phase를 참고한다.
 
+6. **UI 변경 사전 감지** (선택적):
+   bash scripts/detect-ui-change.sh --planning 호출 → likely_ui 결과 표시.
+   "UI 변경 가능성: {Yes/No}" 1줄 출력 (사용자 인지 목적, 분기 결정 X).
+
 #### 복잡도 판단 기준
 
 | 복잡도 | 기준 | 에이전트 편성 |
@@ -260,6 +264,51 @@ QA 프롬프트에 반드시 포함할 항목:
 | 실제 동작 (curl/playwright) | 생략 | 필수 |
 | 경계값 시나리오 | 생략 | 필수 |
 
+### Phase 5.5: UI 변경 감지 + ux-audit Lite (자동)
+
+Phase 5가 PASS면 다음을 수행한다:
+
+1. `result = bash scripts/detect-ui-change.sh --post-impl`
+
+2. `result.is_ui == false` → 즉시 Phase 7으로 (메트릭 기록 없음)
+
+3. `result.cache_hit == true`:
+   - "[Nova] 이전 감사와 동일한 변경 — ux-audit Lite 생략" 1줄 출력
+   - `bash scripts/log-metric.sh --event ui_audit_triggered --cache_hit 1`
+   - Phase 7으로
+
+4. `--no-ux-audit` 플래그 OR (`nova-config.json` 존재 AND `.auto.uiAudit == false`):
+   - `bash scripts/log-metric.sh --event ui_audit_opt_out --reason flag` (또는 `--reason config`)
+   - Phase 7으로
+
+5. 사전 고지:
+   - `.nova/ui-state.json` 미존재 또는 `.first_ui_audit_shown == false`:
+     다음 자세한 안내 출력 (첫 트리거 템플릿):
+     ```
+     [Nova] UI 변경이 감지되었습니다. ux-audit Lite(3인 평가자)를 자동 실행합니다.
+     - 평가자: Newcomer · Accessibility · Cognitive Load
+     - 대상 파일: {result.files}
+     - 이 자동화를 끄려면: --no-ux-audit 플래그 또는 nova-config.json { "auto": { "uiAudit": false } }
+     ```
+     `.nova/ui-state.json` 갱신: `first_ui_audit_shown = true`
+   - 그 외: "[Nova] UI 변경 감지 → ux-audit Lite 병행" 1줄 출력
+
+6. **ux-audit Lite 실행** (Newcomer + Accessibility + Cognitive Load 3인, 5인 Full 아님):
+   - `target = result.files`
+   - ux-audit 스킬을 Lite 모드로 호출
+
+7. 완료 후 메트릭 기록 및 캐시 갱신:
+   ```
+   bash scripts/log-metric.sh --event ui_audit_completed \
+     --critical N --high N --medium N --low N
+   ```
+   `.nova/last-audit.json` 갱신: `hash, ts, result, files, stats`
+
+8. `result.critical >= 1` AND (`nova-config.json` 미존재 OR `.auto.uiAuditBlockOnCritical != false`):
+   - 커밋 차단 + 사용자에게 Critical 목록 보고
+   - 옵션 제시: 재시도 / `--no-ux-audit` / 수동 fix
+9. 그 외: Phase 7으로 (보고에 audit 결과 통합)
+
 ### Phase 6: 수정 (Auto-Fix)
 
 QA 결과에서 FAIL/Critical/HIGH 이슈를 추출한다.
@@ -313,6 +362,7 @@ Fix 에이전트에 반드시 포함할 컨텍스트:
 NOVA-STATE.md가 있으면 Last Activity를 갱신한다:
 ```
 - /nova:auto → {PASS/FAIL} — {프로젝트명} | {ISO 8601 타임스탬프}
+- /nova:auto → UI 감지 → ux-audit Lite PASS — Critical N / High N / Medium N / Low N | {ISO 8601 타임스탬프}
 ```
 
 ## 플래그
