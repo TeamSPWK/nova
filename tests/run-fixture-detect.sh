@@ -17,10 +17,9 @@ trap 'cd / 2>/dev/null; rm -rf "$TMPDIR"' EXIT INT TERM
 cp -r "$ROOT_DIR/tests/fixtures/$FIXTURE/." "$TMPDIR/"
 cd "$TMPDIR"
 git init -q
-git config user.email 't@t'
-git config user.name 'T'
 git add -A > /dev/null 2>&1
-git commit -q -m init > /dev/null 2>&1
+# commit 생략 — detect-ui-change.sh --post-impl이 staged 변경을 인식하므로
+# git user.email/name 설정 불필요 (CI portability — GitHub Actions runner 대응)
 bash "$ROOT_DIR/scripts/detect-ui-change.sh" "$MODE" 2>/dev/null
 STATUS=$?
 exit $STATUS
