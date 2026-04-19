@@ -60,11 +60,11 @@ echo -e "${YELLOW}[구조: 커맨드]${NC}"
 
 EXPECTED_COMMANDS=(
   run design scan evolve setup next
-  auto plan review check ask ux-audit
+  auto plan deepplan review check ask ux-audit
   worktree-setup
 )
 CMD_COUNT=$(ls "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
-assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 13 ]"
+assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 14 ]"
 
 for cmd in "${EXPECTED_COMMANDS[@]}"; do
   assert "커맨드: $cmd.md" "[ -f '$ROOT_DIR/.claude/commands/$cmd.md' ]"
@@ -837,6 +837,41 @@ assert "Sprint B #7: 동일 변경 캐시 hit" "bash '$ROOT_DIR/tests/test-cache
 # Done 조건 11 (Nice-to-have): metrics 회전
 assert "Sprint B #11 (Nice): metrics.jsonl 1000줄 초과 시 회전" \
   "TMPD=\$(mktemp -d); (cd \"\$TMPD\"; mkdir -p .nova; for i in \$(seq 1 1001); do echo '{}' >> .nova/metrics.jsonl; done; bash '$ROOT_DIR/scripts/log-metric.sh' --event rotation_test; ls .nova/metrics.*.jsonl > /dev/null 2>&1); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# Sprint 3: deepplan 동기화
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint 3: deepplan 동기화]${NC}"
+
+assert "commands/deepplan.md 존재" \
+  "[ -f '$ROOT_DIR/.claude/commands/deepplan.md' ]"
+
+assert "skills/deepplan/SKILL.md 존재" \
+  "[ -f '$ROOT_DIR/.claude/skills/deepplan/SKILL.md' ]"
+
+assert "session-start.sh: /nova:deepplan 포함" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q '/nova:deepplan'"
+
+assert "nova-rules.md: deepplan 언급 존재" \
+  "grep -q 'deepplan' '$ROOT_DIR/docs/nova-rules.md'"
+
+assert "orchestrator SKILL.md: --deep 플래그 처리 포함" \
+  "grep -q '\-\-deep' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "orchestrator SKILL.md: deepplan 호출 로직 포함" \
+  "grep -q 'deepplan' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "auto.md: --deep 플래그 문서화" \
+  "grep -q '\-\-deep' '$ROOT_DIR/.claude/commands/auto.md'"
+
+assert "plan.md: deepplan 크로스 레퍼런스 존재" \
+  "grep -q 'deepplan' '$ROOT_DIR/.claude/commands/plan.md'"
+
+assert "next.md: deepplan 진입 조건 언급 존재" \
+  "grep -q 'deepplan' '$ROOT_DIR/.claude/commands/next.md'"
 
 echo ""
 

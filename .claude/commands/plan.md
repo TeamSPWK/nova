@@ -121,7 +121,28 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
   - /nova:plan → 완료 — docs/plans/{slug}.md | {ISO 8601}
   ```
 
-# Related: `/ultraplan`과의 역할 분리
+# Related: `/nova:deepplan`과 `/ultraplan`
+
+## `/nova:deepplan` — 로컬 강화 플래닝
+
+아키텍처 전환·대형 마이그레이션·실패 비용이 높은 판단에는 `/nova:deepplan`을 사용한다.
+Explorer×3 병렬 탐색 → Synthesizer → Critic → Refiner 4단계로 기본 `/nova:plan`보다 깊이 있는 Plan을 생성한다.
+
+| | `/nova:plan` | `/nova:deepplan` | `/ultraplan` |
+|---|---|---|---|
+| 실행 | 로컬 동기 (터미널) | 로컬 동기 (터미널) | 클라우드 비동기 (브라우저 리뷰) |
+| 플래닝 깊이 | CPS 단일 패스 | Explorer×3 + Critic + Refiner | 전용 컴퓨트 + 인라인 피드백 |
+| 적합 | 일반 기능 추가, 버그 수정 | 아키텍처 전환, 대형 마이그레이션, 보안 경계 변경 | 대형 팀 공유 문서, 브라우저 인라인 피드백 |
+| 토큰/시간 | 기본 | 3~5×, 10~20분 추가 | 별도 클라우드 컴퓨트 |
+| Nova 체인 | Plan → Design → 구현 체인 | Plan → Design → 구현 체인 (동일) | 독립 실행 (결과를 Nova에 수동 흡수) |
+
+**언제 `/nova:deepplan`을 쓰나**:
+- 기존 시스템 다수를 재구성하는 아키텍처 전환
+- DB 스키마·인증 구조·외부 API 연동처럼 실패 비용이 높은 판단
+- 대안을 충분히 탐색하고 싶을 때
+- 단순 기능 추가에는 `/nova:plan`이 더 빠름
+
+## `/ultraplan`과의 역할 분리
 
 Claude Code `/ultraplan`은 클라우드 CCR에서 최대 30분 전용 컴퓨트로 플래닝 세션을 돌리고 브라우저에서 인라인 코멘트로 반복 편집한다. `/nova:plan`과 **실행 모델이 달라 체인 통합하지 않는다.** 보완재로 병용한다.
 

@@ -60,7 +60,91 @@ orchestration_update({ orchestration_id: "orch-abc123", phase_name: "구현", st
 
 NOVA-STATE.md가 있으면 현재 스프린트 컨텍스트와 Phase를 참고한다.
 
-6. **UI 변경 사전 감지** (선택적):
+#### Plan/Design 재사용 분기
+
+요청 분석 직후, Phase 2 진입 전에 기존 산출물을 확인하고 분기한다.
+
+**slug 추출 규칙**:
+1. 요청에서 따옴표(`'` 또는 `"`) 안의 텍스트를 추출한다. 따옴표가 없으면 플래그(`--xxx`)를 제외한 전체 요청 텍스트를 사용한다.
+2. 공백을 `-`로 치환한다.
+3. 한글·영문·숫자·하이픈 이외의 특수문자를 제거한다. **한글은 유지한다.**
+4. 최종 slug 예시:
+   - `"건폐율 시각화 추가"` → `건폐율-시각화-추가`
+   - `"add carousel"` → `add-carousel`
+5. 플래그 제거 후 slug가 빈 문자열이면(예: `/nova:auto --fresh --design-only`), 재사용 분기를 건너뛰고 fresh 동작으로 진입한다. 경고 로그: `[Orchestrator] slug 추출 실패 — fresh 모드로 진행`. 요청에 플래그가 없고 텍스트도 비어 있는 경우에만 요청 첫 단어를 slug로 사용한다.
+
+**후보 매칭 규칙**:
+- `docs/plans/{slug}.md` — exact match 우선
+- exact match 실패 시 slug의 첫 단어로 시작하는(`startsWith`) 파일을 fuzzy 후보로 수집
+- 후보가 **2개 이상**이면 사용자에게 숫자 선택 프롬프트를 출력한다:
+  ```
+  다음 기존 Plan 중 재사용할 것을 선택하세요:
+  [1] {후보1}.md
+  [2] {후보2}.md
+  [f] fresh로 처음부터
+  ```
+
+**분기 매트릭스**:
+
+**우선순위**: 위에서 아래로 순차 평가한다. 먼저 매칭되는 행이 적용된다. 특히 Plan과 Design이 **모두** 존재하면 Design 행이 우선(Phase 2·3 스킵).
+
+| 조건 | 동작 |
+|------|------|
+| `--fresh` + `--deep` 동시 있음 | 기존 Plan/Design 무시 + deepplan 스킬 호출로 Plan 생성 → PlanReuseFlow로 진입. 로그: `[Orchestrator] fresh+deep 모드 — deepplan 호출 후 파이프라인 진입` |
+| `--fresh` 플래그 있음 (--deep 없음) | 재사용 무시 → fresh Architect (escape hatch). 로그: `[Orchestrator] fresh 모드 — 기존 Plan/Design 무시` |
+| `docs/designs/{slug}.md` 존재 | Phase 2·3 스킵 → Phase 4(Generator) 직행. Dev 프롬프트 기반으로 Design 파일 내용을 사용. 로그: `[Orchestrator] Design 재사용: docs/designs/{slug}.md — Phase 2·3 스킵` |
+| `docs/plans/{slug}.md`만 존재 + `--deep` | `--deep` 무시 + 경고 + Plan 재사용. 로그: `[Orchestrator] --deep 무시 — 기존 Plan 존중. 재실행하려면 --fresh --deep` |
+| `docs/plans/{slug}.md`만 존재 (Design 없음, --deep 없음) | Phase 2 Architect 실행. **단, Architect 프롬프트에 Plan 경로와 내용을 반드시 포함**하여 fresh 설계를 금지한다. 로그: `[Orchestrator] Plan 재사용: docs/plans/{slug}.md — Architect가 Plan 기반 설계` |
+| 둘 다 없음 + `--deep` | deepplan 스킬 호출 → `docs/plans/{slug}.md` 생성 → PlanReuseFlow로 진입. 로그: `[Orchestrator] deepplan 호출 — Plan 생성 후 파이프라인 진입` |
+| 둘 다 없음 | 기존 동작 유지 (fresh Architect) |
+
+**`--deep` 처리 의사코드**:
+
+```
+if flags.fresh and flags.deep:
+    log("[Orchestrator] fresh+deep 모드 — deepplan 호출 후 파이프라인 진입")
+    run_deepplan(request)   # docs/plans/{slug}.md 생성
+    return PlanReuseFlow(plan_path)
+
+if flags.fresh:
+    log("[Orchestrator] fresh 모드 — 기존 Plan/Design 무시")
+    return FreshFlow()
+
+if exists(design_path):
+    log("[Orchestrator] Design 재사용: {design_path} — Phase 2·3 스킵")
+    return DesignReuseFlow(design_path)
+
+if exists(plan_path) and flags.deep:
+    warn("[Orchestrator] --deep 무시 — 기존 Plan 존중. 재실행하려면 --fresh --deep")
+    return PlanReuseFlow(plan_path)
+
+if exists(plan_path):
+    log("[Orchestrator] Plan 재사용: {plan_path} — Architect가 Plan 기반 설계")
+    return PlanReuseFlow(plan_path)
+
+if flags.deep:
+    log("[Orchestrator] deepplan 호출 — Plan 생성 후 파이프라인 진입")
+    run_deepplan(request)   # docs/plans/{slug}.md 생성
+    return PlanReuseFlow(plan_path)
+
+return FreshFlow()  # 기존 동작
+```
+
+**Design 재사용 시 Phase 3 처리**:
+Phase 2·3을 스킵하므로, Phase 4 Dev 프롬프트는 Architect 설계서 대신 `docs/designs/{slug}.md` 내용을 기반으로 생성한다. Phase 3 프롬프트 변환 항목 표의 "Architect 설계서" 출처를 Design 파일로 대체한다.
+
+**Plan 재사용 시 Phase 2 처리**:
+Architect 서브에이전트 컨텍스트에 다음을 추가한다:
+```
+기존 Plan 파일: docs/plans/{slug}.md
+아래 Plan 내용을 기반으로 설계하라. 처음부터 새로 작성하지 않는다.
+Plan 내용에 없는 내용을 발명하지 말고, Plan의 Solution·Sprints 구조를 설계서에 반영하라.
+---
+{Plan 파일 전체 내용}
+---
+```
+
+**UI 변경 사전 감지** (선택적):
    bash scripts/detect-ui-change.sh --planning 호출 → likely_ui 결과 표시.
    "UI 변경 가능성: {Yes/No}" 1줄 출력 (사용자 인지 목적, 분기 결정 X).
 
@@ -204,6 +288,8 @@ FAIL 판정 시 수정 지시를 구조화하여 전달한다:
 
 ### Phase 3: 프롬프트 변환
 
+> **조건부 실행**: Phase 1의 Design 재사용 분기에서는 이 Phase 전체가 스킵된다. 아래 표의 "Architect 설계서" 출처는 그 경로에서 `docs/designs/{slug}.md`로 대체되어 Phase 4 Dev 프롬프트에 직접 주입된다.
+
 Architect의 설계서를 Dev 에이전트 프롬프트로 변환한다.
 이 단계가 품질의 핵심이다 — 설계서의 구체적 정보가 구현 지침으로 주입된다.
 
@@ -212,12 +298,12 @@ Dev 프롬프트에 반드시 포함할 항목:
 | 항목 | 출처 |
 |------|------|
 | 프로젝트 경로 (절대 경로) | 요청 분석 |
-| 기술 스택 | Architect 설계서 |
-| 파일/컴포넌트 구조 | Architect 설계서 |
-| 디자인 토큰 | Architect 설계서 |
-| 데이터 흐름 | Architect 설계서 |
-| 구현 순서 | Architect 설계서 |
-| 빌드 검증 명령 | Architect 설계서 |
+| 기술 스택 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
+| 파일/컴포넌트 구조 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
+| 디자인 토큰 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
+| 데이터 흐름 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
+| 구현 순서 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
+| 빌드 검증 명령 | Architect 설계서 (Design 재사용 시: `docs/designs/{slug}.md`) |
 | "구현만 해, 검증은 별도" 명시 | 항상 포함 |
 
 간단 복잡도는 Architect 없이 사용자 요청에서 직접 Dev 프롬프트를 생성한다.
@@ -373,6 +459,9 @@ NOVA-STATE.md가 있으면 Last Activity를 갱신한다:
 | `--design-only` | 설계까지만 (구현 전 확인용) |
 | `--skip-qa` | QA 생략 (빠른 프로토타이핑) |
 | `--strict` | QA를 Full 검증으로 강제 |
+| `--fresh` | 기존 Plan/Design 무시, 강제 fresh Architect (escape hatch) |
+| `--deep` | Plan 없을 때 deepplan 스킬(Explorer×3→Synth→Critic→Refiner) 호출 후 파이프라인 진입. 아키텍처 전환·대형 마이그레이션에 권장 |
+| `--fresh --deep` | 기존 Plan 무시 + deepplan으로 새 Plan 생성 후 파이프라인 진입 |
 
 ## Input
 
