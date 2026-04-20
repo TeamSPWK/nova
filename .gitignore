@@ -22,6 +22,10 @@ NOVA-STATE.md
 # record-event.sh CI 분기 출력 (CI=true + CI_ARTIFACTS 미지정 시 프로젝트 루트에 생성됨)
 nova-events/
 
+# 주의: mcp-server/dist/ 는 플러그인 entrypoint (.mcp.json 참조)이므로 커밋 대상이다.
+# 과거에 이 경로가 ignore 되어 있어 v5.15.1/v5.15.2 릴리스에 빌드 산출물이 반영되지 않는
+# 사고가 발생했다. 되돌리지 말 것.
+
 # bkit generated files
 docs/.bkit-memory.json
 docs/.pdca-status.json
@@ -38,7 +42,7 @@ node_modules/
 
 # MCP server
 mcp-server/node_modules/
-mcp-server/dist/
+# mcp-server/dist/ 는 ignore하지 않는다 — 플러그인 entrypoint이므로 반드시 커밋한다 (위 주석 참조)
 
 # Nova Orbit (별도 프로젝트)
 nova-orbit/

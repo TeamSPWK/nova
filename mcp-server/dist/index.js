@@ -21820,12 +21820,24 @@ function registerXVerify(server2) {
 import fs5 from "fs/promises";
 import path5 from "path";
 var orchestrations = /* @__PURE__ */ new Map();
+function normalizeIso(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString();
+}
 async function saveToDisk() {
+  const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
+  const tmpPath = `${filePath}.tmp.${process.pid}`;
   try {
     const data = Object.fromEntries(orchestrations);
-    const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
-    await fs5.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+    await fs5.writeFile(tmpPath, JSON.stringify(data, null, 2), "utf-8");
+    await fs5.rename(tmpPath, filePath);
   } catch {
+    try {
+      await fs5.unlink(tmpPath);
+    } catch {
+    }
   }
 }
 async function loadFromDisk() {
@@ -21833,9 +21845,14 @@ async function loadFromDisk() {
     const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
     const content = await fs5.readFile(filePath, "utf-8");
     const data = JSON.parse(content);
-    for (const [id, orch] of Object.entries(data)) {
-      if (orch.status === "running") {
-        orchestrations.set(id, orch);
+    for (const [id, diskOrch] of Object.entries(data)) {
+      const memOrch = orchestrations.get(id);
+      if (!memOrch) {
+        orchestrations.set(id, diskOrch);
+        continue;
+      }
+      if (normalizeIso(diskOrch.updatedAt) > normalizeIso(memOrch.updatedAt)) {
+        orchestrations.set(id, diskOrch);
       }
     }
   } catch {
