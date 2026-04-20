@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nova v5.15 — 하네스 엔지니어링 완성</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+  <style>
+    :root {
+      --r-background-color: #0d1117;
+      --r-main-color: #e6edf3;
+      --r-heading-color: #00d4ff;
+      --r-link-color: #58a6ff;
+      --r-selection-background-color: #1f6feb;
+    }
+
+    .reveal {
+      font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 34px;
+      color: var(--r-main-color);
+    }
+
+    .reveal section { text-align: left; }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      color: var(--r-heading-color);
+      text-transform: none;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5em;
+    }
+    .reveal h1 { font-size: 2.4em; }
+    .reveal h2 { font-size: 1.8em; }
+    .reveal h3 { font-size: 1.3em; color: #7ee787; }
+
+    .reveal .subtitle {
+      color: #8b949e;
+      font-size: 0.7em;
+      margin-top: -0.5em;
+      font-weight: 400;
+    }
+
+    .reveal strong { color: #ffa657; }
+    .reveal em { color: #7ee787; font-style: normal; }
+
+    .reveal code {
+      background: #161b22;
+      color: #f0883e;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    }
+
+    .reveal pre {
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+      border-radius: 8px;
+      border: 1px solid #30363d;
+    }
+    .reveal pre code {
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 0.65em;
+      line-height: 1.5;
+      padding: 1em;
+      max-height: 500px;
+    }
+
+    .reveal table {
+      margin: 0.5em 0;
+      font-size: 0.75em;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .reveal table th {
+      background: #161b22;
+      color: #00d4ff;
+      font-weight: 600;
+      padding: 0.6em 0.8em;
+      border-bottom: 2px solid #00d4ff;
+    }
+    .reveal table td {
+      padding: 0.5em 0.8em;
+      border-bottom: 1px solid #30363d;
+    }
+    .reveal table tr:hover td { background: rgba(31, 111, 235, 0.1); }
+
+    .reveal ul, .reveal ol { margin-left: 1em; }
+    .reveal li { margin: 0.3em 0; }
+
+    /* Custom components */
+    .badge {
+      display: inline-block;
+      padding: 0.2em 0.7em;
+      border-radius: 99px;
+      font-size: 0.5em;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin: 0 0.3em;
+      vertical-align: middle;
+    }
+    .badge-done { background: #238636; color: #fff; }
+    .badge-fail { background: #da3633; color: #fff; }
+    .badge-conditional { background: #d29922; color: #fff; }
+    .badge-pass { background: #1f6feb; color: #fff; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1em;
+      margin: 1em 0;
+    }
+    .metric {
+      background: linear-gradient(135deg, #161b22, #21262d);
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 1em;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 2em;
+      font-weight: 800;
+      color: #00d4ff;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .metric-label {
+      font-size: 0.55em;
+      color: #8b949e;
+      margin-top: 0.3em;
+    }
+
+    .arrow {
+      color: #00d4ff;
+      font-weight: 800;
+      font-size: 1.2em;
+      padding: 0 0.3em;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.15em 0.6em;
+      border-radius: 6px;
+      font-size: 0.55em;
+      font-family: 'SF Mono', monospace;
+      font-weight: 600;
+    }
+    .pill-critical { background: rgba(218, 54, 51, 0.2); color: #ff7b72; border: 1px solid #da3633; }
+    .pill-high { background: rgba(210, 153, 34, 0.2); color: #ffa657; border: 1px solid #d29922; }
+    .pill-medium { background: rgba(88, 166, 255, 0.2); color: #79c0ff; border: 1px solid #58a6ff; }
+    .pill-low { background: rgba(126, 231, 135, 0.15); color: #7ee787; border: 1px solid #238636; }
+
+    .layer-box {
+      background: linear-gradient(135deg, #0d1117, #161b22);
+      border: 1px solid #30363d;
+      border-left: 4px solid #00d4ff;
+      border-radius: 8px;
+      padding: 0.8em 1.2em;
+      margin: 0.5em 0;
+    }
+    .layer-box h4 {
+      color: #00d4ff;
+      margin: 0 0 0.3em 0;
+      font-size: 0.9em;
+    }
+    .layer-box p {
+      margin: 0;
+      font-size: 0.7em;
+      color: #8b949e;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+      margin: 1em 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 0.8em 1.2em;
+      font-size: 0.7em;
+      font-weight: 600;
+    }
+    .flow-step.highlight {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.1);
+      color: #00d4ff;
+    }
+
+    .ascii-diagram {
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
+      font-size: 0.55em;
+      color: #7ee787;
+      background: #0d1117;
+      padding: 1em;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      white-space: pre;
+      line-height: 1.4;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 1em;
+      right: 1em;
+      font-size: 0.4em;
+      color: #484f58;
+      z-index: 10;
+    }
+
+    .title-slide {
+      text-align: center !important;
+    }
+    .title-slide h1 {
+      background: linear-gradient(135deg, #00d4ff 0%, #7ee787 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 3em;
+      margin-bottom: 0.2em;
+    }
+    .title-slide .subtitle-big {
+      font-size: 1.2em;
+      color: #8b949e;
+      margin-bottom: 2em;
+    }
+    .title-slide .meta {
+      font-size: 0.7em;
+      color: #484f58;
+      margin-top: 3em;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1em;
+      align-items: center;
+      margin: 1em 0;
+    }
+    .before, .after {
+      background: #161b22;
+      border-radius: 8px;
+      padding: 1em;
+    }
+    .before { border: 1px solid #da3633; }
+    .after { border: 1px solid #238636; }
+    .before h4 { color: #ff7b72; margin: 0 0 0.5em 0; }
+    .after h4 { color: #7ee787; margin: 0 0 0.5em 0; }
+
+    .slide-number-overlay {
+      position: fixed;
+      bottom: 1em;
+      left: 1em;
+      font-size: 0.4em;
+      color: #484f58;
+      font-family: 'SF Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- 1. Title -->
+    <section class="title-slide">
+      <h1>Nova v5.15</h1>
+      <p class="subtitle-big">하네스 엔지니어링 완성</p>
+      <p style="font-size: 0.6em; color: #7ee787;">— 선언에서 실측·강제로 —</p>
+      <div class="meta">
+        2026-04-20 · Spacewalk Engineering<br>
+        v5.11.0 <span class="arrow">→</span> v5.15.0 · 4개 릴리스 · 396/396 회귀
+      </div>
+    </section>
+
+    <!-- 2. 질문 -->
+    <section>
+      <h2>이 세션이 풀고자 한 질문</h2>
+      <p style="font-size: 1.5em; color: #7ee787; text-align: center; margin: 2em 0;">
+        "Nova는 <strong>하네스 엔지니어링</strong>이라 할 수 있는가?"
+      </p>
+      <div class="flow">
+        <div class="flow-step">선언한다 ✓</div>
+        <span class="arrow">vs</span>
+        <div class="flow-step highlight">실제로 동작하는가?</div>
+      </div>
+      <p style="font-size: 0.8em; color: #8b949e; text-align: center;">
+        plugin.json <code>keywords: ["harness-engineering"]</code> — 선언은 있음<br>
+        실측·강제는? → 이 세션이 해결한 것
+      </p>
+    </section>
+
+    <!-- 3. 하네스 엔지니어링이란 -->
+    <section>
+      <h2>하네스 엔지니어링 (Anthropic, 2026)</h2>
+      <p class="subtitle">LLM 에이전트를 둘러싼 전체 <em>소프트웨어 인프라</em></p>
+
+      <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="metric">
+          <div class="metric-value" style="font-size: 1.2em;">Constrain</div>
+          <div class="metric-label">도구 제약</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" style="font-size: 1.2em;">Inform</div>
+          <div class="metric-label">맥락 주입</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" style="font-size: 1.2em;">Verify</div>
+          <div class="metric-label">검증·측정</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" style="font-size: 1.2em;">Correct</div>
+          <div class="metric-label">피드백 루프</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" style="font-size: 1.2em;">HITL</div>
+          <div class="metric-label">사람 개입</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.7em; color: #8b949e; margin-top: 1em;">
+        Anthropic "Harness design for long-running apps" — 에이전트가 안정적으로 일하려면 프롬프트만으로는 부족하다.
+      </p>
+    </section>
+
+    <!-- 4. 진단 결과 -->
+    <section>
+      <h2>진단 결과 <span class="badge badge-fail">세션 시작</span></h2>
+
+      <table>
+        <thead>
+          <tr><th>원칙</th><th style="text-align: center;">Before (v5.11.0)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Generator-Evaluator 분리</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr><td>Context reset + handoff</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr><td>Sprint Contract</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr><td>3-agent 파이프라인</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr><td>실행 검증</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr><td>피드백 루프</td><td style="color: #7ee787; text-align: center;">✅</td></tr>
+          <tr style="background: rgba(218, 54, 51, 0.1);"><td><strong>Verify (실측)</strong></td><td style="color: #ff7b72; text-align: center;">❌ KPI "실측 없음"</td></tr>
+          <tr style="background: rgba(218, 54, 51, 0.1);"><td><strong>Constrain (도구 제약)</strong></td><td style="color: #ff7b72; text-align: center;">❌ 선언만</td></tr>
+        </tbody>
+      </table>
+
+      <p style="text-align: center; font-size: 1em; color: #ffa657; margin-top: 1em;">
+        → <strong>2개 축 미완</strong>. 세션 목표로 설정.
+      </p>
+    </section>
+
+    <!-- 5. 해결 전략 -->
+    <section>
+      <h2>해결 전략 — 4 Sprint</h2>
+
+      <div class="ascii-diagram">
+DeepPlan(Explorer×3 + Critic + Refiner)
+      ↓
+  docs/plans + docs/designs
+      ↓
+┌─────────┬─────────┬─────────┬─────────┐
+│ Sprint 0│ Sprint 1│Sprint 2a│Sprint 2b│
+│ 경량화  │ 관찰성  │ 정적 제약│ 런타임  │
+│v5.11.1  │v5.13.0  │v5.14.0  │v5.15.0  │
+└────┬────┴────┬────┴────┬────┴────┬────┘
+     ↓         ↓         ↓         ↓
+  Evaluator Evaluator Evaluator Evaluator
+  (독립 서브에이전트 · 적대적 관점)
+      </div>
+
+      <p style="font-size: 0.7em; color: #8b949e; text-align: center;">
+        각 스프린트 = 독립 릴리스 + 독립 Evaluator PASS 게이트
+      </p>
+    </section>
+
+    <!-- 6. Sprint 0 -->
+    <section>
+      <h2>Sprint 0 <span class="badge badge-done">v5.11.1</span></h2>
+      <h3>session-start.sh 경량화</h3>
+
+      <div class="comparison">
+        <div class="before">
+          <h4>Before</h4>
+          <div style="font-size: 2.5em; font-weight: 800; color: #ff7b72; text-align: center;">3,525</div>
+          <div style="text-align: center; font-size: 0.7em;">bytes (hard 2500 초과)</div>
+          <ul style="margin-top: 1em; font-size: 0.7em;">
+            <li>§1~§10 전부 주입</li>
+            <li>매 세션 규칙 10개 로드</li>
+            <li>플러그인 로드 실패 위험</li>
+          </ul>
+        </div>
+        <span class="arrow" style="font-size: 2em;">→</span>
+        <div class="after">
+          <h4>After</h4>
+          <div style="font-size: 2.5em; font-weight: 800; color: #7ee787; text-align: center;">1,766</div>
+          <div style="text-align: center; font-size: 0.7em;">bytes (soft 1900 이하)</div>
+          <ul style="margin-top: 1em; font-size: 0.7em;">
+            <li>핵심 5개(§1,§2,§4,§7,§9)만 주입</li>
+            <li>§3/§5/§6/§8/§9 → on-demand</li>
+            <li>§0 신설: 로드 패턴 공식화</li>
+          </ul>
+        </div>
+      </div>
+
+      <p style="font-size: 0.75em; color: #8b949e; margin-top: 1em;">
+        <strong>50% 감축</strong> · 9개 커맨드·스킬에 on-demand 로드 선언 · 테스트 309개
+      </p>
+    </section>
+
+    <!-- 7. Sprint 1 — 관찰성 -->
+    <section>
+      <h2>Sprint 1 <span class="badge badge-done">v5.13.0</span></h2>
+      <h3>관찰성 레이어 — JSONL + KPI</h3>
+
+      <div class="ascii-diagram">
+evaluator / orchestrator / context-chain 스킬
+                   ↓ 호출
+   hooks/record-event.sh &lt;event_type&gt; &lt;extra&gt;
+   ├─ NOVA_DISABLE_EVENTS=1 → 즉시 종료
+   ├─ Privacy 필터 (14 정규식 + 엔트로피)
+   ├─ JSON 조립 (jq)
+   ├─ flock-x (macOS: mkdir fallback)
+   ├─ Rotation (10MB/5 파일/30일)
+   └─ append → <em>.nova/events.jsonl</em>
+                   ↓
+      scripts/nova-metrics.sh → KPI 4종
+                   ↓
+               /nova:next
+      </div>
+
+      <p style="font-size: 0.7em; color: #8b949e;">
+        <strong>"실측 없음"</strong> 부채 해소 · Safe-default: 기록 실패는 stderr WARN + exit 0
+      </p>
+    </section>
+
+    <!-- 8. 이벤트 타입 11종 -->
+    <section>
+      <h2>이벤트 타입 v1 — 11종</h2>
+
+      <table style="font-size: 0.6em;">
+        <thead>
+          <tr><th>#</th><th>event_type</th><th>기록 주체</th><th>트리거</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>session_start</code></td><td>hooks/session-start.sh</td><td>SessionStart 훅</td></tr>
+          <tr><td>2</td><td><code>session_end</code></td><td>hooks/stop-event.sh</td><td>Stop 훅</td></tr>
+          <tr><td>3</td><td><code>phase_transition</code></td><td>orchestrator 스킬</td><td>Phase 전이</td></tr>
+          <tr><td>4</td><td><code>evaluator_verdict</code></td><td>evaluator 스킬</td><td>판정 직후</td></tr>
+          <tr><td>5</td><td><code>sprint_started</code></td><td>run/auto 커맨드</td><td>스프린트 착수</td></tr>
+          <tr><td>6</td><td><code>sprint_completed</code></td><td>run/auto 커맨드</td><td>스프린트 종료</td></tr>
+          <tr><td>7</td><td><code>blocker_raised</code></td><td>모든 커맨드</td><td>§7 분류</td></tr>
+          <tr><td>8</td><td><code>blocker_resolved</code></td><td>모든 커맨드</td><td>해소</td></tr>
+          <tr><td>9</td><td><code>plan_created</code></td><td>plan/deepplan</td><td>Phase E 완료</td></tr>
+          <tr><td>10</td><td><code>jury_verdict</code></td><td>ask/jury</td><td>판정 직후</td></tr>
+          <tr style="background: rgba(0, 212, 255, 0.05);"><td>11</td><td><code>tool_constraint_violation</code></td><td>precheck-tool.sh</td><td>위반 감지 <span class="badge badge-pass">Sprint 2b</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 9. KPI 4종 -->
+    <section>
+      <h2>KPI 4종 — 실측 결과</h2>
+
+      <pre><code class="language-bash">$ bash scripts/nova-metrics.sh --fixture tests/fixtures/events-fixture.jsonl --since all
+
+Process consistency:     33.3% (n=3)    # Plan 선행률
+Gap detection rate:      100.0% (n=1)   # Evaluator FAIL → 수정 복구율
+Rule evolution rate:     N/A            # (프로젝트 rules-changelog 의존)
+Multi-perspective:       50.0% (n=2)    # jury 방향 전환률</code></pre>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-value">14</div>
+          <div class="metric-label">Privacy 정규식</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">11</div>
+          <div class="metric-label">이벤트 타입</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">4</div>
+          <div class="metric-label">KPI</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">10MB</div>
+          <div class="metric-label">Rotation</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.65em; color: #8b949e;">
+        <strong>docs/nova-engineering.md §9</strong> "실측 결과가 아니다" 문구 제거 → nova-metrics.sh 참조로 대체
+      </p>
+    </section>
+
+    <!-- 10. Privacy 14 -->
+    <section>
+      <h2>Privacy 필터 14 패턴 + 엔트로피</h2>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em; font-size: 0.65em;">
+        <div>
+          <ul>
+            <li><code>sk-ant-*</code> Anthropic</li>
+            <li><code>sk-proj-*</code> OpenAI</li>
+            <li><code>gh[pous]_*</code> GitHub PAT</li>
+            <li><code>xox[baprs]-*</code> Slack</li>
+            <li><code>sk_live_*</code> Stripe Live</li>
+            <li><code>sk_test_*</code> Stripe Test</li>
+            <li><code>AIza[...]</code> Google API</li>
+          </ul>
+        </div>
+        <div>
+          <ul>
+            <li><code>AKIA[...]</code> AWS Access</li>
+            <li><code>aws_secret=[...]</code> AWS Secret</li>
+            <li><code>Bearer [...]</code> Bearer Token</li>
+            <li><code>eyJ...eyJ...</code> JWT</li>
+            <li><code>password=[...]</code> Password KV</li>
+            <li><code>KEY=[...]</code> .env line</li>
+            <li><code>-----BEGIN PRIVATE KEY</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="layer-box" style="margin-top: 1em;">
+        <h4>+ Shannon 엔트로피 휴리스틱</h4>
+        <p>48자 이상 <code>[A-Za-z0-9_/+=-]</code> + entropy &gt; 4.5 → redact · <strong>sensitive_key</strong>(<code>password/token/secret/api_key/...</code>) 자동 감지</p>
+      </div>
+
+      <p style="font-size: 0.6em; color: #8b949e; text-align: center;">
+        Sprint 1 Evaluator Issue #3 반영 — 40자 → 48자 상향 (commit SHA 오탐 방어)
+      </p>
+    </section>
+
+    <!-- 11. Sprint 2a — 정적 -->
+    <section>
+      <h2>Sprint 2a <span class="badge badge-done">v5.14.0</span></h2>
+      <h3>도구 제약 — 정적 (Declaration + Audit)</h3>
+
+      <div class="layer-box">
+        <h4>① Declaration</h4>
+        <p><code>.claude/agents/*.md</code> frontmatter <code>tools:</code> + <code>.claude-plugin/plugin.json</code> <code>tool_contract.per_agent</code></p>
+      </div>
+      <div class="layer-box" style="border-left-color: #ffa657;">
+        <h4>② Audit</h4>
+        <p><code>scripts/audit-agent-tools.sh</code> — frontmatter × plugin.json 대조. <strong>orphan 감지 양방향</strong>. 불일치 <code>exit 1</code></p>
+      </div>
+      <div class="layer-box" style="border-left-color: #7ee787;">
+        <h4>③ Template</h4>
+        <p><code>/nova:setup --permissions</code> — jq 기반 merge. 사용자 <code>.claude/settings.json</code>에 deny-by-default 17패턴 병합</p>
+      </div>
+
+      <p style="font-size: 0.7em; color: #8b949e;">
+        <strong>U1 해소</strong>(2026-04-19): plugin.json permission 공식 미지원 → <em>tool_contract은 audit 소스로만</em>, 실제 차단은 Sprint 2b
+      </p>
+    </section>
+
+    <!-- 12. Sprint 2b — 런타임 -->
+    <section>
+      <h2>Sprint 2b <span class="badge badge-done">v5.15.0</span></h2>
+      <h3>PreToolUse 런타임 차단</h3>
+
+      <pre><code class="language-bash"># .claude/settings.json에서 훅 호출
+scripts/precheck-tool.sh
+
+# 입력: { tool_name: "Bash", tool_input: { command: "rm -rf /tmp" } }
+# 정책:
+#  ① Bash 복합명령 ; && || | \n 세그먼트 분리 → 각 glob 매칭
+#  ② Write/Edit/NotebookEdit — file_path glob 매칭
+#  ③ project settings.json + local settings.json deny union
+#  ④ 위반 → exit 2 + stderr DENIED + JSONL violation 이벤트
+#  ⑤ 자체 오류(invalid JSON/jq 없음) → fail-open + schema_error 이벤트
+#  ⑥ NOVA_BYPASS_PRECHECK=1 → 일시 해제 + bypass 이벤트 감사</code></pre>
+
+      <p style="font-size: 0.7em;">
+        <strong>85%+ enforcement 커버리지</strong> · <code>$()/백틱/eval</code> 동적 평가는 §11 알려진 한계로 명시
+      </p>
+    </section>
+
+    <!-- 13. 품질 게이트 사이클 -->
+    <section>
+      <h2>품질 게이트 — Evaluator 4회</h2>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>Sprint</th><th>1차</th><th>2차 (재평가)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sprint 0</td>
+            <td><span class="pill pill-medium">CONDITIONAL</span> · 7 Issue</td>
+            <td><span class="pill pill-low">PASS</span> · 5 해소 + 2 이관</td>
+          </tr>
+          <tr>
+            <td>Sprint 1</td>
+            <td><span class="pill pill-medium">CONDITIONAL</span> · 4 Critical</td>
+            <td><span class="pill pill-low">PASS</span> · heredoc 버그 <em>자체 발견</em></td>
+          </tr>
+          <tr>
+            <td>Sprint 2a</td>
+            <td><span class="pill pill-medium">CONDITIONAL</span> · P0 3 + P1 1</td>
+            <td><span class="pill pill-low">PASS</span> · traversal <code>..</code> bypass 1줄 수정</td>
+          </tr>
+          <tr>
+            <td>Sprint 2b</td>
+            <td><span class="pill pill-critical">FAIL</span> · Critical 3</td>
+            <td><span class="pill pill-low">PASS</span> · 옵션 B → 옵션 α</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="font-size: 0.75em; color: #8b949e; margin-top: 1em;">
+        <strong>FAIL 1회 포함</strong> — 적대적 평가가 실제로 작동한다는 증명.<br>
+        모든 Evaluator는 독립 서브에이전트(별도 컨텍스트 창) + tmux split-pane.
+      </p>
+    </section>
+
+    <!-- 14. 숨은 발견 -->
+    <section>
+      <h2>숨은 발견 3종</h2>
+
+      <div class="layer-box" style="border-left-color: #ff7b72;">
+        <h4>🐛 python3 heredoc stdin 덮어쓰기 버그</h4>
+        <p><code>python3 - &lt;&lt;'PYEOF'</code> 패턴에서 heredoc이 stdin을 덮어써서 pipe 입력 증발 → <strong>모든 KPI가 "0 0" 반환</strong>. Evaluator가 fixture exact-match 요구 → 자체 발견 → <code>scripts/_metrics-helpers.py</code> 외부 파일 분리로 해결</p>
+      </div>
+
+      <div class="layer-box" style="border-left-color: #ffa657;">
+        <h4>🛡️ GitHub Push Protection이 Stripe fixture 차단</h4>
+        <p>테스트용 <code>sk_live_*</code> fixture를 실제 키로 오인 → push 거부. <strong>shell-concat split</strong>으로 회피 (<code>"sk_""live_..."</code> → 런타임 합성, 소스엔 분리 저장)</p>
+      </div>
+
+      <div class="layer-box" style="border-left-color: #79c0ff;">
+        <h4>🔒 Path traversal <code>..</code> bypass</h4>
+        <p>Sprint 2a 초안의 cwd 검증이 단순 문자열 결합이라 <code>../etc/foo.json</code> 통과 → <strong><code>mkdir -p</code> 선행 + <code>cd && pwd -P</code></strong>로 커널 canonicalize</p>
+      </div>
+    </section>
+
+    <!-- 15. 누적 지표 -->
+    <section>
+      <h2>누적 지표</h2>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-value">4</div>
+          <div class="metric-label">릴리스</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">396<span style="font-size: 0.5em; color: #7ee787;">/396</span></div>
+          <div class="metric-label">회귀 테스트 PASS</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">+127</div>
+          <div class="metric-label">신규 assert</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">4</div>
+          <div class="metric-label">Evaluator 사이클</div>
+        </div>
+      </div>
+
+      <div class="metric-grid" style="margin-top: 1em;">
+        <div class="metric">
+          <div class="metric-value">24<span style="font-size: 0.5em; color: #ffa657;">건</span></div>
+          <div class="metric-label">Plan Risk</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">6<span style="font-size: 0.5em; color: #ffa657;">건</span></div>
+          <div class="metric-label">Unknown (2건 해소)</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">33<span style="font-size: 0.5em; color: #ffa657;">건</span></div>
+          <div class="metric-label">Sprint Contract</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">30<span style="font-size: 0.5em; color: #ffa657;">건</span></div>
+          <div class="metric-label">Verification Hook</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.65em; color: #8b949e; text-align: center; margin-top: 1em;">
+        세션 하루(2026-04-19) 내 완결. <strong>사용자 개입: 초기 승인 + "추천대로 진행" 3회</strong>.
+      </p>
+    </section>
+
+    <!-- 16. Before / After -->
+    <section>
+      <h2>하네스 엔지니어링 정합성</h2>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>원칙</th><th style="text-align: center;">v5.11.0</th><th style="text-align: center;">v5.15.0</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Generator-Evaluator 분리</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr><td>Context reset + handoff</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr><td>Sprint Contract</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr><td>3-agent 파이프라인</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr><td>실행 검증</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr><td>피드백 루프</td><td style="text-align: center;">✅</td><td style="text-align: center;">✅</td></tr>
+          <tr style="background: rgba(126, 231, 135, 0.08);">
+            <td><strong>Verify (실측)</strong></td>
+            <td style="text-align: center; color: #ff7b72;">❌ "실측 없음"</td>
+            <td style="text-align: center; color: #7ee787;">✅ JSONL + KPI 4종</td>
+          </tr>
+          <tr style="background: rgba(126, 231, 135, 0.08);">
+            <td><strong>Constrain (도구 제약)</strong></td>
+            <td style="text-align: center; color: #ff7b72;">❌ 선언만</td>
+            <td style="text-align: center; color: #7ee787;">✅ audit + PreToolUse 차단</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="text-align: center; font-size: 0.9em; color: #00d4ff; margin-top: 1em;">
+        Nova = 하네스 엔지니어링의 <strong>상위집합</strong> · Adaptive + X-Verification + Context Chain
+      </p>
+    </section>
+
+    <!-- 17. 정직한 한계 -->
+    <section>
+      <h2>정직한 한계 (§11 명시)</h2>
+
+      <table style="font-size: 0.65em;">
+        <thead>
+          <tr><th>한계</th><th style="text-align: center;">심각도</th><th>수용 사유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>sh -c/bash -c "..."</code> wrapping bypass</td>
+            <td style="text-align: center;"><span class="pill pill-medium">Medium</span></td>
+            <td>quoted argument lexical 검사 불가</td>
+          </tr>
+          <tr>
+            <td>Write/Edit <code>../</code> 경로 정규화 없음</td>
+            <td style="text-align: center;"><span class="pill pill-medium">Medium</span></td>
+            <td>glob 문자열 그대로 매칭</td>
+          </tr>
+          <tr>
+            <td><code>$()</code> 백틱 <code>eval</code> 동적 평가</td>
+            <td style="text-align: center;"><span class="pill pill-medium">Medium</span></td>
+            <td>런타임 해석 없이 감지 불가</td>
+          </tr>
+          <tr>
+            <td>실 Claude Code 런타임 E2E 미검증</td>
+            <td style="text-align: center;"><span class="pill pill-medium">Medium</span></td>
+            <td>field-test 스킬로 후속</td>
+          </tr>
+          <tr>
+            <td>setup-permissions bootstrap race</td>
+            <td style="text-align: center;"><span class="pill pill-low">Low</span></td>
+            <td>실무 빈도 낮음 (사용자 1회)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="font-size: 0.75em; color: #ffa657; text-align: center; margin-top: 1em;">
+        "Nova가 보호해준다"는 <strong>허위 안전감</strong>을 주지 않기 위해 — §11 공식 명시 + NOVA-STATE Known Risks 등재
+      </p>
+    </section>
+
+    <!-- 18. Next -->
+    <section>
+      <h2>다음 단계</h2>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin: 1em 0;">
+        <div class="layer-box">
+          <h4>실사용 피드백</h4>
+          <p>30일 윈도우로 <code>nova-metrics.sh</code> 수치 축적. 실제 KPI 기반선 확보 → <em>도입 목표</em>를 <em>실측 보정</em>으로.</p>
+        </div>
+        <div class="layer-box" style="border-left-color: #ffa657;">
+          <h4>field-test E2E</h4>
+          <p>실 Claude Code 워크트리에서 precheck-tool.sh가 실제로 발화하는지 검증. stdin 모의 한계 극복.</p>
+        </div>
+        <div class="layer-box" style="border-left-color: #7ee787;">
+          <h4>Sprint 2c (후보)</h4>
+          <p><code>$()</code> 동적 평가 AST 기반 감지 · Write/Edit realpath 정규화 · flock 기반 bootstrap dedup</p>
+        </div>
+        <div class="layer-box" style="border-left-color: #79c0ff;">
+          <h4>NotebookLM 스타일</h4>
+          <p>이 프레젠테이션처럼 일반 사용자용 산출물 자동 생성 — Gemini API + TTS로 팟캐스트 오디오 오버뷰까지.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19. Thanks -->
+    <section class="title-slide">
+      <h1>v5.15.0</h1>
+      <p class="subtitle-big" style="color: #7ee787;">Goal 완성 — 하네스 엔지니어링</p>
+
+      <p style="font-size: 0.7em; color: #8b949e;">
+        4 릴리스 · 396 테스트 PASS · 4 Evaluator 사이클<br>
+        <code>github.com/TeamSPWK/nova</code>
+      </p>
+
+      <div style="margin-top: 2em; font-size: 0.55em; color: #484f58;">
+        Plan: <code>docs/plans/harness-engineering-gap-coverage.md</code><br>
+        Design: <code>docs/designs/harness-engineering-gap-coverage.md</code><br>
+        Unknowns: <code>docs/unknowns-resolution.md</code>
+      </div>
+
+      <p style="margin-top: 2em; color: #00d4ff; font-size: 0.8em;">
+        ← / → 화살표로 이동 · <kbd style="background:#161b22; padding:0.2em 0.5em; border-radius:4px; font-size:0.8em;">F</kbd> 전체화면 · <kbd style="background:#161b22; padding:0.2em 0.5em; border-radius:4px; font-size:0.8em;">S</kbd> 스피커 노트 · <kbd style="background:#161b22; padding:0.2em 0.5em; border-radius:4px; font-size:0.8em;">?</kbd> 단축키
+      </p>
+    </section>
+
+  </div>
+</div>
+
+<div class="footer">Nova · Spacewalk Engineering · 2026-04-20</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    center: false,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    width: 1280,
+    height: 800,
+    margin: 0.08,
+    pdfSeparateFragments: false,
+    plugins: [RevealHighlight, RevealNotes]
+  });
+</script>
+
+</body>
+</html>

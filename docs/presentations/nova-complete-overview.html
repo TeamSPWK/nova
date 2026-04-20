@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nova — AI Agent Ops 프레임워크 완전판</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+  <style>
+    :root {
+      --r-background-color: #0d1117;
+      --r-main-color: #e6edf3;
+      --r-heading-color: #00d4ff;
+      --r-link-color: #58a6ff;
+      --bg-card: #161b22;
+      --bg-card-hover: #21262d;
+      --border: #30363d;
+      --green: #7ee787;
+      --orange: #ffa657;
+      --red: #ff7b72;
+      --blue: #79c0ff;
+      --purple: #d2a8ff;
+    }
+
+    .reveal {
+      font-family: 'Pretendard Variable', -apple-system, system-ui, sans-serif;
+      font-size: 32px;
+      color: var(--r-main-color);
+    }
+
+    .reveal section { text-align: left; }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      color: var(--r-heading-color);
+      text-transform: none;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .reveal h1 { font-size: 2.4em; margin-bottom: 0.3em; }
+    .reveal h2 { font-size: 1.6em; margin-bottom: 0.6em; }
+    .reveal h3 { font-size: 1.1em; color: var(--green); margin-bottom: 0.5em; }
+
+    .reveal .subtitle {
+      color: #8b949e;
+      font-size: 0.65em;
+      margin-top: -0.4em;
+      font-weight: 400;
+    }
+
+    .reveal strong { color: var(--orange); }
+    .reveal em { color: var(--green); font-style: normal; }
+
+    .reveal code {
+      background: var(--bg-card);
+      color: #f0883e;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    }
+
+    .reveal pre {
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .reveal pre code {
+      background: #0d1117;
+      font-size: 0.6em;
+      line-height: 1.5;
+      padding: 1em;
+      max-height: 520px;
+    }
+
+    .reveal table {
+      margin: 0.4em 0;
+      font-size: 0.7em;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .reveal table th {
+      background: var(--bg-card);
+      color: var(--r-heading-color);
+      font-weight: 600;
+      padding: 0.5em 0.7em;
+      border-bottom: 2px solid var(--r-heading-color);
+      text-align: left;
+    }
+    .reveal table td {
+      padding: 0.4em 0.7em;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .reveal table tr:hover td { background: rgba(31, 111, 235, 0.08); }
+
+    .reveal ul, .reveal ol { margin-left: 1em; }
+    .reveal li { margin: 0.25em 0; }
+
+    /* Custom components */
+    .badge {
+      display: inline-block;
+      padding: 0.15em 0.6em;
+      border-radius: 99px;
+      font-size: 0.45em;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      vertical-align: middle;
+    }
+    .badge-cmd { background: #1f6feb; color: #fff; }
+    .badge-skill { background: #8957e5; color: #fff; }
+    .badge-agent { background: #0e7490; color: #fff; }
+    .badge-pillar { background: var(--green); color: #0d1117; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.8em;
+      margin: 0.8em 0;
+    }
+    .metric {
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8em;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 1.6em;
+      font-weight: 800;
+      color: var(--r-heading-color);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .metric-label {
+      font-size: 0.5em;
+      color: #8b949e;
+      margin-top: 0.3em;
+    }
+
+    .arrow { color: var(--r-heading-color); font-weight: 800; padding: 0 0.3em; }
+
+    .pill {
+      display: inline-block;
+      padding: 0.12em 0.55em;
+      border-radius: 6px;
+      font-size: 0.55em;
+      font-family: 'SF Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .pill-env { background: rgba(126, 231, 135, 0.15); color: var(--green); }
+    .pill-ctx { background: rgba(121, 192, 255, 0.15); color: var(--blue); }
+    .pill-qa { background: rgba(0, 212, 255, 0.15); color: var(--r-heading-color); }
+    .pill-coop { background: rgba(210, 168, 255, 0.15); color: var(--purple); }
+    .pill-evo { background: rgba(255, 166, 87, 0.15); color: var(--orange); }
+
+    .pillar-card {
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--r-heading-color);
+      border-radius: 10px;
+      padding: 0.9em 1.2em;
+      margin: 0.5em 0;
+    }
+    .pillar-card.env { border-left-color: var(--green); }
+    .pillar-card.ctx { border-left-color: var(--blue); }
+    .pillar-card.qa { border-left-color: var(--r-heading-color); }
+    .pillar-card.coop { border-left-color: var(--purple); }
+    .pillar-card.evo { border-left-color: var(--orange); }
+    .pillar-card h4 {
+      color: var(--r-heading-color);
+      margin: 0 0 0.3em 0;
+      font-size: 0.95em;
+    }
+    .pillar-card.env h4 { color: var(--green); }
+    .pillar-card.ctx h4 { color: var(--blue); }
+    .pillar-card.coop h4 { color: var(--purple); }
+    .pillar-card.evo h4 { color: var(--orange); }
+    .pillar-card p { margin: 0; font-size: 0.7em; color: #c9d1d9; }
+
+    .ascii-diagram {
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
+      font-size: 0.5em;
+      color: var(--green);
+      background: #0d1117;
+      padding: 1em;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      white-space: pre;
+      line-height: 1.5;
+      overflow: auto;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4em;
+      margin: 1em 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5em 0.9em;
+      font-size: 0.65em;
+      font-weight: 600;
+    }
+    .flow-step.hi {
+      border-color: var(--r-heading-color);
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--r-heading-color);
+    }
+    .flow-step.green { border-color: var(--green); background: rgba(126,231,135,0.08); color: var(--green); }
+    .flow-step.orange { border-color: var(--orange); background: rgba(255,166,87,0.08); color: var(--orange); }
+
+    .title-slide { text-align: center !important; }
+    .title-slide h1 {
+      background: linear-gradient(135deg, #00d4ff 0%, #7ee787 50%, #d2a8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 3.3em;
+      margin-bottom: 0.1em;
+    }
+    .title-slide .subtitle-big {
+      font-size: 1.1em;
+      color: #8b949e;
+      margin-bottom: 1.5em;
+    }
+    .title-slide .meta {
+      font-size: 0.65em;
+      color: #484f58;
+      margin-top: 2.5em;
+    }
+
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6em;
+      margin: 0.5em 0;
+    }
+    .cmd-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5em 0.7em;
+      font-size: 0.65em;
+    }
+    .cmd-item code {
+      color: var(--r-heading-color);
+      font-weight: 600;
+      background: transparent;
+      padding: 0;
+    }
+    .cmd-item .desc { color: #8b949e; font-size: 0.85em; margin-top: 0.15em; }
+
+    .footer {
+      position: fixed;
+      bottom: 0.8em;
+      right: 1em;
+      font-size: 0.38em;
+      color: #484f58;
+      z-index: 10;
+    }
+
+    .center-text { text-align: center; }
+    .dim { color: #8b949e; font-size: 0.7em; }
+
+    kbd {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .column-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ═══════ 1. TITLE ═══════ -->
+    <section class="title-slide">
+      <h1>Nova</h1>
+      <p class="subtitle-big">AI Agent Ops 프레임워크 — 완전판</p>
+      <p style="color: var(--green); font-size: 0.75em;">
+        <strong>N</strong>ew Standards · <strong>O</strong>rchestrated · <strong>V</strong>erified · <strong>A</strong>daptive
+      </p>
+      <div class="meta">
+        v5.15.0 · 2026-04 · Spacewalk Engineering<br>
+        5 기둥 · 14 커맨드 · 9 스킬 · 5 에이전트 · 396 회귀 테스트
+      </div>
+    </section>
+
+    <!-- ═══════ 2. Nova가 뭐죠? ═══════ -->
+    <section>
+      <h2>Nova가 뭐죠?</h2>
+      <p style="font-size: 1.3em; color: var(--green); text-align: center; margin: 1.5em 0;">
+        <strong>AI 에이전트가 안정적으로 일하도록 만드는 개발 프레임워크</strong>
+      </p>
+
+      <div class="ascii-diagram" style="text-align: center;">
+       ┌──────────────────────────────────────┐
+       │         Claude Code + Nova           │
+       │                                      │
+       │   "기능 X 추가해줘"  ←  사용자        │
+       │           ↓                          │
+       │   ┌─────────────────────────┐        │
+       │   │ Plan  →  Design  →  Run │  Nova  │
+       │   │   ↓       ↓         ↓   │        │
+       │   │      Evaluator (독립)    │        │
+       │   │           ↓              │        │
+       │   │   품질 게이트 통과 →커밋  │        │
+       │   └─────────────────────────┘        │
+       └──────────────────────────────────────┘</div>
+
+      <p class="dim center-text">
+        Claude Code <strong>플러그인</strong>으로 배포 · 사용자 프로젝트에 슬래시 커맨드로 주입
+      </p>
+    </section>
+
+    <!-- ═══════ 3. 왜 필요한가 - 4 병목 ═══════ -->
+    <section>
+      <h2>AI 시대 생산성의 진짜 병목</h2>
+      <p class="subtitle">"빠르게 만드는 것"과 "빠르게 완성하는 것"은 다르다</p>
+
+      <table>
+        <thead>
+          <tr><th>병목</th><th>증상</th><th>Nova 해결책</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>방향 오류</strong></td>
+            <td>잘못된 전제로 빠르게 구현 → 전면 재작업</td>
+            <td>CPS로 문제 먼저 정의, MECE로 분해</td>
+          </tr>
+          <tr>
+            <td><strong>AI 환각 누적</strong></td>
+            <td>한 모델의 오류가 다음 작업으로 전파</td>
+            <td>X-Verification — 다관점 수집으로 조기 차단</td>
+          </tr>
+          <tr>
+            <td><strong>암묵지 소실</strong></td>
+            <td>세션/팀원 교체 시 맥락 유실 → 동일 실수</td>
+            <td>Context Chain — 규칙으로 암묵지 명시화</td>
+          </tr>
+          <tr>
+            <td><strong>설계-구현 괴리</strong></td>
+            <td>설계와 코드가 따로 놀아 품질 저하</td>
+            <td>Gap Analysis — 역방향 검증 자동 탐지</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="text-align: center; color: var(--orange); margin-top: 1em;">
+        Nova의 모든 구조는 <strong>이 네 가지를 제거하기 위해</strong> 존재한다.
+      </p>
+    </section>
+
+    <!-- ═══════ 4. 하네스 엔지니어링과의 관계 ═══════ -->
+    <section>
+      <h2>하네스 엔지니어링과의 관계</h2>
+
+      <div class="ascii-diagram" style="text-align: center; font-size: 0.55em;">
+하네스 엔지니어링 (Anthropic 2026)
+  ├─ Constrain  (도구 제약)
+  ├─ Inform     (맥락 주입)
+  ├─ Verify     (검증·측정)
+  ├─ Correct    (피드백 루프)
+  └─ HITL       (사람 개입)
+            ↓ 계승 + 확장
+        Nova (상위집합)
+  ├─ + Adaptive         (규칙이 살아있다)
+  ├─ + X-Verification   (혼자 판단 안 한다)
+  ├─ + Context Chain    (잊지 않는다)
+  └─ + Human-AI Boundary (역할을 나눈다)</div>
+
+      <p class="dim center-text">
+        Nova v5.15.0은 하네스 엔지니어링의 <strong>6대 필수 요소 + Verify 실측 + Constrain 강제</strong> 모두 구현
+      </p>
+    </section>
+
+    <!-- ═══════ 5. 5 기둥 지도 ═══════ -->
+    <section>
+      <h2>Nova의 5 기둥</h2>
+      <p class="subtitle">AI Agent Ops의 구조적 분류</p>
+
+      <div class="pillar-card env">
+        <h4>① 환경 (Environment) <span class="pill pill-env">hooks · worktree</span></h4>
+        <p>worktree·secret·격리 환경 셋업 · 매 세션 자동 주입</p>
+      </div>
+      <div class="pillar-card ctx">
+        <h4>② 맥락 (Context) <span class="pill pill-ctx">NOVA-STATE · context-chain</span></h4>
+        <p>세션 간 상태·메모리 연속성 · 3계층 메모리 아키텍처</p>
+      </div>
+      <div class="pillar-card qa">
+        <h4>③ 품질 (Quality) <span class="pill pill-qa">evaluator · jury · review</span></h4>
+        <p>Generator-Evaluator 분리 · 커밋 전 하드 게이트 · 가장 강한 기둥</p>
+      </div>
+      <div class="pillar-card coop">
+        <h4>④ 협업 (Collaboration) <span class="pill pill-coop">orchestrator · auto · ask</span></h4>
+        <p>설계→구현→검증 오케스트레이션 · 멀티 AI 자문 (X-Verification)</p>
+      </div>
+      <div class="pillar-card evo">
+        <h4>⑤ 진화 (Evolution) <span class="pill pill-evo">evolve · scan · next</span></h4>
+        <p>자기 진단 · 자동 업그레이드 · Adaptive 규칙 체계</p>
+      </div>
+    </section>
+
+    <!-- ═══════ 6. 기둥 ①: 환경 ═══════ -->
+    <section>
+      <h2>기둥 ① 환경 <span class="pill pill-env">Environment</span></h2>
+      <h3>hooks — 매 세션 자동 발화</h3>
+
+      <table>
+        <thead>
+          <tr><th>훅</th><th>시점</th><th>역할</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SessionStart</code></td><td>세션 시작</td><td>5 핵심 규칙 + NOVA-STATE Goal 주입 (1766 bytes)</td></tr>
+          <tr><td><code>PreCompact</code></td><td>컨텍스트 압축 전</td><td>중요 상태 보존</td></tr>
+          <tr><td><code>PreToolUse</code></td><td>도구 실행 전</td><td>Write/Edit 안전 체크 · Bash git 커밋 알림 · 도구 제약 차단</td></tr>
+          <tr><td><code>Stop</code></td><td>세션 종료</td><td>session_end 이벤트 + duration 기록</td></tr>
+        </tbody>
+      </table>
+
+      <div class="pillar-card env" style="margin-top: 1em;">
+        <h4>worktree-setup — 환경 기둥의 첫 시민</h4>
+        <p>git worktree 진입 시 메인 레포의 <code>.env</code>·<code>.secret/</code>·<code>.npmrc</code> <strong>자동 심볼릭 링크</strong>. 환경변수/시크릿이 끊기지 않는다.</p>
+      </div>
+    </section>
+
+    <!-- ═══════ 7. 기둥 ②: 맥락 ═══════ -->
+    <section>
+      <h2>기둥 ② 맥락 <span class="pill pill-ctx">Context</span></h2>
+      <h3>세션이 끊겨도 맥락은 살아있다</h3>
+
+      <div class="ascii-diagram" style="font-size: 0.55em;">
+┌─ Layer 1: Ephemeral (휘발성) ──────────────┐
+│  현재 대화 컨텍스트 · 작업 중 상태          │
+│  수명: 세션 내                              │
+└─────────────────────────────────────────────┘
+┌─ Layer 2: Persistent (영속) ──────────────┐
+│  NOVA-STATE.md · .claude/memory/            │
+│  수명: 프로젝트 생애                         │
+└─────────────────────────────────────────────┘
+┌─ Layer 3: Structural (구조적) ────────────┐
+│  docs/plans · docs/designs · git log · 린터 │
+│  수명: 영구                                 │
+└─────────────────────────────────────────────┘</div>
+
+      <div class="column-2" style="margin-top: 0.8em;">
+        <div class="pillar-card ctx">
+          <h4>NOVA-STATE.md</h4>
+          <p>사람이 읽는 상위 요약 · Current/Tasks/Blockers/Refs/Last Activity · 50줄 이내</p>
+        </div>
+        <div class="pillar-card ctx">
+          <h4>.nova/events.jsonl <span class="pill" style="font-size: 0.5em; background: var(--orange); color: #000;">v5.13.0+</span></h4>
+          <p>기계가 집계하는 원자 이벤트 · 11 타입 · rotation (10MB/5/30일)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 8. 기둥 ③: 품질 (핵심) ═══════ -->
+    <section>
+      <h2>기둥 ③ 품질 <span class="pill pill-qa">Quality</span> — 가장 강한 기둥</h2>
+      <p class="subtitle">세션마다 자동 주입되는 유일한 전역 규칙 (hooks/session-start.sh)</p>
+
+      <table style="font-size: 0.6em;">
+        <thead>
+          <tr><th>§</th><th>규칙</th><th>주입 위치</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>§1</td><td><strong>복잡도 판단</strong> — 1~2/3~7/8+ 파일 분기, 자가 완화 금지</td><td class="dim">세션 시작</td></tr>
+          <tr><td>§2</td><td><strong>Generator-Evaluator 분리</strong> — 독립 서브에이전트 + 커밋 전 하드 게이트</td><td class="dim">세션 시작</td></tr>
+          <tr><td>§3</td><td>검증 기준 — 기능/데이터관통/설계정합성/경계값</td><td class="dim">check/review</td></tr>
+          <tr><td>§4</td><td><strong>실행 검증</strong> — 코드 존재 ≠ 동작 · 환경 변경 3단계</td><td class="dim">세션 시작</td></tr>
+          <tr><td>§5</td><td>검증 경량화 — 기본 Lite · --strict 시 Full</td><td class="dim">run/check</td></tr>
+          <tr><td>§6</td><td>스프린트 분할 — 8+파일 독립 검증 사이클</td><td class="dim">run/auto</td></tr>
+          <tr><td>§7</td><td><strong>블로커 분류</strong> — Auto/Soft/Hard · 2회 실패 시 강제</td><td class="dim">세션 시작</td></tr>
+          <tr><td>§8</td><td>세션 상태 유지 — Known Gaps · 커밋 전 일괄 갱신</td><td class="dim">context-chain</td></tr>
+          <tr><td>§9</td><td><strong>환경 안전</strong> — 설정 파일 직접 수정 금지</td><td class="dim">세션 시작</td></tr>
+          <tr><td>§10</td><td>관찰성 계약 — JSONL + KPI 4종 · fail-open 원칙 <span class="pill pill-qa">v5.13+</span></td><td class="dim">on-demand</td></tr>
+          <tr><td>§11</td><td>도구 제약 계약 — 3 레이어 · PreToolUse 차단 <span class="pill pill-qa">v5.14+</span></td><td class="dim">on-demand</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════ 9. 품질 - Generator-Evaluator 하드 게이트 ═══════ -->
+    <section>
+      <h2>하드 게이트: Generator ≠ Evaluator</h2>
+
+      <div class="flow">
+        <div class="flow-step">구현 완료</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">tsc/lint</div>
+        <span class="arrow">→</span>
+        <div class="flow-step hi">Evaluator 서브에이전트</div>
+        <span class="arrow">→</span>
+        <div class="flow-step green">PASS</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">커밋 허용</div>
+      </div>
+
+      <div class="pillar-card qa">
+        <h4>🛡️ 기술적 정의: "독립 서브에이전트"</h4>
+        <p>
+          반드시 <strong>별도 서브에이전트 spawn으로 컨텍스트 창이 분리된 상태</strong>. 메인 에이전트가 직접 코드를 재읽고 "문제 없다"고 판단하는 것은 독립 검증이 아님.<br>
+          <em>자가 점검: "나는 이 코드를 구현한 에이전트와 동일 컨텍스트 창에 있는가?"</em>
+        </p>
+      </div>
+
+      <div class="pillar-card qa" style="border-left-color: var(--red);">
+        <h4 style="color: var(--red);">🚨 차단</h4>
+        <p>Evaluator PASS 없이 커밋 시 <code>hooks/pre-commit-reminder.sh</code>가 <code>exit 2</code>로 차단. 예외: <code>--emergency</code> (프로덕션 장애 긴급 수정).</p>
+      </div>
+
+      <p class="dim center-text">
+        "사용자가 '<em>Evaluator 돌렸니?</em>'라고 물어보는 상황은 프로세스 실패다."
+      </p>
+    </section>
+
+    <!-- ═══════ 10. 기둥 ④: 협업 ═══════ -->
+    <section>
+      <h2>기둥 ④ 협업 <span class="pill pill-coop">Collaboration</span></h2>
+      <h3>X-Verification — 3개 AI 다관점 자문</h3>
+
+      <pre><code class="language-bash">$ /nova:ask "Redis vs Postgres LISTEN/NOTIFY 결정"
+
+  Claude → "Postgres LISTEN이 연결 상태 복잡성 적음..."
+  GPT    → "Redis가 초당 10만 메시지 이상 유리..."
+  Gemini → "워크로드 정의 먼저. 초당 1000↓이면..."
+
+  → 합의 수준: Partial Consensus (70~89%)
+  → AI가 차이점 요약 → 사람이 판단</code></pre>
+
+      <table style="font-size: 0.7em; margin-top: 0.8em;">
+        <thead>
+          <tr><th>합의</th><th>조건</th><th>행동</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Strong Consensus</strong></td><td>관점 핵심 방향 일치</td><td>사람 확인 후 진행</td></tr>
+          <tr><td><strong>Partial Consensus</strong></td><td>공통점+차이점 공존</td><td>AI가 차이점 요약 → 사람 판단</td></tr>
+          <tr><td><strong>Divergent</strong></td><td>방향 불일치</td><td>사람 필수 개입, 요구사항 재정의</td></tr>
+        </tbody>
+      </table>
+
+      <p class="dim" style="margin-top: 0.8em;">
+        ⚠️ <strong>공유 학습 편향</strong>: 3 AI가 합의해도 같은 편향일 수 있음. 사실 확인(factual)엔 부적합.
+      </p>
+    </section>
+
+    <!-- ═══════ 11. 기둥 ⑤: 진화 ═══════ -->
+    <section>
+      <h2>기둥 ⑤ 진화 <span class="pill pill-evo">Evolution</span></h2>
+      <h3>규칙이 스스로 진화한다</h3>
+
+      <div class="flow">
+        <div class="flow-step orange">감지 (Detect)</div>
+        <span class="arrow">→</span>
+        <div class="flow-step orange">제안 (Propose)</div>
+        <span class="arrow">→</span>
+        <div class="flow-step hi">승인 (Approve) <span class="dim">by human</span></div>
+        <span class="arrow">→</span>
+        <div class="flow-step green">적용 (Apply)</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">검증 (Verify)</div>
+      </div>
+
+      <div class="column-2">
+        <div class="pillar-card evo">
+          <h4>/nova:evolve --scan</h4>
+          <p>기술 동향 스캔 · Claude Code 업데이트 감지 · 관련성 필터</p>
+        </div>
+        <div class="pillar-card evo">
+          <h4>/nova:evolve --apply</h4>
+          <p>자율 범위 내 자동 적용 · 품질 게이트 통과 시만</p>
+        </div>
+      </div>
+
+      <p class="dim center-text" style="margin-top: 1em;">
+        <strong>원칙</strong>: AI는 제안, 인간은 결정. AI가 독단적으로 아키텍처/규칙 변경 불가.
+      </p>
+    </section>
+
+    <!-- ═══════ 12. 커맨드 14개 ═══════ -->
+    <section>
+      <h2>커맨드 카탈로그 — 14개</h2>
+
+      <div class="cmd-grid">
+        <div class="cmd-item"><code>/nova:plan</code><div class="desc">CPS Plan 문서 작성</div></div>
+        <div class="cmd-item"><code>/nova:deepplan</code><div class="desc">Explorer×3 + Critic</div></div>
+        <div class="cmd-item"><code>/nova:design</code><div class="desc">CPS Design + Sprint Contract</div></div>
+        <div class="cmd-item"><code>/nova:run</code><div class="desc">구현→검증 사이클</div></div>
+        <div class="cmd-item"><code>/nova:auto</code><div class="desc">자연어→전체 사이클</div></div>
+        <div class="cmd-item"><code>/nova:check</code><div class="desc">품질 리뷰 + 정합성</div></div>
+        <div class="cmd-item"><code>/nova:review</code><div class="desc">적대적 코드 리뷰</div></div>
+        <div class="cmd-item"><code>/nova:ask</code><div class="desc">Claude+GPT+Gemini 자문</div></div>
+        <div class="cmd-item"><code>/nova:setup</code><div class="desc">Nova 초기 설정/업그레이드</div></div>
+        <div class="cmd-item"><code>/nova:scan</code><div class="desc">새 프로젝트 브리핑</div></div>
+        <div class="cmd-item"><code>/nova:next</code><div class="desc">다음 커맨드 추천 + KPI</div></div>
+        <div class="cmd-item"><code>/nova:ux-audit</code><div class="desc">5인 UI/UX 평가자</div></div>
+        <div class="cmd-item"><code>/nova:worktree-setup</code><div class="desc">worktree 심링크 수동</div></div>
+        <div class="cmd-item"><code>/nova:evolve</code><div class="desc">자기 진화 (개발자용)</div></div>
+      </div>
+
+      <p class="dim center-text" style="margin-top: 0.8em;">
+        모두 <strong>on-demand</strong> 로드 — 세션 시작에 상세 로드 안 하고 호출 시점에 관련 규칙만.
+      </p>
+    </section>
+
+    <!-- ═══════ 13. 핵심 워크플로우 ═══════ -->
+    <section>
+      <h2>핵심 워크플로우</h2>
+
+      <h3>간단 (1~2 파일)</h3>
+      <div class="flow">
+        <div class="flow-step green">요청</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">바로 구현</div>
+        <span class="arrow">→</span>
+        <div class="flow-step hi">Evaluator Lite</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">커밋</div>
+      </div>
+
+      <h3>보통 (3~7 파일)</h3>
+      <div class="flow">
+        <div class="flow-step green">요청</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">/nova:plan</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">구현</div>
+        <span class="arrow">→</span>
+        <div class="flow-step hi">Evaluator Standard</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">/nova:review</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">커밋</div>
+      </div>
+
+      <h3>복잡 (8+ 파일 · 아키텍처 전환)</h3>
+      <div class="flow">
+        <div class="flow-step green">요청</div>
+        <span class="arrow">→</span>
+        <div class="flow-step orange">/nova:deepplan</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">/nova:design</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">Sprint 분할</div>
+        <span class="arrow">→</span>
+        <div class="flow-step hi">Sprint별 Evaluator Full</div>
+        <span class="arrow">→</span>
+        <div class="flow-step">릴리스</div>
+      </div>
+
+      <p class="dim center-text" style="margin-top: 1em;">
+        <strong>자가 완화 금지</strong>: 인프라/빌드/설정/문서/테스트도 예외 없음. 파일 수 초과 시 즉시 Plan 승격.
+      </p>
+    </section>
+
+    <!-- ═══════ 14. 스킬 9개 ═══════ -->
+    <section>
+      <h2>스킬 카탈로그 — 9개</h2>
+      <p class="subtitle">MUST TRIGGER — 특정 상황에서 자동 로드</p>
+
+      <table style="font-size: 0.65em;">
+        <thead>
+          <tr><th>스킬</th><th>역할</th><th>트리거</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>evaluator</code></td><td>적대적 검증 엔진</td><td>/run, /check, /review 서브에이전트 · 스프린트 완료</td></tr>
+          <tr><td><code>jury</code></td><td>다중 관점 평가 (편향 보정)</td><td>/ask, deepplan Phase C (--jury)</td></tr>
+          <tr><td><code>deepplan</code></td><td>Explorer×3 + Critic + Refiner 4단</td><td>/nova:deepplan 또는 /auto --deep</td></tr>
+          <tr><td><code>orchestrator</code></td><td>설계→구현→검증 자동 사이클</td><td>/nova:auto</td></tr>
+          <tr><td><code>context-chain</code></td><td>NOVA-STATE 관리 + JSONL 연계</td><td>세션 시작, 커밋 후, 스프린트 전환</td></tr>
+          <tr><td><code>worktree-setup</code></td><td>worktree 환경 자동 셋업</td><td>새 worktree 진입 직후</td></tr>
+          <tr><td><code>ux-audit</code></td><td>5인 적대적 UI/UX 평가</td><td>UI 변경 후 /review 전</td></tr>
+          <tr><td><code>evolution</code></td><td>자기 진화 파이프라인</td><td>/nova:evolve</td></tr>
+          <tr><td><code>field-test</code></td><td>실 프로젝트 워크트리 테스트</td><td>Nova 자체 개발용</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════ 15. 서브에이전트 5개 ═══════ -->
+    <section>
+      <h2>서브에이전트 5개 — 역할 분담</h2>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>에이전트</th><th>전문성</th><th>도구 화이트리스트</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-agent">architect</span></td>
+            <td>시스템 아키텍처 · ADR · 결합도 분석</td>
+            <td><code>Read · Glob · Grep · Agent · WebSearch</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-agent">senior-dev</span></td>
+            <td>코드 품질 · 리팩토링 · 최소 변경</td>
+            <td><code>Read · Glob · Grep · Edit · Write · Bash · Agent</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-agent">qa-engineer</span></td>
+            <td>테스트 전략 · 엣지 케이스 · 경계값</td>
+            <td><code>Read · Glob · Grep · Bash</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-agent">security-engineer</span></td>
+            <td>보안 감사 · OWASP · 시크릿 탐지</td>
+            <td><code>Read · Glob · Grep</code> <span class="dim">(write 불가)</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-agent">devops-engineer</span></td>
+            <td>CI/CD · 인프라 · IaC</td>
+            <td><code>Read · Glob · Grep · Edit · Write · Bash</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pillar-card qa" style="margin-top: 1em;">
+        <h4>🔐 도구 제약 3 레이어 (Sprint 2a/2b)</h4>
+        <p><strong>Declaration</strong>: frontmatter <code>tools:</code> + <code>plugin.json tool_contract</code> · <strong>Audit</strong>: <code>audit-agent-tools.sh</code> · <strong>Enforcement</strong>: PreToolUse 훅 <code>precheck-tool.sh</code></p>
+      </div>
+    </section>
+
+    <!-- ═══════ 16. CPS Framework ═══════ -->
+    <section>
+      <h2>CPS 프레임워크</h2>
+      <p class="subtitle">모든 Nova 문서의 구조적 뿌리</p>
+
+      <div class="column-2">
+        <div class="pillar-card qa">
+          <h4>C — Context</h4>
+          <p>왜 이 작업이 필요한가?<br>배경과 현재 상태<br>관련 자료 · 설계 원칙</p>
+        </div>
+        <div class="pillar-card qa">
+          <h4>P — Problem</h4>
+          <p>구체적으로 무엇이 문제인가?<br>MECE로 분해<br>제약 조건 · 우선순위</p>
+        </div>
+      </div>
+      <div class="pillar-card qa">
+        <h4>S — Solution</h4>
+        <p>어떻게 해결하는가? 트레이드오프 · 결정 근거 · <strong>데이터 계약</strong>(필드 단위/포맷) · 에러 처리 · <strong>Sprint Contract</strong>(검증 명령 포함) · 관통 검증 조건 (E2E)</p>
+      </div>
+
+      <p class="dim center-text" style="margin-top: 1em;">
+        <code>/nova:plan</code> → Context+Problem+Solution 초안 ·
+        <code>/nova:design</code> → <strong>Sprint Contract로 검증 계약 구체화</strong>
+      </p>
+    </section>
+
+    <!-- ═══════ 17. PDCA ═══════ -->
+    <section>
+      <h2>PDCA — 실행 프레임워크</h2>
+
+      <div class="ascii-diagram" style="text-align: center; font-size: 0.6em;">
+          ┌──→ Plan ──→ Do ──→ Check ──→ Act ──┐
+          │      ↑                            │
+          │      └────────────────────────────┘
+          └─ Adaptive 사이클
+
+  Plan    → CPS 정의 · MECE 분해 · 설계 문서
+  Do      → 하네스 규칙 아래 구현 · 린터 강제
+  Check   → X-Verification · 역방향 검증 · Gap Analysis
+  Act     → Adaptive 규칙 갱신 · 개선 반영</div>
+
+      <table style="font-size: 0.65em; margin-top: 1em;">
+        <thead>
+          <tr><th>단계</th><th>통과 기준</th><th>실패 시</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Plan → Do</td><td>설계 문서 완성 · 린터 규칙 확인</td><td>Do 진입 불가</td></tr>
+          <tr><td>Do → Check</td><td>빌드 성공 · 기본 테스트 통과</td><td>Check 진입 불가</td></tr>
+          <tr><td>Gap Analysis</td><td>설계-구현 일치율 ≥90%</td><td>Act에서 자동 개선 (최대 5회)</td></tr>
+          <tr><td>Act → 완료</td><td>다관점 수집 Strong Consensus</td><td>사람 개입 후 재검토</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════ 18. DeepPlan 파이프라인 ═══════ -->
+    <section>
+      <h2>DeepPlan — 복잡한 판단을 위한 4단 파이프라인</h2>
+
+      <div class="ascii-diagram" style="text-align: center; font-size: 0.55em;">
+사용자 요청
+    ↓
+┌── Phase A ─────────────────────────────┐
+│  Explorer × 3 (병렬)                    │
+│    • code-explorer   — 기존 코드/패턴    │
+│    • risk-explorer   — 실패 시나리오    │
+│    • option-explorer — 대안 3개 비교     │
+└────────────────────────────────────────┘
+    ↓
+┌── Phase B: Synthesizer ────────────────┐
+│  CPS 골격에 배치 · Plan 초안 저장        │
+└────────────────────────────────────────┘
+    ↓
+┌── Phase C: Critic ─────────────────────┐
+│  적대적 검증 (evaluator 또는 jury)       │
+│    MECE 구멍 · 검증불가 Done · 엣지      │
+└────────────────────────────────────────┘
+    ↓ FAIL
+┌── Phase D: Refiner (≤3회) ─────────────┐
+│  이슈 반영 → 재-Critic                   │
+└────────────────────────────────────────┘
+    ↓ PASS
+최종 Plan (Risk Map · Unknowns · Verification Hooks)</div>
+
+      <p class="dim center-text">
+        트리거: 아키텍처 전환 · 대규모 마이그레이션 · 실패 비용 높은 판단 → <code>/nova:auto --deep</code>
+      </p>
+    </section>
+
+    <!-- ═══════ 19. 관찰성 레이어 ═══════ -->
+    <section>
+      <h2>관찰성 레이어 <span class="pill pill-qa">v5.13.0+</span></h2>
+      <h3>.nova/events.jsonl — 11 이벤트 타입</h3>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-value">11</div>
+          <div class="metric-label">이벤트 타입</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">14</div>
+          <div class="metric-label">Privacy 정규식</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">4</div>
+          <div class="metric-label">KPI 종류</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">10MB</div>
+          <div class="metric-label">Rotation 기본</div>
+        </div>
+      </div>
+
+      <pre><code class="language-bash">$ bash scripts/nova-metrics.sh --since 30d
+
+Process consistency:     78% (n=41)   # Plan 선행률 (3파일+ 스프린트)
+Gap detection rate:      85% (n=13)   # Evaluator FAIL → PASS 복구
+Rule evolution rate:     60% (n=20)   # 제안된 규칙 채택률
+Multi-perspective:       62% (n=8)    # jury 방향 전환률</code></pre>
+
+      <p class="dim center-text">
+        <strong>Safe-default</strong>: 기록 실패는 stderr WARN + exit 0. 관찰성 장애가 파이프라인을 죽이지 않는다.<br>
+        <strong>Privacy</strong>: Anthropic/OpenAI/GitHub/Slack/Stripe/AWS/JWT 등 14 패턴 + Shannon 엔트로피 휴리스틱
+      </p>
+    </section>
+
+    <!-- ═══════ 20. 도구 제약 ═══════ -->
+    <section>
+      <h2>도구 제약 레이어 <span class="pill pill-qa">v5.14.0+</span></h2>
+      <h3>하네스 엔지니어링 "constrain" 원칙</h3>
+
+      <div class="pillar-card env">
+        <h4>① Declaration (선언)</h4>
+        <p><code>.claude/agents/*.md</code> frontmatter <code>tools:</code> + <code>.claude-plugin/plugin.json tool_contract.per_agent</code></p>
+      </div>
+      <div class="pillar-card" style="border-left-color: var(--orange);">
+        <h4 style="color: var(--orange);">② Audit (감사)</h4>
+        <p><code>scripts/audit-agent-tools.sh</code> — 양방향 대조. frontmatter ↔ plugin.json 불일치 시 <code>exit 1</code>. CI 게이트.</p>
+      </div>
+      <div class="pillar-card qa">
+        <h4>③ Enforcement (런타임 강제) <span class="pill pill-qa">v5.15.0</span></h4>
+        <p><code>scripts/precheck-tool.sh</code> PreToolUse 훅 — Bash 복합명령 분리 · Write/Edit glob · settings.json + local union. 위반 시 <code>exit 2</code> + JSONL <code>tool_constraint_violation</code> 이벤트.</p>
+      </div>
+
+      <p class="dim center-text" style="margin-top: 0.8em;">
+        사용자 opt-in: <code>/nova:setup --permissions</code> → 17 deny + 11 allow 템플릿 · 기존 설정 병합 보존
+      </p>
+    </section>
+
+    <!-- ═══════ 21. 세션 시작 프로토콜 ═══════ -->
+    <section>
+      <h2>세션 시작 프로토콜</h2>
+      <h3>on-demand 로드 패턴 — 1766 bytes 예산</h3>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>세션 시작 주입 (핵심 5)</th><th>on-demand 로드 (상세 5)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              §1 복잡도 판단<br>
+              §2 Gen-Eval + 하드 게이트<br>
+              §4 실행 검증<br>
+              §7 블로커 분류<br>
+              §9 환경 안전
+            </td>
+            <td>
+              §3 검증 기준 → check/review<br>
+              §5 검증 경량화 → run/check<br>
+              §6 스프린트 분할 → run/auto<br>
+              §8 세션 상태 → context-chain<br>
+              §9 긴급 모드 → auto
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pillar-card env" style="margin-top: 0.8em;">
+        <h4>🎯 왜 경량화? (v5.11.1)</h4>
+        <p>
+          이전: 3525 bytes, hard 2500 초과 · 플러그인 로드 파손 위험<br>
+          이후: <strong>1766 bytes</strong> · soft 1900 이하 · 새 규칙 추가 예산 확보 · test-scripts.sh가 상한 자동 검증
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════ 22. Always-On 행동 ═══════ -->
+    <section>
+      <h2>Always-On 행동 — 6개</h2>
+      <p class="subtitle">사용자가 Nova를 언급하지 않아도 항상 적용</p>
+
+      <ol style="font-size: 0.9em; line-height: 1.8;">
+        <li>모든 코드 변경 작업에 자동 적용 규칙(§1~§10)을 적용</li>
+        <li><strong>3 파일 이상 변경 시 반드시 Plan을 먼저 제시</strong></li>
+        <li>구현 완료 시 <strong>Evaluator를 독립 서브에이전트로 자동 실행</strong></li>
+        <li>커밋 전 <code>/nova:review --fast</code> 자동 실행</li>
+        <li>세션 시작 시 <code>NOVA-STATE.md</code>를 읽어 현재 상태 파악</li>
+        <li>블로커 발생 시 즉시 사용자에게 알림</li>
+      </ol>
+
+      <p style="text-align: center; color: var(--orange); margin-top: 1em;">
+        "Nova는 배경에서 자동으로 품질을 관리한다."
+      </p>
+    </section>
+
+    <!-- ═══════ 23. 설치 + 시작 ═══════ -->
+    <section>
+      <h2>설치 + 시작</h2>
+
+      <h3>Claude Code 플러그인으로 설치</h3>
+      <pre><code class="language-bash"># Claude Code에서
+/plugin install github.com/TeamSPWK/nova
+
+# 또는 marketplace에서 검색
+/plugin browse</code></pre>
+
+      <h3>새 프로젝트에 적용</h3>
+      <pre><code class="language-bash"># 프로젝트 디렉토리에서
+/nova:setup                    # 초기 셋업 (17개 항목 점검)
+/nova:setup --upgrade          # 기존 프로젝트 갭 보완
+/nova:setup --permissions      # deny-by-default 템플릿 병합</code></pre>
+
+      <h3>첫 사용</h3>
+      <pre><code class="language-bash">/nova:scan                     # 새 프로젝트 브리핑 ("어디부터 볼지")
+/nova:next                     # 다음 커맨드 추천 + KPI 요약
+/nova:auto "기능 X 추가해줘"    # 설계→구현→검증 전체 사이클</code></pre>
+    </section>
+
+    <!-- ═══════ 24. 실전 예시 - 복잡 작업 ═══════ -->
+    <section>
+      <h2>실전 예시 — 복잡한 작업</h2>
+      <h3>"인증 미들웨어 교체" (10+ 파일 · 보안 영역)</h3>
+
+      <pre style="font-size: 0.85em;"><code class="language-bash"># 1. DeepPlan (Explorer×3 병렬 탐색)
+/nova:auto --deep "인증 미들웨어 교체"
+
+# 자동 실행:
+#   └─ Phase A: Explorer×3 → 기존 코드/리스크/대안 3종 병렬 탐색
+#   └─ Phase B: Synthesizer → Plan 초안 (Risk Map + Unknowns + V-Hook)
+#   └─ Phase C: Critic (evaluator) → 적대적 검증
+#   └─ Phase D: Refiner (필요 시) → 이슈 반영
+#   └─ /nova:design → Sprint Contract 구체화
+#   └─ Sprint 1 구현 → Evaluator → PASS → 커밋
+#   └─ Sprint 2 구현 → Evaluator → CONDITIONAL → 수정 → PASS
+#   └─ 최종 /nova:review --strict → 릴리스</code></pre>
+
+      <p class="dim">
+        <strong>인증/DB/결제 = 자동 한 단계 상향</strong> (§1). 자가 완화 금지 — AI가 "이 정도면 괜찮다"고 스킵 못함.
+      </p>
+    </section>
+
+    <!-- ═══════ 25. 품질 게이트 실제 사이클 (이 세션 사례) ═══════ -->
+    <section>
+      <h2>품질 게이트가 실제로 작동한다는 증거</h2>
+      <h3>최근 세션 (2026-04-19) 실측</h3>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>Sprint</th><th>1차 Evaluator</th><th>2차 (재평가)</th><th>발견</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sprint 0</td>
+            <td><span class="pill pill-coop">CONDITIONAL</span> 7 Issue</td>
+            <td><span class="pill pill-env">PASS</span></td>
+            <td>Plan-구현 정합성 드리프트</td>
+          </tr>
+          <tr>
+            <td>Sprint 1</td>
+            <td><span class="pill pill-coop">CONDITIONAL</span> 4 Critical</td>
+            <td><span class="pill pill-env">PASS</span></td>
+            <td><strong>python3 heredoc stdin 버그 자체 발견</strong></td>
+          </tr>
+          <tr>
+            <td>Sprint 2a</td>
+            <td><span class="pill pill-coop">CONDITIONAL</span> P0×3 + P1</td>
+            <td><span class="pill pill-env">PASS</span></td>
+            <td>Path traversal '..' bypass 1줄 수정</td>
+          </tr>
+          <tr>
+            <td>Sprint 2b</td>
+            <td><span class="pill" style="background: var(--red); color:#fff;">FAIL</span> Critical 3</td>
+            <td><span class="pill pill-env">PASS</span></td>
+            <td>Bash 복합명령 · Write/Edit · settings.local 하이재킹</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="text-align: center; font-size: 0.85em; color: var(--green); margin-top: 1em;">
+        <strong>FAIL 1회 포함</strong> — 적대적 평가가 실제 동작 · heredoc 같은 숨은 버그까지 잡아냄
+      </p>
+    </section>
+
+    <!-- ═══════ 26. Nova vs 관행 ═══════ -->
+    <section>
+      <h2>Nova vs 관행적 AI 코딩</h2>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>관점</th><th>관행</th><th>Nova</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>복잡도 판단</td>
+            <td class="dim">AI가 상황 봐서 결정</td>
+            <td>파일 수 기반 강제 분기 + 자가 완화 금지</td>
+          </tr>
+          <tr>
+            <td>검증</td>
+            <td class="dim">"잘 됐어 보여요"</td>
+            <td>독립 서브에이전트 Evaluator + 하드 게이트</td>
+          </tr>
+          <tr>
+            <td>환각 방어</td>
+            <td class="dim">없음 (자기 검토)</td>
+            <td>X-Verification 3 AI + Generator-Evaluator 분리</td>
+          </tr>
+          <tr>
+            <td>맥락 유지</td>
+            <td class="dim">세션마다 재설명</td>
+            <td>NOVA-STATE + Context Chain 3계층</td>
+          </tr>
+          <tr>
+            <td>도구 안전</td>
+            <td class="dim">사용자가 프롬프트마다 승인</td>
+            <td>PreToolUse 훅 런타임 차단 + 감사 로그</td>
+          </tr>
+          <tr>
+            <td>측정</td>
+            <td class="dim">주관적</td>
+            <td>실측 KPI 4종 · JSONL 이벤트 스트림</td>
+          </tr>
+          <tr>
+            <td>진화</td>
+            <td class="dim">수동 업데이트</td>
+            <td>/nova:evolve 자동 감지·제안·승인·적용</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════ 27. 발전 히스토리 ═══════ -->
+    <section>
+      <h2>Nova 발전 히스토리 (요약)</h2>
+
+      <table style="font-size: 0.7em;">
+        <thead>
+          <tr><th>버전</th><th>핵심 추가</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>v2.x</strong></td><td>Claude Code 플러그인 전환 · /nova:* 커맨드 체계</td></tr>
+          <tr><td><strong>v3.x</strong></td><td>5 기둥 프레임워크 정립 · worktree-setup · context-chain</td></tr>
+          <tr><td><strong>v5.3.0</strong></td><td>Self-Verify 핸드오프 필드 (self_verify: confident/uncertain/not_tested)</td></tr>
+          <tr><td><strong>v5.9.0</strong></td><td>ux-audit Cognitive Load + 디자인 시스템 정합 항목</td></tr>
+          <tr><td><strong>v5.10.0</strong></td><td>/nova:auto UI 변경 감지 분기 + Sprint B 메트릭</td></tr>
+          <tr><td><strong>v5.11.0</strong></td><td>/nova:deepplan 단독 파이프라인 · Plan 재사용</td></tr>
+          <tr style="background: rgba(0, 212, 255, 0.05);"><td><strong>v5.11.1</strong></td><td>session-start 경량화 (3525→1766 bytes) · on-demand 로드 패턴</td></tr>
+          <tr style="background: rgba(0, 212, 255, 0.05);"><td><strong>v5.13.0</strong></td><td><strong>관찰성 레이어</strong> — JSONL + KPI 4종 + Privacy 14</td></tr>
+          <tr style="background: rgba(0, 212, 255, 0.05);"><td><strong>v5.14.0</strong></td><td><strong>도구 제약 정적</strong> — audit + /nova:setup --permissions</td></tr>
+          <tr style="background: rgba(0, 212, 255, 0.05);"><td><strong>v5.15.0</strong></td><td><strong>도구 제약 런타임</strong> — PreToolUse 차단 + violation 감사</td></tr>
+        </tbody>
+      </table>
+
+      <p class="dim center-text">
+        하이라이트: 최근 세션(2026-04-19)에 <strong>4 릴리스 연속</strong>으로 하네스 엔지니어링 완성
+      </p>
+    </section>
+
+    <!-- ═══════ 28. 정직한 한계 ═══════ -->
+    <section>
+      <h2>정직한 한계 (공식 명시)</h2>
+      <p class="subtitle">"Nova가 보호해준다"는 허위 안전감을 주지 않기 위해</p>
+
+      <table style="font-size: 0.65em;">
+        <thead>
+          <tr><th>한계</th><th>섹션</th><th>상태</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>sh -c "..."</code> wrapping bypass</td><td>§11</td><td>수용</td></tr>
+          <tr><td>Write/Edit <code>../</code> 정규화 없음</td><td>§11</td><td>수용</td></tr>
+          <tr><td><code>$()</code> 백틱 동적 평가</td><td>§11</td><td>수용 (AST 기반 감지 불가)</td></tr>
+          <tr><td>실 Claude Code E2E 미검증</td><td>§11</td><td>field-test 후속</td></tr>
+          <tr><td>Entropy 48자+ 긴 base64 오탐</td><td>§10</td><td>수용 (과도 redact &gt; 누출)</td></tr>
+          <tr><td>monotonic_ns BSD 폴백 비단조</td><td>§10</td><td>python3 있을 때만 보장</td></tr>
+          <tr><td>공유 학습 편향 (3 AI 합의)</td><td>nova-engineering §3</td><td>인간 전문가 검증 권장</td></tr>
+        </tbody>
+      </table>
+
+      <p style="text-align: center; color: var(--green); margin-top: 1em;">
+        모든 한계는 <code>nova-rules.md</code> + <code>NOVA-STATE.md Known Risks</code>에 <strong>공식 등재</strong>
+      </p>
+    </section>
+
+    <!-- ═══════ 29. 확장성 ═══════ -->
+    <section>
+      <h2>확장성</h2>
+
+      <div class="column-2">
+        <div class="pillar-card env">
+          <h4>프로젝트별 커스텀 규칙</h4>
+          <p><code>.claude/rules/</code>가 있으면 <strong>Nova 규칙보다 우선</strong>. 프로젝트 고유 컨벤션을 Nova와 공존시킬 수 있다.</p>
+        </div>
+        <div class="pillar-card ctx">
+          <h4>커스텀 서브에이전트</h4>
+          <p><code>.claude/agents/*.md</code>에 새 에이전트 추가 → <code>plugin.json tool_contract.per_agent</code>에 등록 → audit 통과</p>
+        </div>
+        <div class="pillar-card qa">
+          <h4>새 이벤트 타입</h4>
+          <p><code>hooks/record-event.sh &lt;새_타입&gt; &lt;extra_json&gt;</code> — 스키마는 event_type 자유. v2 확장 시 schema_version 분기.</p>
+        </div>
+        <div class="pillar-card coop">
+          <h4>MCP 서버 통합</h4>
+          <p><code>mcp-server/</code>에 Nova 자체 MCP 도구(<code>orchestration_start</code>, <code>x_verify</code> 등) 포함. 외부 MCP 서버와 공존.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 30. 로드맵 ═══════ -->
+    <section>
+      <h2>로드맵 (방향성)</h2>
+
+      <div class="pillar-card evo">
+        <h4>단기 — 실측 기반 보정</h4>
+        <p>30일+ <code>nova-metrics.sh</code> 데이터 축적 → KPI 목표치를 도입 기준에서 <strong>실측 기준선</strong>으로 보정. nova-engineering.md §9 실수치 반영.</p>
+      </div>
+
+      <div class="pillar-card evo">
+        <h4>중기 — Self-Verify 흡수 Sprint 2~4</h4>
+        <p>신호 기반 검증 Layer 배분 최적화 · Generator-Evaluator 충돌 탐지 + Adaptive 축적 · Jury에 self-verify 참여</p>
+      </div>
+
+      <div class="pillar-card evo">
+        <h4>중기 — 도구 제약 Sprint 2c (후보)</h4>
+        <p><code>$()</code> 동적 평가 AST 기반 감지 · Write/Edit realpath 정규화 · flock 기반 bootstrap dedup</p>
+      </div>
+
+      <div class="pillar-card evo">
+        <h4>장기 — Multi-org 확장</h4>
+        <p>조직 간 Nova 템플릿 공유 · 산업별 프리셋 · CI 통합 최적화</p>
+      </div>
+    </section>
+
+    <!-- ═══════ 31. Thanks ═══════ -->
+    <section class="title-slide">
+      <h1>Nova</h1>
+      <p class="subtitle-big" style="color: var(--green);">Harness-engineering, refined.</p>
+
+      <div class="metric-grid" style="margin: 2em auto; max-width: 800px;">
+        <div class="metric">
+          <div class="metric-value">5</div>
+          <div class="metric-label">기둥</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">14</div>
+          <div class="metric-label">커맨드</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">9</div>
+          <div class="metric-label">스킬</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">5</div>
+          <div class="metric-label">서브에이전트</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">396</div>
+          <div class="metric-label">테스트 PASS</div>
+        </div>
+      </div>
+
+      <p style="color: #8b949e; font-size: 0.7em;">
+        <code>github.com/TeamSPWK/nova</code> · v5.15.0 · MIT License<br>
+        Created by Spacewalk Engineering
+      </p>
+
+      <p style="margin-top: 2em; color: var(--r-heading-color); font-size: 0.7em;">
+        <kbd>←</kbd> <kbd>→</kbd> 이동 · <kbd>F</kbd> 전체화면 · <kbd>S</kbd> 노트 · <kbd>?</kbd> 단축키
+      </p>
+    </section>
+
+  </div>
+</div>
+
+<div class="footer">Nova Complete Overview · Spacewalk Engineering · 2026-04-20</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    center: false,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    width: 1280,
+    height: 800,
+    margin: 0.06,
+    pdfSeparateFragments: false,
+    plugins: [RevealHighlight, RevealNotes]
+  });
+</script>
+
+</body>
+</html>
