@@ -1409,6 +1409,64 @@ assert "MCP dist 무결성: $MCP_ENTRY 가 git tracked" \
 assert "MCP dist 무결성: $MCP_ENTRY 가 .gitignore에 걸려있지 않음" \
   "(cd '$ROOT_DIR' && ! git check-ignore '$MCP_ENTRY' > /dev/null 2>&1)"
 
+# ═══════════════════════════════════════════
+# Orchestration 추적 계약 (Phase 0 강제 + 사후 감사)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Orchestration 추적 계약]${NC}"
+
+# SKILL.md가 Phase 0 오케스트레이션 등록을 명시적으로 "필수/최우선"으로 규정하는가
+assert "Orchestrator SKILL.md: Phase 0 등록 스텝 필수 명시" \
+  "grep -q 'Phase 0.*오케스트레이션 등록' '$ROOT_DIR/skills/orchestrator/SKILL.md'"
+
+# soft escape hatch 문구 재삽입 감지 (v5.15.x 이전 문구)
+assert "Orchestrator SKILL.md: soft escape hatch 문구 제거됨" \
+  "! grep -q '사용 불가능한 환경에서는 추적 없이' '$ROOT_DIR/skills/orchestrator/SKILL.md'"
+
+# audit-orchestration.sh 존재 + 실행 권한
+assert "hooks/audit-orchestration.sh 존재 + 실행 권한" \
+  "[ -x '$ROOT_DIR/hooks/audit-orchestration.sh' ]"
+
+# stop-event.sh가 audit-orchestration.sh를 호출하는가
+assert "stop-event.sh → audit-orchestration.sh 연계" \
+  "grep -q 'audit-orchestration.sh' '$ROOT_DIR/hooks/stop-event.sh'"
+
+# audit 동작: 짧은 세션(임계값 미만) → 감지 스킵
+assert "audit: 짧은 세션(임계값 미만) → 감지 스킵 (exit 0 + 이벤트 없음)" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && mkdir .nova && \
+    date -u +%s > .nova/session.start_epoch && \
+    NOVA_ORCH_AUDIT_THRESHOLD=300 bash '$ROOT_DIR/hooks/audit-orchestration.sh' && \
+    [ ! -f .nova/events.jsonl ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# audit 동작: 긴 세션 + orch 기록 없음 → orchestration_missing 이벤트 기록
+assert "audit: 긴 세션 + orch 기록 0 → orchestration_missing 이벤트" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && mkdir .nova && \
+    echo \$(( \$(date -u +%s) - 400 )) > .nova/session.start_epoch && \
+    NOVA_ORCH_AUDIT_THRESHOLD=180 bash '$ROOT_DIR/hooks/audit-orchestration.sh' && \
+    [ -f .nova/events.jsonl ] && \
+    grep -q 'orchestration_missing' .nova/events.jsonl \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# audit 동작: 긴 세션 + orch 최신 업데이트 존재 → 감지 안 함 (false positive 방지)
+assert "audit: 긴 세션 + 세션 중 orch 업데이트 존재 → 감지 안 함" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && mkdir .nova && \
+    SESSION_EPOCH=\$(( \$(date -u +%s) - 400 )); \
+    echo \$SESSION_EPOCH > .nova/session.start_epoch; \
+    NOW_ISO=\$(date -u +'%Y-%m-%dT%H:%M:%SZ'); \
+    echo '{\"orch-x\":{\"id\":\"orch-x\",\"task\":\"t\",\"complexity\":\"simple\",\"status\":\"running\",\"phases\":[],\"createdAt\":\"'\$NOW_ISO'\",\"updatedAt\":\"'\$NOW_ISO'\"}}' > .nova-orchestration.json; \
+    NOVA_ORCH_AUDIT_THRESHOLD=180 bash '$ROOT_DIR/hooks/audit-orchestration.sh' && \
+    [ ! -f .nova/events.jsonl -o \"\$(grep -c 'orchestration_missing' .nova/events.jsonl 2>/dev/null || echo 0)\" = '0' ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# NOVA_DISABLE_EVENTS=1 → audit도 옵트아웃
+assert "audit: NOVA_DISABLE_EVENTS=1 → 이벤트 기록 생략" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && mkdir .nova && \
+    echo \$(( \$(date -u +%s) - 400 )) > .nova/session.start_epoch && \
+    NOVA_DISABLE_EVENTS=1 NOVA_ORCH_AUDIT_THRESHOLD=180 bash '$ROOT_DIR/hooks/audit-orchestration.sh' && \
+    [ ! -f .nova/events.jsonl ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

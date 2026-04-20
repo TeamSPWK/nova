@@ -29,5 +29,8 @@ fi
 
 bash "${BASH_SOURCE%/*}/record-event.sh" session_end "$EXTRA" 2>/dev/null || true
 
+# Orchestration 추적 누락 감사 (Phase 0 계약 준수 검사)
+bash "${BASH_SOURCE%/*}/audit-orchestration.sh" 2>/dev/null || true
+
 rm -f "$START_FILE" 2>/dev/null || true
 exit 0

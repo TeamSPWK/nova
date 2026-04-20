@@ -48,18 +48,22 @@ Safe-default: 실패는 exit 0, 상위 파이프라인 영향 없음.
 - 구조화된 프롬프트가 자연어보다 낫다
 - 멀티 프로젝트 병렬 지원
 
-## 오케스트레이션 추적 (MCP 도구)
+## 오케스트레이션 추적 (MCP 도구) — **필수 계약**
 
-각 Phase 진행 상황을 MCP 도구로 추적한다. 세션 중단 시에도 `.nova-orchestration.json`에 상태가 보존된다.
+**이 섹션은 soft 권고가 아니라 계약이다.** 각 Phase 진행 상황은 반드시 MCP 도구로 추적한다. 세션 중단 시 `.nova-orchestration.json`으로 복구 지점이 되며, 누락 시 Evolve 피드백 루프의 관찰 데이터가 공백이 된다.
 
-| 시점 | MCP 도구 호출 |
-|------|--------------|
-| 오케스트레이션 시작 | `orchestration_start` — task, complexity, phases 등록 |
-| Phase 시작 | `orchestration_update` — status: "running" |
-| Phase 완료/실패 | `orchestration_update` — status: "completed"/"failed" + result |
-| 상태 확인 | `orchestration_status` — 현재 진행 상황 조회 |
+| 시점 | MCP 도구 호출 | 누락 시 영향 |
+|------|--------------|------------|
+| **Phase 0**: 오케스트레이션 등록 | `orchestration_start` — task, complexity, phases 전체 등록 | 세션 끊기면 복구 불가 + 외부에서 진행 조회 불가 |
+| Phase N 시작 | `orchestration_update` — status: "running" | 어느 Phase에서 끊겼는지 모름 |
+| Phase N 완료 | `orchestration_update` — status: "completed" + result | Phase 소요 시간·산출물 메트릭 공백 |
+| Phase N 실패 | `orchestration_update` — status: "failed" + result | 실패 패턴 분석 불가 |
+| 상태 확인 | `orchestration_status` — 현재 진행 상황 조회 | (조회용, 선택) |
 
-예시 (보통 복잡도):
+### Phase 0: 오케스트레이션 등록 (무조건 최우선)
+
+**요청 분석(Phase 1) 직전에 반드시 실행한다.** 분기 매트릭스 평가·Architect spawn·Design 재사용 판단 등 **어떤 다른 스텝보다 먼저**.
+
 ```
 orchestration_start({
   task: "사용자 프로필 페이지 구현",
@@ -70,17 +74,40 @@ orchestration_start({
     { name: "검증", role: "Evaluator" }
   ]
 })
-→ orch-abc123
-
-orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "running" })
-orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "completed", result: "CPS 설계서 작성 완료" })
-orchestration_update({ orchestration_id: "orch-abc123", phase_name: "구현", status: "running" })
-...
+→ orch-abc123   # 이 ID를 이후 모든 update에서 참조
 ```
 
-> MCP 도구가 사용 불가능한 환경에서는 추적 없이 기존 방식대로 실행한다.
+이후 Phase마다:
+
+```
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "running" })
+# ... Architect 실행 ...
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "설계", status: "completed", result: "CPS 설계서 작성 완료" })
+orchestration_update({ orchestration_id: "orch-abc123", phase_name: "구현", status: "running" })
+# ...
+```
+
+### Escape hatch는 단 하나 — 명시적 에러
+
+MCP 도구 호출이 **실제로 에러를 반환한** 경우에만 추적 없이 진행한다. "가볍게 스킵"하거나 "이번은 필요 없을 것 같아서 생략"은 계약 위반이다.
+
+호출 시도 후 에러 발생 시:
+- stderr에 `[Orchestrator] orchestration_start 호출 실패 — 추적 없이 진행: <에러 메시지>` 기록
+- 이후 Phase 진행은 기존 방식으로 계속
+
+사용 불가 환경이라는 **추정**만으로 호출 자체를 생략하지 않는다. 반드시 시도한다.
+
+### 사후 감사
+
+세션 종료 시 `hooks/audit-orchestration.sh`가 이 계약 준수 여부를 자동 검사한다. Generator/Evaluator Task 호출이 있었는데 `.nova-orchestration.json`에 오늘자 기록이 없으면 `orchestration_missing` 이벤트가 기록되고, 다음 세션 Evaluator가 이를 사용자에게 보고한다.
 
 ## Execution
+
+### Phase 0: 오케스트레이션 등록 (필수, 최우선)
+
+요청을 받자마자 **Phase 1 분석 이전에** `orchestration_start`를 호출한다. 초기에 phases 구성이 불확실하면 최소 골격(Architect/Generator/Evaluator)으로 등록 후 `orchestration_update`로 필요 시 보완한다. **호출 자체를 스킵하지 않는다.**
+
+등록 없이 Phase 1 이후로 넘어가면 관찰성 계약을 위반한 것이며, 사후 감사(`hooks/audit-orchestration.sh`)가 `orchestration_missing` 이벤트를 기록한다.
 
 ### Phase 1: 요청 분석
 
