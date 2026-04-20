@@ -27,28 +27,53 @@ interface Orchestration {
 // 메모리 + 파일 동기화
 const orchestrations = new Map<string, Orchestration>();
 
+// ISO 8601 문자열 사전순 비교가 성립하려면 모두 UTC(`Z` suffix)여야 한다.
+// 외부에서 주입된 JSON이 `+09:00` 같은 오프셋 형식이어도 안전하게 비교하도록 정규화한다.
+function normalizeIso(ts: string | undefined): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString();
+}
+
+// 쓰기 중단으로 파일이 손상되는 것을 막기 위해 tmp → rename 패턴을 쓴다
 async function saveToDisk(): Promise<void> {
+  const filePath = path.join(process.cwd(), ".nova-orchestration.json");
+  const tmpPath = `${filePath}.tmp.${process.pid}`;
   try {
     const data = Object.fromEntries(orchestrations);
-    const filePath = path.join(process.cwd(), ".nova-orchestration.json");
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+    await fs.writeFile(tmpPath, JSON.stringify(data, null, 2), "utf-8");
+    await fs.rename(tmpPath, filePath);
   } catch {
-    // 저장 실패 무시 (읽기 전용 환경 등)
+    // rename 실패 시 tmp 파일 잔류 방지 — 삭제 실패해도 치명적이지 않음
+    try {
+      await fs.unlink(tmpPath);
+    } catch {
+      /* noop */
+    }
   }
 }
 
+// saveToDisk가 메모리 전체를 덮어쓰므로 load 시 완전한 이전 기록을 가져와야 한다.
+// 단, 재호출되더라도 메모리의 최신 updatedAt이 디스크 구값에 덮이지 않도록 병합한다.
 async function loadFromDisk(): Promise<void> {
   try {
     const filePath = path.join(process.cwd(), ".nova-orchestration.json");
     const content = await fs.readFile(filePath, "utf-8");
     const data = JSON.parse(content) as Record<string, Orchestration>;
-    for (const [id, orch] of Object.entries(data)) {
-      if (orch.status === "running") {
-        orchestrations.set(id, orch);
+    for (const [id, diskOrch] of Object.entries(data)) {
+      const memOrch = orchestrations.get(id);
+      if (!memOrch) {
+        orchestrations.set(id, diskOrch);
+        continue;
+      }
+      // 타임존 정규화 후 비교. 디스크가 더 새로우면 교체, 메모리가 같거나 더 새로우면 유지.
+      if (normalizeIso(diskOrch.updatedAt) > normalizeIso(memOrch.updatedAt)) {
+        orchestrations.set(id, diskOrch);
       }
     }
   } catch {
-    // 파일 없으면 무시
+    // 파일 없음 / 손상된 JSON / 빈 파일 모두 기존 메모리 상태 유지
   }
 }
 

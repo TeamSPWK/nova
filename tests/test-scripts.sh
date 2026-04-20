@@ -1367,6 +1367,16 @@ assert "Sprint 2b 회귀: session-start 여전히 soft 1900 이하" \
 echo ""
 
 # ═══════════════════════════════════════════
+# orchestration-tracker load/save 회귀 (v5.15.1 데이터 손실 + atomic + merge)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[orchestration-tracker]${NC}"
+assert "orchestration-tracker 단위 테스트 (TC1~TC9) 통과" \
+  "node '$ROOT_DIR/tests/test-orchestration-tracker.mjs' > /dev/null 2>&1"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 
