@@ -1388,6 +1388,27 @@ echo -e "${YELLOW}[orchestration-tracker]${NC}"
 assert "orchestration-tracker 단위 테스트 (TC1~TC9) 통과" \
   "node '$ROOT_DIR/tests/test-orchestration-tracker.mjs' > /dev/null 2>&1"
 
+# ═══════════════════════════════════════════
+# MCP dist 배포 무결성 (v5.15.1/v5.15.2 껍데기 릴리스 사고 방지)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[MCP dist 배포 무결성]${NC}"
+
+# .mcp.json의 entrypoint 경로 추출 (릴리스 사고 분석 결과 도입)
+MCP_ENTRY=$(jq -r '.mcpServers[].args[]?' "$ROOT_DIR/.mcp.json" 2>/dev/null | grep -F 'dist/' | sed 's|.*\${CLAUDE_PLUGIN_ROOT}/||' | head -1)
+
+assert "MCP dist 무결성: .mcp.json entrypoint 경로 추출 가능" \
+  "[ -n '$MCP_ENTRY' ]"
+
+assert "MCP dist 무결성: $MCP_ENTRY 파일이 저장소에 존재" \
+  "[ -f '$ROOT_DIR/$MCP_ENTRY' ]"
+
+assert "MCP dist 무결성: $MCP_ENTRY 가 git tracked" \
+  "(cd '$ROOT_DIR' && git ls-files --error-unmatch '$MCP_ENTRY' > /dev/null 2>&1)"
+
+assert "MCP dist 무결성: $MCP_ENTRY 가 .gitignore에 걸려있지 않음" \
+  "(cd '$ROOT_DIR' && ! git check-ignore '$MCP_ENTRY' > /dev/null 2>&1)"
+
 echo ""
 
 # ═══════════════════════════════════════════
