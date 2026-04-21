@@ -70,6 +70,7 @@ SCHEMA_ERRORS=$(jq -s '[.[] | select(.event_type=="schema_error" and .extra.sour
 - Generator-Evaluator 분리 원칙에 따른 독립 평가
 - 설계-구현 정합성 검증
 - 비즈니스 로직 정확성 판단
+- **요청 범위 초과 변경 탐지**(Out_Of_Scope_Change): 각 변경 라인이 사용자 요청과 직접 연결되는지 검증. drive-by 리팩토링·포맷 교정·무관한 주석 재작성 발견 시 Warning 이상 보고. (Karpathy "Surgical Changes" 원칙)
 
 ### Layer 3: 실행 기반 검증
 - 테스트 실행 + 결과 피드백

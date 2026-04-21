@@ -32,8 +32,8 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
 
 | 조건 | 모드 | 동작 |
 |------|------|------|
-| `--check` 플래그 | **Check** | Nova 도입 수준 측정 (17개 항목 점검, 보고만) |
-| `--upgrade` 플래그 | **Upgrade** | 17개 항목 점검 → 미충족 항목만 보완 |
+| `--check` 플래그 | **Check** | Nova 도입 수준 측정 (32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7) 점검, 보고만) |
+| `--upgrade` 플래그 | **Upgrade** | 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7) 점검 → 미충족 항목만 보완 |
 | CLAUDE.md + NOVA-STATE.md 이미 존재 | **Upgrade** (자동 전환) | 초기화 건너뛰고 갭 보완 |
 | 위 해당 없음 | **Init** (기본) | 처음부터 셋업 |
 
@@ -43,15 +43,15 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
 
 ## Check 모드 실행 흐름 (`--check`)
 
-1. 아래 Upgrade 모드와 동일한 17개 항목을 점검한다
+1. 아래 Upgrade 모드와 동일한 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7)을 점검한다
 2. 결과를 보고만 하고, 파일 수정/생성은 하지 않는다
 3. 개선 추천과 실행 가능한 커맨드를 안내한다
 
-> Check 모드는 기존 `/nova:metrics` 기능을 대체한다. 동일한 17개 항목, 동일한 5단계 Pillar, 동일한 등급 체계.
+> Check 모드는 기존 `/nova:metrics` 기능을 대체한다. 동일한 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7), 동일한 5단계 Pillar, 동일한 등급 체계.
 
 ## Upgrade 모드 실행 흐름
 
-1. 17개 항목을 점검한다
+1. 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7)을 점검한다
 2. **미충족 항목만** 목록으로 표시한다:
    ```
    ━━━ Nova Upgrade — 갭 진단 ━━━━━━━━━━━━━━━━
