@@ -53,7 +53,22 @@ if [[ -f "${NOVA_ROOT}/hooks/record-event.sh" ]] && [[ -z "${NOVA_DISABLE_EVENTS
     [[ -n "$_SID" ]] && ( set -C; echo "$_SID" > .nova/session.id ) 2>/dev/null || true
   fi
   date -u +%s > .nova/session.start_epoch 2>/dev/null || true
-  bash "${NOVA_ROOT}/hooks/record-event.sh" session_start '{}' 2>/dev/null &
+  # Debounce: 5초 이내 재호출 시 session_start 기록 스킵 (노이즈 억제)
+  _DEBOUNCE_FILE=".nova/session.debounce"
+  _SKIP_RECORD=0
+  if [[ -f "$_DEBOUNCE_FILE" ]]; then
+    _LAST=$(date -r "$_DEBOUNCE_FILE" +%s 2>/dev/null || \
+            python3 -c "import os; print(int(os.path.getmtime('$_DEBOUNCE_FILE')))" 2>/dev/null || echo 0)
+    _NOW=$(date -u +%s)
+    if (( _NOW - _LAST < 5 )); then
+      _SKIP_RECORD=1
+    fi
+  fi
+  if [[ $_SKIP_RECORD -eq 0 ]]; then
+    touch "$_DEBOUNCE_FILE" 2>/dev/null || true
+    _TRIGGER="${CLAUDE_HOOK_TRIGGER:-unknown}"
+    bash "${NOVA_ROOT}/hooks/record-event.sh" session_start "{\"trigger\":\"${_TRIGGER}\"}" 2>/dev/null &
+  fi
 fi
 
 # ── 프로파일별 additionalContext 생성 ──

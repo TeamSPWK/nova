@@ -59,7 +59,7 @@ if [[ -f "$ORCH_FILE" ]]; then
 fi
 
 if [[ "$RECENT_ORCH_COUNT" -eq 0 ]]; then
-  # 누락 — orchestration_missing 이벤트 기록
+  # 누락 — orchestration_missing 이벤트 기록 + stderr 경고 출력
   EXTRA=$(jq -cn \
     --argjson dur "$DURATION_SEC" \
     --arg threshold "$THRESHOLD_SEC" \
@@ -71,6 +71,7 @@ if [[ "$RECENT_ORCH_COUNT" -eq 0 ]]; then
       reason: "no_orchestration_updates_during_session"
     }')
   bash "${BASH_SOURCE%/*}/record-event.sh" orchestration_missing "$EXTRA" 2>/dev/null || true
+  echo "[nova:audit] Phase 0 orchestration 기록 누락 — 서브에이전트 launch 시 mcp__plugin_nova_nova__orchestration_update 호출 누락. docs/nova-rules.md §2 참조." >&2
 fi
 
 exit 0

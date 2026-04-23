@@ -110,9 +110,25 @@ analyze_tool_frequency() {
   echo "  ── 도구별 호출 빈도 ──"
   echo ""
 
-  # PreToolUse 이벤트에서 tool_name 추출
-  local result
-  result=$(jq -r '
+  # tool_call 이벤트의 extra.tool 필드 집계 (v5.18.0 PreToolUse 훅)
+  local tool_result
+  tool_result=$(jq -r '
+    select(.event_type == "tool_call") |
+    (.extra.tool // .extra.tool_name // "unknown")
+  ' "$EVENTS_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -"$TOP_N")
+
+  echo "  [도구 호출 빈도 (tool_call 이벤트)]"
+  if [[ -z "$tool_result" ]]; then
+    echo "  아직 관측 데이터 없음 — v5.18.0 PreToolUse 훅 활성 후 7일 대기 권장"
+  else
+    echo "$tool_result" | awk '{printf "  %3d  %s\n", $1, $2}'
+  fi
+
+  echo ""
+
+  # 메타 이벤트 빈도 (session_start/end 등)
+  local meta_result
+  meta_result=$(jq -r '
     select(.event_type != null) |
     if .event_type == "session_start" or
        .event_type == "session_end" or
@@ -125,35 +141,19 @@ analyze_tool_frequency() {
        .event_type == "jury_verdict" or
        .event_type == "tool_constraint_violation" or
        .event_type == "tool_constraint_bypass" or
-       .event_type == "phase_transition" then
+       .event_type == "phase_transition" or
+       .event_type == "orchestration_missing" then
       .event_type
     else
       empty
     end
   ' "$EVENTS_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -"$TOP_N")
 
-  # tool_name 필드가 있는 이벤트에서 추출 (PreToolUse 스타일)
-  local tool_result
-  tool_result=$(jq -r '
-    select(.extra.tool_name != null or .extra.tool != null) |
-    (.extra.tool_name // .extra.tool // "unknown")
-  ' "$EVENTS_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -"$TOP_N")
-
-  if [[ -z "$result" && -z "$tool_result" ]]; then
-    echo "  데이터 없음 — PreToolUse 이벤트가 기록되지 않았습니다."
-    echo "  이벤트 타입별 집계:"
-    jq -r '.event_type' "$EVENTS_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -"$TOP_N" | \
-      awk '{printf "  %3d  %s\n", $1, $2}'
+  echo "  [메타 이벤트]"
+  if [[ -n "$meta_result" ]]; then
+    echo "$meta_result" | awk '{printf "  %3d  %s\n", $1, $2}'
   else
-    if [[ -n "$tool_result" ]]; then
-      echo "  [도구별]"
-      echo "$tool_result" | awk '{printf "  %3d  %s\n", $1, $2}'
-      echo ""
-    fi
-    if [[ -n "$result" ]]; then
-      echo "  [이벤트 타입별]"
-      echo "$result" | awk '{printf "  %3d  %s\n", $1, $2}'
-    fi
+    echo "  데이터 없음"
   fi
 }
 
@@ -162,10 +162,22 @@ analyze_sequence() {
   echo ""
 
   # 타임스탬프 순으로 이벤트 타입 나열 후 2-gram, 3-gram 추출
+  # session_start는 같은 session_id 내 첫 번째 항목만 유지 (debounce 후에도 중복 제거)
   local events_sorted
   events_sorted=$(jq -r '
-    [.timestamp, (.event_type // "unknown")] | @tsv
-  ' "$EVENTS_FILE" 2>/dev/null | sort -k1 | awk '{print $2}')
+    [.timestamp, (.session_id // ""), (.event_type // "unknown")] | @tsv
+  ' "$EVENTS_FILE" 2>/dev/null | sort -k1 | awk -F'\t' '
+    {
+      etype = $3
+      sid   = $2
+      key   = sid "_session_start"
+      if (etype == "session_start") {
+        if (!seen[key]++) { print etype }
+      } else {
+        print etype
+      }
+    }
+  ')
 
   if [[ -z "$events_sorted" ]]; then
     echo "  시퀀스 분석 불가 — 타임스탬프 필드가 없거나 이벤트가 비어 있습니다."
@@ -256,8 +268,21 @@ analyze_failures() {
     echo "$violation_count" | awk '{printf "  %3d  %s\n", $1, $2}'
   fi
 
-  if [[ -z "$fail_count" && -z "$conditional_count" && -z "$blocker_count" && -z "$violation_count" ]]; then
-    echo "  실패 패턴 없음 — 기록된 FAIL/CONDITIONAL/blocker/violation 이벤트가 없습니다."
+  # orchestration_missing 집계
+  local orch_missing_count
+  orch_missing_count=$(jq -s '[.[] | select(.event_type == "orchestration_missing")] | length' \
+    "$EVENTS_FILE" 2>/dev/null || echo 0)
+  if [[ "$orch_missing_count" -gt 0 ]]; then
+    local orch_avg_dur
+    orch_avg_dur=$(jq -s '[.[] | select(.event_type == "orchestration_missing") | .extra.duration_sec // 0] | if length > 0 then add/length else 0 end | floor' \
+      "$EVENTS_FILE" 2>/dev/null || echo 0)
+    echo "  [Phase 0 orchestration 누락]"
+    echo "  누락 횟수: $orch_missing_count  |  평균 세션 시간: ${orch_avg_dur}초"
+    echo ""
+  fi
+
+  if [[ -z "$fail_count" && -z "$conditional_count" && -z "$blocker_count" && -z "$violation_count" && "$orch_missing_count" -eq 0 ]]; then
+    echo "  실패 패턴 없음 — 기록된 FAIL/CONDITIONAL/blocker/violation/orchestration_missing 이벤트가 없습니다."
   fi
 }
 

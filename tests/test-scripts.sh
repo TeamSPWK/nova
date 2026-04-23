@@ -1645,6 +1645,49 @@ assert "S7.4: docs/nova-rules.md §13 Subagent Bootstrap Isolation 섹션 존재
 echo ""
 
 # ═══════════════════════════════════════════
+# S8: Observability Closure (v5.18.0)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[S8: Observability Closure]${NC}"
+
+# S8.1: hooks.json PreToolUse '*' 매처 + pre-tool-use-record.sh 엔트리
+assert "S8.1: hooks.json PreToolUse '*' 매처 + pre-tool-use-record.sh 엔트리" \
+  "jq -e '.hooks.PreToolUse[] | select(.matcher==\"*\")' $ROOT_DIR/hooks/hooks.json >/dev/null"
+
+# S8.2: hooks/pre-tool-use-record.sh 존재 + 실행 권한
+assert "S8.2: hooks/pre-tool-use-record.sh 존재 + 실행 권한" \
+  "test -x $ROOT_DIR/hooks/pre-tool-use-record.sh"
+
+# S8.3: pre-tool-use-record.sh — TOOL_INPUT 기록 금지 (grep)
+assert "S8.3: pre-tool-use-record.sh — TOOL_INPUT 기록 금지 (grep)" \
+  "! grep -qE 'TOOL_INPUT|tool_input' $ROOT_DIR/hooks/pre-tool-use-record.sh"
+
+# S8.4: session-start.sh debounce 로직 존재
+assert "S8.4: session-start.sh debounce 로직 존재" \
+  "grep -q 'session.debounce\|debounce' $ROOT_DIR/hooks/session-start.sh"
+
+# S8.5: audit-orchestration.sh stderr 경고 출력
+assert "S8.5: audit-orchestration.sh stderr 경고 출력" \
+  "grep -qE '\[nova:audit\].*orchestration.*누락' $ROOT_DIR/hooks/audit-orchestration.sh"
+
+# S8.6: 엔드투엔드 스모크 — pre-tool-use-record.sh 실행 후 이벤트 기록 확인
+assert "S8.6: pre-tool-use-record.sh 실행 → tool_call 이벤트 기록" \
+  "TMPD=\$(mktemp -d); NOVA_EVENTS_PATH=\"\$TMPD/events.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh && \
+   sleep 0.3 && grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && \
+   ! grep -q 'tool_input' \"\$TMPD/events.jsonl\"; S=\$?; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S8.7: debounce 동작 — 5초 내 2회 호출 → 1회만 기록
+assert "S8.7: session-start.sh debounce — 2회 연속 호출 시 1회 기록" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\" && mkdir -p .nova && \
+   NOVA_EVENTS_PATH=\"\$TMPD/.nova/events.jsonl\" bash $ROOT_DIR/hooks/session-start.sh >/dev/null && \
+   sleep 0.2 && NOVA_EVENTS_PATH=\"\$TMPD/.nova/events.jsonl\" bash $ROOT_DIR/hooks/session-start.sh >/dev/null && \
+   sleep 0.3 && \
+   COUNT=\$(grep -c 'session_start' \"\$TMPD/.nova/events.jsonl\" 2>/dev/null || echo 0); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \"\$COUNT\" = \"1\" ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

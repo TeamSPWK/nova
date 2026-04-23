@@ -30,7 +30,8 @@ fi
 bash "${BASH_SOURCE%/*}/record-event.sh" session_end "$EXTRA" 2>/dev/null || true
 
 # Orchestration 추적 누락 감사 (Phase 0 계약 준수 검사)
-bash "${BASH_SOURCE%/*}/audit-orchestration.sh" 2>/dev/null || true
+# stderr 리다이렉션 제거 — audit 경고가 사용자에게 전달되도록 함
+bash "${BASH_SOURCE%/*}/audit-orchestration.sh" || true
 
 rm -f "$START_FILE" 2>/dev/null || true
 exit 0
