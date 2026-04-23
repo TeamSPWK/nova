@@ -1,6 +1,6 @@
 {
-  "version": "5.19.1",
-  "generatedAt": "2026-04-23T11:12:06Z",
+  "version": "5.19.2",
+  "generatedAt": "2026-04-23T11:20:00Z",
   "stats": {
     "commands": 14,
     "skills": 10,
@@ -9,39 +9,39 @@
     "mcpTools": 6
   },
   "commands": [
-    {"cmd": "/nova:ask", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다."},
-    {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다."},
-    {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후."},
-    {"cmd": "/nova:deepplan", "description": "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다."},
-    {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다."},
-    {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다."},
-    {"cmd": "/nova:next", "description": "현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다."},
-    {"cmd": "/nova:plan", "description": "CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다."},
-    {"cmd": "/nova:review", "description": "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. — MUST TRIGGER: 커밋 전(로직 변경 시), PR 생성 전, 버그 수정 후 회귀 확인 시."},
-    {"cmd": "/nova:run", "description": "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능."},
-    {"cmd": "/nova:scan", "description": "새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다."},
-    {"cmd": "/nova:setup", "description": "새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade)."},
-    {"cmd": "/nova:ux-audit", "description": "5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석."},
-    {"cmd": "/nova:worktree-setup", "description": "현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전."}
+    {"cmd": "/nova:ask", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다.", "description_en": "Run multi-AI consultation. Queries Claude + GPT + Gemini in parallel and analyzes the consensus level."},
+    {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다.", "description_en": "Auto-run a natural-language request through the full design → implement → verify → fix cycle."},
+    {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후.", "description_en": "Combined code review + design-implementation gap verification in one pass. — MUST TRIGGER: before commit (3+ files changed), at sprint completion, right after a user-reported bug."},
+    {"cmd": "/nova:deepplan", "description": "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다.", "description_en": "Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline."},
+    {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다.", "description_en": "Write a Design document using the CPS (Context-Problem-Solution) framework."},
+    {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다.", "description_en": "Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf."},
+    {"cmd": "/nova:next", "description": "현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다.", "description_en": "Diagnose current project state and recommend the next Nova command to run."},
+    {"cmd": "/nova:plan", "description": "CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.", "description_en": "Write a Plan document using the CPS (Context-Problem-Solution) framework."},
+    {"cmd": "/nova:review", "description": "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. — MUST TRIGGER: 커밋 전(로직 변경 시), PR 생성 전, 버그 수정 후 회귀 확인 시.", "description_en": "Review code adversarially and surface hidden issues. — MUST TRIGGER: before commit (on logic changes), before PR, after a bug fix for regression check."},
+    {"cmd": "/nova:run", "description": "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능.", "description_en": "Run the implement → verify full cycle. Use --verify-only to run verification alone."},
+    {"cmd": "/nova:scan", "description": "새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다.", "description_en": "Auto-analyze a codebase on first entry and brief you on 'where to start looking'."},
+    {"cmd": "/nova:setup", "description": "새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade).", "description_en": "Initial Nova Quality Gate setup for a new project, or auto-fill gaps in an existing project (--upgrade)."},
+    {"cmd": "/nova:ux-audit", "description": "5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석.", "description_en": "Deep UI/UX evaluation via 5 adversarial reviewers — accessibility (WCAG 2.2), cognitive load, performance (Core Web Vitals), and dark patterns (EU DSA) analyzed from code."},
+    {"cmd": "/nova:worktree-setup", "description": "현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전.", "description_en": "Instantly symlink the main repo's .env, secrets, and config files into the current worktree. Manual retry of the SessionStart auto-hook."}
   ],
   "skills": [
-    {"name": "context-chain", "description": "세션 간 맥락을 연결해야 할 때. — MUST TRIGGER: 세션 시작 시 NOVA-STATE.md 읽기, 커밋 후 상태 갱신, 스프린트 전환 시."},
-    {"name": "deepplan", "description": "Plan 문서의 탐색 폭/검증 깊이가 부족할 때 깊이 있는 Plan을 생성한다. — MUST TRIGGER: 복잡도 8+ 작업, 아키텍처 분기 결정, /nova:plan 결과가 얕다고 판단되는 경우, 사용자가 /nova:deepplan 호출."},
-    {"name": "evaluator", "description": "코드 구현을 적대적 관점으로 검증해야 할 때. — MUST TRIGGER: /run, /check, /review 내부에서 독립 서브에이전트로 호출, 스프린트 완료 직후, 커밋 전 Evaluator PASS 필요 시."},
-    {"name": "evolution", "description": "Nova 자체를 진화시킬 때 사용한다. — MUST TRIGGER: /nova:evolve 호출, 외부 기술 동향을 Nova에 반영해야 할 때, Nova 메타-개선(규칙/스킬/훅 구조 변경) 작업."},
-    {"name": "field-test", "description": "Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. — MUST TRIGGER: 신규 Nova 기능 검증, 사용자가 실전 피드백을 요청할 때, 워크트리 격리 환경에서 방법론을 리허설할 때."},
-    {"name": "jury", "description": "단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. — MUST TRIGGER: 아키텍처 결정, 릴리스 게이트 의심 케이스, 사용자가 /nova:ask 또는 다관점 평가를 요청할 때."},
-    {"name": "orchestrator", "description": "자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. — MUST TRIGGER: /nova:auto 호출, 사용자가 '전체 알아서 해줘' 유형의 요청을 할 때, 다중 에이전트 편성이 필요한 복합 작업."},
-    {"name": "ux-audit", "description": "UI/UX 품질을 다관점·적대적으로 검증할 때. — MUST TRIGGER: UI/UX 변경 후 /review 전, 새 기능 론칭 전, 프론트엔드 리팩토링 후, 접근성(WCAG) 점검이 필요할 때."},
-    {"name": "worktree-setup", "description": "git worktree에서 메인 레포의 환경 설정이 필요할 때. — MUST TRIGGER: 새 worktree 진입 직후, 사용자가 '환경변수 안 읽힘·시크릿 못 찾음'을 보고할 때, EnterWorktree 도구 호출 직후."},
-    {"name": "writing-nova-skill", "description": "새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. — MUST TRIGGER: skills/ 하위 신규 SKILL.md 생성, 기존 SKILL description 리팩터, 사용자가 'Nova 스킬 추가/수정' 요청 시."}
+    {"name": "context-chain", "description": "세션 간 맥락을 연결해야 할 때. — MUST TRIGGER: 세션 시작 시 NOVA-STATE.md 읽기, 커밋 후 상태 갱신, 스프린트 전환 시.", "description_en": "Use when session-to-session context must carry over. — MUST TRIGGER: reading NOVA-STATE.md on session start, updating state after commit, or on sprint transitions."},
+    {"name": "deepplan", "description": "Plan 문서의 탐색 폭/검증 깊이가 부족할 때 깊이 있는 Plan을 생성한다. — MUST TRIGGER: 복잡도 8+ 작업, 아키텍처 분기 결정, /nova:plan 결과가 얕다고 판단되는 경우, 사용자가 /nova:deepplan 호출.", "description_en": "Use when a Plan's search breadth or verification depth is insufficient and a deeper Plan is needed. — MUST TRIGGER: complexity 8+ tasks, architectural fork decisions, when /nova:plan output feels shallow, or user invokes /nova:deepplan."},
+    {"name": "evaluator", "description": "코드 구현을 적대적 관점으로 검증해야 할 때. — MUST TRIGGER: /run, /check, /review 내부에서 독립 서브에이전트로 호출, 스프린트 완료 직후, 커밋 전 Evaluator PASS 필요 시.", "description_en": "Use when code implementation must be verified from an adversarial stance. — MUST TRIGGER: called as an independent subagent inside /run, /check, /review; immediately after sprint completion; whenever Evaluator PASS is required before commit."},
+    {"name": "evolution", "description": "Nova 자체를 진화시킬 때 사용한다. — MUST TRIGGER: /nova:evolve 호출, 외부 기술 동향을 Nova에 반영해야 할 때, Nova 메타-개선(규칙/스킬/훅 구조 변경) 작업.", "description_en": "Use when evolving Nova itself. — MUST TRIGGER: /nova:evolve invocation, when external tech trends must be reflected into Nova, or Nova meta-improvement (rules/skills/hooks structural changes)."},
+    {"name": "field-test", "description": "Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. — MUST TRIGGER: 신규 Nova 기능 검증, 사용자가 실전 피드백을 요청할 때, 워크트리 격리 환경에서 방법론을 리허설할 때.", "description_en": "Use when validating the Nova methodology on real projects to find improvement points. — MUST TRIGGER: new Nova feature validation, when the user asks for real-world feedback, or when rehearsing methodology in a worktree-isolated environment."},
+    {"name": "jury", "description": "단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. — MUST TRIGGER: 아키텍처 결정, 릴리스 게이트 의심 케이스, 사용자가 /nova:ask 또는 다관점 평가를 요청할 때.", "description_en": "Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. — MUST TRIGGER: architectural decisions, suspicious release-gate cases, or when the user invokes /nova:ask or requests multi-perspective evaluation."},
+    {"name": "orchestrator", "description": "자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. — MUST TRIGGER: /nova:auto 호출, 사용자가 '전체 알아서 해줘' 유형의 요청을 할 때, 다중 에이전트 편성이 필요한 복합 작업.", "description_en": "Use when a natural-language request needs the entire development cycle auto-handled. — MUST TRIGGER: /nova:auto invocation, 'just handle everything' requests, or complex tasks requiring multi-agent formation."},
+    {"name": "ux-audit", "description": "UI/UX 품질을 다관점·적대적으로 검증할 때. — MUST TRIGGER: UI/UX 변경 후 /review 전, 새 기능 론칭 전, 프론트엔드 리팩토링 후, 접근성(WCAG) 점검이 필요할 때.", "description_en": "Use when UI/UX quality must be validated adversarially from multiple perspectives. — MUST TRIGGER: after UI/UX changes before /review, before launching a new feature, after frontend refactoring, or when accessibility (WCAG) review is needed."},
+    {"name": "worktree-setup", "description": "git worktree에서 메인 레포의 환경 설정이 필요할 때. — MUST TRIGGER: 새 worktree 진입 직후, 사용자가 '환경변수 안 읽힘·시크릿 못 찾음'을 보고할 때, EnterWorktree 도구 호출 직후.", "description_en": "Use when the main repo's environment setup is needed inside a git worktree. — MUST TRIGGER: right after entering a new worktree, when the user reports 'env vars not read' or 'secrets not found', or right after the EnterWorktree tool is called."},
+    {"name": "writing-nova-skill", "description": "새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. — MUST TRIGGER: skills/ 하위 신규 SKILL.md 생성, 기존 SKILL description 리팩터, 사용자가 'Nova 스킬 추가/수정' 요청 시.", "description_en": "Use when authoring a new Nova skill or revising an existing skill's description. — MUST TRIGGER: creating a new SKILL.md under skills/, refactoring an existing SKILL description, or when the user asks to 'add or modify a Nova skill'."}
   ],
   "agents": [
-    {"name": "architect", "description": "시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용. 설계 문서 리뷰, 모듈 간 결합도 분석, ADR 작성에 적합.", "tools": "Read, Glob, Grep, Agent, WebSearch"},
-    {"name": "devops-engineer", "description": "CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용. Dockerfile, GitHub Actions, IaC 검토 및 작성에 적합.", "tools": "Read, Glob, Grep, Edit, Write, Bash"},
-    {"name": "qa-engineer", "description": "테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용. 테스트 시나리오 설계, 경계값 분석, 실패 재현에 적합.", "tools": "Read, Glob, Grep, Bash"},
-    {"name": "refiner", "description": "evaluator FAIL 출력을 받아 수정안을 제안한다. 코드 직접 변경 금지, 제안만 한다.", "tools": "Read, Glob, Grep"},
-    {"name": "security-engineer", "description": "보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용. 코드 보안 감사, 시크릿 노출 탐지, OWASP 기반 분석에 적합.", "tools": "Read, Glob, Grep"},
-    {"name": "senior-dev", "description": "코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용. 코드 리뷰, 최소 변경 구현, 디자인 패턴 적용에 적합.", "tools": "Read, Glob, Grep, Edit, Write, Bash, Agent"}
+    {"name": "architect", "description": "시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용. 설계 문서 리뷰, 모듈 간 결합도 분석, ADR 작성에 적합.", "description_en": "For system architecture design, technology selection, and scalability/maintainability review. Best for design doc review, module coupling analysis, and ADR authoring.", "tools": "Read, Glob, Grep, Agent, WebSearch"},
+    {"name": "devops-engineer", "description": "CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용. Dockerfile, GitHub Actions, IaC 검토 및 작성에 적합.", "description_en": "For CI/CD pipelines, infrastructure setup, deployment strategy, and monitoring configuration. Best for reviewing and authoring Dockerfiles, GitHub Actions, and IaC.", "tools": "Read, Glob, Grep, Edit, Write, Bash"},
+    {"name": "qa-engineer", "description": "테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용. 테스트 시나리오 설계, 경계값 분석, 실패 재현에 적합.", "description_en": "For test strategy, edge-case identification, and quality verification. Best for designing test scenarios, boundary-value analysis, and reproducing failures.", "tools": "Read, Glob, Grep, Bash"},
+    {"name": "refiner", "description": "evaluator FAIL 출력을 받아 수정안을 제안한다. 코드 직접 변경 금지, 제안만 한다.", "description_en": "Takes evaluator FAIL output and proposes fixes. Cannot modify code directly — proposals only.", "tools": "Read, Glob, Grep"},
+    {"name": "security-engineer", "description": "보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용. 코드 보안 감사, 시크릿 노출 탐지, OWASP 기반 분석에 적합.", "description_en": "For security vulnerability review, threat modeling, and auth/authorization review. Best for code security audits, secret exposure detection, and OWASP-based analysis.", "tools": "Read, Glob, Grep"},
+    {"name": "senior-dev", "description": "코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용. 코드 리뷰, 최소 변경 구현, 디자인 패턴 적용에 적합.", "description_en": "For code quality improvement, refactoring, implementation strategy, and tech debt identification. Best for code review, minimal-change implementation, and design pattern application.", "tools": "Read, Glob, Grep, Edit, Write, Bash, Agent"}
   ]
 }

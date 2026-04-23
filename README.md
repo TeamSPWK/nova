@@ -1,7 +1,7 @@
 # Nova
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-5.19.1-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-5.19.2-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Verify before you ship. Every time.**
@@ -231,20 +231,20 @@ Commands provide **additional control** on top of auto-apply rules.
 <!-- AUTO-GEN:commands -->
 | Command | Description |
 |---------|------------|
-| `/nova:ask` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
-| `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다. |
-| `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
-| `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |
-| `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
-| `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
-| `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
-| `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
-| `/nova:review` | 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. |
-| `/nova:run` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
-| `/nova:scan` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
-| `/nova:setup` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
-| `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
-| `/nova:worktree-setup` | 현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전. |
+| `/nova:ask` | Run multi-AI consultation. Queries Claude + GPT + Gemini in parallel and analyzes the consensus level. |
+| `/nova:auto` | Auto-run a natural-language request through the full design → implement → verify → fix cycle. |
+| `/nova:check` | Combined code review + design-implementation gap verification in one pass. |
+| `/nova:deepplan` | Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline. |
+| `/nova:design` | Write a Design document using the CPS (Context-Problem-Solution) framework. |
+| `/nova:evolve` | Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf. |
+| `/nova:next` | Diagnose current project state and recommend the next Nova command to run. |
+| `/nova:plan` | Write a Plan document using the CPS (Context-Problem-Solution) framework. |
+| `/nova:review` | Review code adversarially and surface hidden issues. |
+| `/nova:run` | Run the implement → verify full cycle. Use --verify-only to run verification alone. |
+| `/nova:scan` | Auto-analyze a codebase on first entry and brief you on 'where to start looking'. |
+| `/nova:setup` | Initial Nova Quality Gate setup for a new project, or auto-fill gaps in an existing project (--upgrade). |
+| `/nova:ux-audit` | Deep UI/UX evaluation via 5 adversarial reviewers — accessibility (WCAG 2.2), cognitive load, performance (Core Web Vitals), and dark patterns (EU DSA) analyzed from code. |
+| `/nova:worktree-setup` | Instantly symlink the main repo's .env, secrets, and config files into the current worktree. Manual retry of the SessionStart auto-hook. |
 <!-- /AUTO-GEN:commands -->
 
 ## Self-Evolution
@@ -313,16 +313,16 @@ Skills are multi-step operations that commands invoke internally. They can also 
 <!-- AUTO-GEN:skills -->
 | Skill | Description |
 |-------|------------|
-| **context-chain** | 세션 간 맥락을 연결해야 할 때. |
-| **deepplan** | Plan 문서의 탐색 폭/검증 깊이가 부족할 때 깊이 있는 Plan을 생성한다. |
-| **evaluator** | 코드 구현을 적대적 관점으로 검증해야 할 때. |
-| **evolution** | Nova 자체를 진화시킬 때 사용한다. |
-| **field-test** | Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. |
-| **jury** | 단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. |
-| **orchestrator** | 자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. |
-| **ux-audit** | UI/UX 품질을 다관점·적대적으로 검증할 때. |
-| **worktree-setup** | git worktree에서 메인 레포의 환경 설정이 필요할 때. |
-| **writing-nova-skill** | 새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. |
+| **context-chain** | Use when session-to-session context must carry over. |
+| **deepplan** | Use when a Plan's search breadth or verification depth is insufficient and a deeper Plan is needed. |
+| **evaluator** | Use when code implementation must be verified from an adversarial stance. |
+| **evolution** | Use when evolving Nova itself. |
+| **field-test** | Use when validating the Nova methodology on real projects to find improvement points. |
+| **jury** | Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. |
+| **orchestrator** | Use when a natural-language request needs the entire development cycle auto-handled. |
+| **ux-audit** | Use when UI/UX quality must be validated adversarially from multiple perspectives. |
+| **worktree-setup** | Use when the main repo's environment setup is needed inside a git worktree. |
+| **writing-nova-skill** | Use when authoring a new Nova skill or revising an existing skill's description. |
 <!-- /AUTO-GEN:skills -->
 
 ## Specialist Agents (5 Types)
@@ -332,12 +332,12 @@ Each agent has a built-in Nova self-check checklist.
 <!-- AUTO-GEN:agents -->
 | Agent | Description |
 |-------|------------|
-| `architect` | 시스템 아키텍처 설계, 기술 선택, 확장성/유지보수성 검토가 필요할 때 사용 |
-| `devops-engineer` | CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용 |
-| `qa-engineer` | 테스트 전략 수립, 엣지 케이스 식별, 품질 검증이 필요할 때 사용 |
-| `refiner` | evaluator FAIL 출력을 받아 수정안을 제안한다 |
-| `security-engineer` | 보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용 |
-| `senior-dev` | 코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용 |
+| `architect` | For system architecture design, technology selection, and scalability/maintainability review |
+| `devops-engineer` | For CI/CD pipelines, infrastructure setup, deployment strategy, and monitoring configuration |
+| `qa-engineer` | For test strategy, edge-case identification, and quality verification |
+| `refiner` | Takes evaluator FAIL output and proposes fixes |
+| `security-engineer` | For security vulnerability review, threat modeling, and auth/authorization review |
+| `senior-dev` | For code quality improvement, refactoring, implementation strategy, and tech debt identification |
 <!-- /AUTO-GEN:agents -->
 
 ## Session State (NOVA-STATE.md)
