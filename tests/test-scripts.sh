@@ -1650,9 +1650,15 @@ echo ""
 
 echo -e "${YELLOW}[S8: Observability Closure]${NC}"
 
-# S8.1: hooks.json PreToolUse '*' 매처 + pre-tool-use-record.sh 엔트리
-assert "S8.1: hooks.json PreToolUse '*' 매처 + pre-tool-use-record.sh 엔트리" \
-  "jq -e '.hooks.PreToolUse[] | select(.matcher==\"*\")' $ROOT_DIR/hooks/hooks.json >/dev/null"
+# S8.1: hooks.json PreToolUse all-match("") 매처 + pre-tool-use-record.sh 엔트리
+# 근거: Claude Code hooks matcher는 정규식. "*"는 quantifier-at-start로 매칭 실패 (v5.18.0→v5.18.1 수정).
+# 공식 all-match 문법은 빈 문자열 "".
+assert "S8.1: hooks.json PreToolUse all-match 매처 + pre-tool-use-record.sh 엔트리" \
+  "jq -e '.hooks.PreToolUse[] | select(.matcher==\"\" and (.hooks[0].command|contains(\"pre-tool-use-record\")))' $ROOT_DIR/hooks/hooks.json >/dev/null"
+
+# S8.1b: 회귀 방지 — matcher에 "*" 사용 금지 (v5.18.0 결함)
+assert "S8.1b: hooks.json matcher에 리터럴 '*' 사용 금지 (regex 오류 방지)" \
+  "! jq -e '.hooks[][] | select(.matcher==\"*\")' $ROOT_DIR/hooks/hooks.json >/dev/null"
 
 # S8.2: hooks/pre-tool-use-record.sh 존재 + 실행 권한
 assert "S8.2: hooks/pre-tool-use-record.sh 존재 + 실행 권한" \
