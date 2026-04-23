@@ -1,6 +1,7 @@
 ---
 name: jury
 description: "단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. — MUST TRIGGER: 아키텍처 결정, 릴리스 게이트 의심 케이스, 사용자가 /nova:ask 또는 다관점 평가를 요청할 때."
+description_en: "Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. — MUST TRIGGER: architectural decisions, suspicious release-gate cases, or when the user invokes /nova:ask or requests multi-perspective evaluation."
 user-invocable: false
 ---
 

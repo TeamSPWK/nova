@@ -1,5 +1,6 @@
 ---
 description: "5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석."
+description_en: "Deep UI/UX evaluation via 5 adversarial reviewers — accessibility (WCAG 2.2), cognitive load, performance (Core Web Vitals), and dark patterns (EU DSA) analyzed from code."
 ---
 
 5인 적대적 평가자(Adversarial Jury)로 UI/UX를 코드 기반 심층 평가한다.

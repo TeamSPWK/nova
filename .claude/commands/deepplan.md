@@ -1,5 +1,6 @@
 ---
 description: "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다."
+description_en: "Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline."
 ---
 
 # Nova DeepPlan

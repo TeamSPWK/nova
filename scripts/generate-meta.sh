@@ -22,6 +22,21 @@ extract_desc() {
     | sed 's/^description: *//; s/^"//; s/"$//'
 }
 
+# ── frontmatter에서 description_en 추출 ──
+# 없으면 description으로 fallback — 영어 README AUTO-GEN 테이블용
+extract_desc_en() {
+  local file="$1"
+  local en
+  en=$(sed -n '/^---$/,/^---$/p' "$file" \
+    | grep -m1 '^description_en:' \
+    | sed 's/^description_en: *//; s/^"//; s/"$//')
+  if [ -z "$en" ]; then
+    extract_desc "$file"
+  else
+    printf '%s' "$en"
+  fi
+}
+
 # ── frontmatter에서 name 추출 ──
 extract_name() {
   local file="$1"
@@ -50,10 +65,12 @@ for f in "$ROOT/.claude/commands/"*.md; do
   [ -f "$f" ] || continue
   CMD_NAME=$(basename "$f" .md)
   CMD_DESC=$(extract_desc "$f")
+  CMD_DESC_EN=$(extract_desc_en "$f")
   CMD_DESC_ESC=$(json_escape "$CMD_DESC")
+  CMD_DESC_EN_ESC=$(json_escape "$CMD_DESC_EN")
 
   if [ "$FIRST" = true ]; then FIRST=false; else COMMANDS_JSON+=","; fi
-  COMMANDS_JSON+=$(printf '\n    {"cmd": "/nova:%s", "description": "%s"}' "$CMD_NAME" "$CMD_DESC_ESC")
+  COMMANDS_JSON+=$(printf '\n    {"cmd": "/nova:%s", "description": "%s", "description_en": "%s"}' "$CMD_NAME" "$CMD_DESC_ESC" "$CMD_DESC_EN_ESC")
 done
 COMMANDS_JSON+=$'\n  ]'
 
@@ -65,10 +82,12 @@ for f in "$ROOT/.claude/skills/"*/SKILL.md; do
   SKILL_NAME=$(extract_name "$f")
   [ -z "$SKILL_NAME" ] && SKILL_NAME=$(basename "$(dirname "$f")")
   SKILL_DESC=$(extract_desc "$f")
+  SKILL_DESC_EN=$(extract_desc_en "$f")
   SKILL_DESC_ESC=$(json_escape "$SKILL_DESC")
+  SKILL_DESC_EN_ESC=$(json_escape "$SKILL_DESC_EN")
 
   if [ "$FIRST" = true ]; then FIRST=false; else SKILLS_JSON+=","; fi
-  SKILLS_JSON+=$(printf '\n    {"name": "%s", "description": "%s"}' "$SKILL_NAME" "$SKILL_DESC_ESC")
+  SKILLS_JSON+=$(printf '\n    {"name": "%s", "description": "%s", "description_en": "%s"}' "$SKILL_NAME" "$SKILL_DESC_ESC" "$SKILL_DESC_EN_ESC")
 done
 SKILLS_JSON+=$'\n  ]'
 
@@ -80,11 +99,13 @@ for f in "$ROOT/.claude/agents/"*.md; do
   AGENT_NAME=$(extract_name "$f")
   [ -z "$AGENT_NAME" ] && AGENT_NAME=$(basename "$f" .md)
   AGENT_DESC=$(extract_desc "$f")
+  AGENT_DESC_EN=$(extract_desc_en "$f")
   AGENT_DESC_ESC=$(json_escape "$AGENT_DESC")
+  AGENT_DESC_EN_ESC=$(json_escape "$AGENT_DESC_EN")
   AGENT_TOOLS=$(extract_tools "$f")
 
   if [ "$FIRST" = true ]; then FIRST=false; else AGENTS_JSON+=","; fi
-  AGENTS_JSON+=$(printf '\n    {"name": "%s", "description": "%s", "tools": "%s"}' "$AGENT_NAME" "$AGENT_DESC_ESC" "$AGENT_TOOLS")
+  AGENTS_JSON+=$(printf '\n    {"name": "%s", "description": "%s", "description_en": "%s", "tools": "%s"}' "$AGENT_NAME" "$AGENT_DESC_ESC" "$AGENT_DESC_EN_ESC" "$AGENT_TOOLS")
 done
 AGENTS_JSON+=$'\n  ]'
 
@@ -150,52 +171,68 @@ update_readme_section() {
   ' "$readme" > "${readme}.tmp" && mv "${readme}.tmp" "$readme"
 }
 
-# 커맨드 테이블 생성
-CMD_TABLE="| Command | Description |\n|---------|------------|"
+# 커맨드 테이블 생성 (EN + KO)
+CMD_TABLE_EN="| Command | Description |\n|---------|------------|"
+CMD_TABLE_KO="| Command | Description |\n|---------|------------|"
 for f in "$ROOT/.claude/commands/"*.md; do
   [ -f "$f" ] || continue
   CMD_NAME=$(basename "$f" .md)
   CMD_DESC=$(extract_desc "$f")
-  # 테이블용으로 MUST TRIGGER 이후 제거 (간결화)
+  CMD_DESC_EN=$(extract_desc_en "$f")
   CMD_DESC_SHORT=$(echo "$CMD_DESC" | sed 's/ — MUST TRIGGER:.*//')
-  CMD_TABLE+="\n| \`/nova:${CMD_NAME}\` | ${CMD_DESC_SHORT} |"
+  CMD_DESC_EN_SHORT=$(echo "$CMD_DESC_EN" | sed 's/ — MUST TRIGGER:.*//')
+  CMD_TABLE_EN+="\n| \`/nova:${CMD_NAME}\` | ${CMD_DESC_EN_SHORT} |"
+  CMD_TABLE_KO+="\n| \`/nova:${CMD_NAME}\` | ${CMD_DESC_SHORT} |"
 done
 
-# 스킬 테이블 생성
-SKILL_TABLE="| Skill | Description |\n|-------|------------|"
+# 스킬 테이블 생성 (EN + KO)
+SKILL_TABLE_EN="| Skill | Description |\n|-------|------------|"
+SKILL_TABLE_KO="| Skill | Description |\n|-------|------------|"
 for f in "$ROOT/.claude/skills/"*/SKILL.md; do
   [ -f "$f" ] || continue
   SKILL_NAME=$(extract_name "$f")
   [ -z "$SKILL_NAME" ] && SKILL_NAME=$(basename "$(dirname "$f")")
   SKILL_DESC=$(extract_desc "$f")
+  SKILL_DESC_EN=$(extract_desc_en "$f")
   SKILL_DESC_SHORT=$(echo "$SKILL_DESC" | sed 's/ — MUST TRIGGER:.*//')
-  SKILL_TABLE+="\n| **${SKILL_NAME}** | ${SKILL_DESC_SHORT} |"
+  SKILL_DESC_EN_SHORT=$(echo "$SKILL_DESC_EN" | sed 's/ — MUST TRIGGER:.*//')
+  SKILL_TABLE_EN+="\n| **${SKILL_NAME}** | ${SKILL_DESC_EN_SHORT} |"
+  SKILL_TABLE_KO+="\n| **${SKILL_NAME}** | ${SKILL_DESC_SHORT} |"
 done
 
-# 에이전트 테이블 생성
-AGENT_TABLE="| Agent | Description |\n|-------|------------|"
+# 에이전트 테이블 생성 (EN + KO)
+AGENT_TABLE_EN="| Agent | Description |\n|-------|------------|"
+AGENT_TABLE_KO="| Agent | Description |\n|-------|------------|"
 for f in "$ROOT/.claude/agents/"*.md; do
   [ -f "$f" ] || continue
   AGENT_NAME=$(extract_name "$f")
   [ -z "$AGENT_NAME" ] && AGENT_NAME=$(basename "$f" .md)
   AGENT_DESC=$(extract_desc "$f")
-  # 간결화: 첫 문장만
+  AGENT_DESC_EN=$(extract_desc_en "$f")
   AGENT_DESC_SHORT=$(echo "$AGENT_DESC" | sed 's/\. .*//' | sed 's/에 적합$//')
-  AGENT_TABLE+="\n| \`${AGENT_NAME}\` | ${AGENT_DESC_SHORT} |"
+  AGENT_DESC_EN_SHORT=$(echo "$AGENT_DESC_EN" | sed 's/\. .*//')
+  AGENT_TABLE_EN+="\n| \`${AGENT_NAME}\` | ${AGENT_DESC_EN_SHORT} |"
+  AGENT_TABLE_KO+="\n| \`${AGENT_NAME}\` | ${AGENT_DESC_SHORT} |"
 done
 
-# 임시 파일로 테이블 저장
+# 임시 파일로 테이블 저장 (EN/KO 분리)
 TMPDIR_META=$(mktemp -d)
-echo -e "$CMD_TABLE" > "$TMPDIR_META/commands.md"
-echo -e "$SKILL_TABLE" > "$TMPDIR_META/skills.md"
-echo -e "$AGENT_TABLE" > "$TMPDIR_META/agents.md"
+echo -e "$CMD_TABLE_EN"   > "$TMPDIR_META/commands.en.md"
+echo -e "$CMD_TABLE_KO"   > "$TMPDIR_META/commands.ko.md"
+echo -e "$SKILL_TABLE_EN" > "$TMPDIR_META/skills.en.md"
+echo -e "$SKILL_TABLE_KO" > "$TMPDIR_META/skills.ko.md"
+echo -e "$AGENT_TABLE_EN" > "$TMPDIR_META/agents.en.md"
+echo -e "$AGENT_TABLE_KO" > "$TMPDIR_META/agents.ko.md"
 
-# README.md, README.ko.md 모두 교체
-for readme in "$ROOT/README.md" "$ROOT/README.ko.md"; do
-  update_readme_section "$readme" "commands" "$TMPDIR_META/commands.md"
-  update_readme_section "$readme" "skills" "$TMPDIR_META/skills.md"
-  update_readme_section "$readme" "agents" "$TMPDIR_META/agents.md"
-done
+# README.md ← EN 테이블
+update_readme_section "$ROOT/README.md" "commands" "$TMPDIR_META/commands.en.md"
+update_readme_section "$ROOT/README.md" "skills"   "$TMPDIR_META/skills.en.md"
+update_readme_section "$ROOT/README.md" "agents"   "$TMPDIR_META/agents.en.md"
+
+# README.ko.md ← KO 테이블
+update_readme_section "$ROOT/README.ko.md" "commands" "$TMPDIR_META/commands.ko.md"
+update_readme_section "$ROOT/README.ko.md" "skills"   "$TMPDIR_META/skills.ko.md"
+update_readme_section "$ROOT/README.ko.md" "agents"   "$TMPDIR_META/agents.ko.md"
 
 rm -rf "$TMPDIR_META"
 

@@ -1,5 +1,6 @@
 ---
 description: "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. — MUST TRIGGER: 커밋 전(로직 변경 시), PR 생성 전, 버그 수정 후 회귀 확인 시."
+description_en: "Review code adversarially and surface hidden issues. — MUST TRIGGER: before commit (on logic changes), before PR, after a bug fix for regression check."
 ---
 
 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다.

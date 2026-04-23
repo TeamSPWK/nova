@@ -1,5 +1,6 @@
 ---
 description: "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다."
+description_en: "Run multi-AI consultation. Queries Claude + GPT + Gemini in parallel and analyzes the consensus level."
 ---
 
 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다.

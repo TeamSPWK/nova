@@ -1,6 +1,7 @@
 ---
 name: evolution
 description: "Nova 자체를 진화시킬 때 사용한다. — MUST TRIGGER: /nova:evolve 호출, 외부 기술 동향을 Nova에 반영해야 할 때, Nova 메타-개선(규칙/스킬/훅 구조 변경) 작업."
+description_en: "Use when evolving Nova itself. — MUST TRIGGER: /nova:evolve invocation, when external tech trends must be reflected into Nova, or Nova meta-improvement (rules/skills/hooks structural changes)."
 user-invocable: false
 ---
 

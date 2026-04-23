@@ -1,6 +1,7 @@
 ---
 name: security-engineer
 description: 보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용. 코드 보안 감사, 시크릿 노출 탐지, OWASP 기반 분석에 적합.
+description_en: "For security vulnerability review, threat modeling, and auth/authorization review. Best for code security audits, secret exposure detection, and OWASP-based analysis."
 model: sonnet
 tools: Read, Glob, Grep
 disallowedTools: Edit, Write, NotebookEdit, Bash

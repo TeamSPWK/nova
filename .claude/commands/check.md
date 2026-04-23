@@ -1,5 +1,6 @@
 ---
 description: "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후."
+description_en: "Combined code review + design-implementation gap verification in one pass. — MUST TRIGGER: before commit (3+ files changed), at sprint completion, right after a user-reported bug."
 ---
 
 코드 품질 리뷰와 설계-구현 정합성 검증을 한 패스로 수행한다.

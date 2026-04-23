@@ -1,6 +1,7 @@
 ---
 name: senior-dev
 description: 코드 품질 개선, 리팩토링, 구현 전략 수립, 기술 부채 식별이 필요할 때 사용. 코드 리뷰, 최소 변경 구현, 디자인 패턴 적용에 적합.
+description_en: "For code quality improvement, refactoring, implementation strategy, and tech debt identification. Best for code review, minimal-change implementation, and design pattern application."
 model: sonnet
 tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 ---

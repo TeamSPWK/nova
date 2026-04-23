@@ -1,6 +1,7 @@
 ---
 name: context-chain
 description: "세션 간 맥락을 연결해야 할 때. — MUST TRIGGER: 세션 시작 시 NOVA-STATE.md 읽기, 커밋 후 상태 갱신, 스프린트 전환 시."
+description_en: "Use when session-to-session context must carry over. — MUST TRIGGER: reading NOVA-STATE.md on session start, updating state after commit, or on sprint transitions."
 user-invocable: false
 ---
 

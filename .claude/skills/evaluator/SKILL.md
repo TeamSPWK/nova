@@ -1,6 +1,7 @@
 ---
 name: evaluator
 description: "코드 구현을 적대적 관점으로 검증해야 할 때. — MUST TRIGGER: /run, /check, /review 내부에서 독립 서브에이전트로 호출, 스프린트 완료 직후, 커밋 전 Evaluator PASS 필요 시."
+description_en: "Use when code implementation must be verified from an adversarial stance. — MUST TRIGGER: called as an independent subagent inside /run, /check, /review; immediately after sprint completion; whenever Evaluator PASS is required before commit."
 user-invocable: false
 ---
 

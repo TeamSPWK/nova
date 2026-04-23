@@ -1,6 +1,7 @@
 ---
 name: field-test
 description: "Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. — MUST TRIGGER: 신규 Nova 기능 검증, 사용자가 실전 피드백을 요청할 때, 워크트리 격리 환경에서 방법론을 리허설할 때."
+description_en: "Use when validating the Nova methodology on real projects to find improvement points. — MUST TRIGGER: new Nova feature validation, when the user asks for real-world feedback, or when rehearsing methodology in a worktree-isolated environment."
 user-invocable: false
 ---
 

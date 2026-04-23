@@ -1,6 +1,7 @@
 ---
 name: worktree-setup
 description: "git worktree에서 메인 레포의 환경 설정이 필요할 때. — MUST TRIGGER: 새 worktree 진입 직후, 사용자가 '환경변수 안 읽힘·시크릿 못 찾음'을 보고할 때, EnterWorktree 도구 호출 직후."
+description_en: "Use when the main repo's environment setup is needed inside a git worktree. — MUST TRIGGER: right after entering a new worktree, when the user reports 'env vars not read' or 'secrets not found', or right after the EnterWorktree tool is called."
 user-invocable: false
 ---
 

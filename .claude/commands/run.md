@@ -1,5 +1,6 @@
 ---
 description: "구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능."
+description_en: "Run the implement → verify full cycle. Use --verify-only to run verification alone."
 ---
 
 ## 적용 규칙 (on-demand 로드)

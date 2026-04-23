@@ -1,6 +1,7 @@
 ---
 name: ux-audit
 description: "UI/UX 품질을 다관점·적대적으로 검증할 때. — MUST TRIGGER: UI/UX 변경 후 /review 전, 새 기능 론칭 전, 프론트엔드 리팩토링 후, 접근성(WCAG) 점검이 필요할 때."
+description_en: "Use when UI/UX quality must be validated adversarially from multiple perspectives. — MUST TRIGGER: after UI/UX changes before /review, before launching a new feature, after frontend refactoring, or when accessibility (WCAG) review is needed."
 user-invocable: false
 ---
 

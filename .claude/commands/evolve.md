@@ -1,5 +1,6 @@
 ---
 description: "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다."
+description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf."
 ---
 
 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다.

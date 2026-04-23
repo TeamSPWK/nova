@@ -32,6 +32,7 @@ docs/.pdca-status.json
 
 # Claude Code local settings (per-user)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # IDE
 .vscode/

@@ -1,5 +1,6 @@
 ---
 description: "새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다."
+description_en: "Auto-analyze a codebase on first entry and brief you on 'where to start looking'."
 ---
 
 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 "어디를 먼저 봐야 하는지", "알려진 기술 부채는 무엇인지"를 요약한다.

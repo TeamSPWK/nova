@@ -1,5 +1,6 @@
 ---
 description: "현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전."
+description_en: "Instantly symlink the main repo's .env, secrets, and config files into the current worktree. Manual retry of the SessionStart auto-hook."
 ---
 
 현재 worktree에서 메인 레포의 환경 파일을 즉시 다시 연결한다.

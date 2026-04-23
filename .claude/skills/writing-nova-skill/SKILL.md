@@ -1,6 +1,7 @@
 ---
 name: writing-nova-skill
 description: "새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. — MUST TRIGGER: skills/ 하위 신규 SKILL.md 생성, 기존 SKILL description 리팩터, 사용자가 'Nova 스킬 추가/수정' 요청 시."
+description_en: "Use when authoring a new Nova skill or revising an existing skill's description. — MUST TRIGGER: creating a new SKILL.md under skills/, refactoring an existing SKILL description, or when the user asks to 'add or modify a Nova skill'."
 user-invocable: false
 ---
 

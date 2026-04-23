@@ -1,6 +1,7 @@
 ---
 name: orchestrator
 description: "자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. — MUST TRIGGER: /nova:auto 호출, 사용자가 '전체 알아서 해줘' 유형의 요청을 할 때, 다중 에이전트 편성이 필요한 복합 작업."
+description_en: "Use when a natural-language request needs the entire development cycle auto-handled. — MUST TRIGGER: /nova:auto invocation, 'just handle everything' requests, or complex tasks requiring multi-agent formation."
 user-invocable: false
 ---
 

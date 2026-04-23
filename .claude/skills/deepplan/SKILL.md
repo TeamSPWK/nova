@@ -1,6 +1,7 @@
 ---
 name: deepplan
 description: "Plan 문서의 탐색 폭/검증 깊이가 부족할 때 깊이 있는 Plan을 생성한다. — MUST TRIGGER: 복잡도 8+ 작업, 아키텍처 분기 결정, /nova:plan 결과가 얕다고 판단되는 경우, 사용자가 /nova:deepplan 호출."
+description_en: "Use when a Plan's search breadth or verification depth is insufficient and a deeper Plan is needed. — MUST TRIGGER: complexity 8+ tasks, architectural fork decisions, when /nova:plan output feels shallow, or user invokes /nova:deepplan."
 user-invocable: false
 ---
 

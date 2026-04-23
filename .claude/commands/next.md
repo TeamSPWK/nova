@@ -1,5 +1,6 @@
 ---
 description: "현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다."
+description_en: "Diagnose current project state and recommend the next Nova command to run."
 ---
 
 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다.

@@ -1,5 +1,6 @@
 ---
 description: "새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade)."
+description_en: "Initial Nova Quality Gate setup for a new project, or auto-fill gaps in an existing project (--upgrade)."
 ---
 
 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다.

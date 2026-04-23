@@ -1,5 +1,6 @@
 ---
 description: "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다."
+description_en: "Auto-run a natural-language request through the full design → implement → verify → fix cycle."
 ---
 
 # Nova Auto

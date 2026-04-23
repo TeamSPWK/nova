@@ -1,6 +1,7 @@
 ---
 name: refiner
 description: evaluator FAIL 출력을 받아 수정안을 제안한다. 코드 직접 변경 금지, 제안만 한다.
+description_en: "Takes evaluator FAIL output and proposes fixes. Cannot modify code directly — proposals only."
 model: inherit
 tools: Read, Glob, Grep
 disallowedTools: Edit, Write, NotebookEdit

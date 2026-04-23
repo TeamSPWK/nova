@@ -1,6 +1,7 @@
 ---
 name: devops-engineer
 description: CI/CD 파이프라인, 인프라 설정, 배포 전략, 모니터링 구성이 필요할 때 사용. Dockerfile, GitHub Actions, IaC 검토 및 작성에 적합.
+description_en: "For CI/CD pipelines, infrastructure setup, deployment strategy, and monitoring configuration. Best for reviewing and authoring Dockerfiles, GitHub Actions, and IaC."
 model: sonnet
 tools: Read, Glob, Grep, Edit, Write, Bash
 ---
