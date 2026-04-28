@@ -44,16 +44,22 @@ Sprint 1부터 Nova는 두 기록 체계를 **병행**한다(이중화 아님):
 
 세션 말기에 수동 기록하면 부실해진다. **성과 발생 시점**에 즉시 갱신한다.
 
-| 이벤트 | NOVA-STATE.md 갱신 내용 |
-|--------|------------------------|
-| 작업 시작 | Tasks에 행 추가 (Status: doing) |
-| git commit | 관련 Task의 Status 업데이트 |
-| `/nova:plan` 완료 | Current Goal/Phase 설정, Refs Plan 경로 기록 |
-| `/nova:design` 완료 | Phase → building 전환, Refs Design 경로 기록 |
-| `/nova:auto` 완료 | Recently Done에 추가 (Verdict + Ref) |
-| `/nova:review` 완료 | Refs의 Last Verification 갱신 |
-| `/nova:check` 완료 | Refs의 Last Verification 갱신 |
-| 작업 완료 | Tasks에서 제거 → Recently Done 이동 |
+| 이벤트 | NOVA-STATE.md 갱신 내용 | 정리 의무 |
+|--------|------------------------|-----------|
+| 작업 시작 | Tasks에 행 추가 (Status: doing) | — |
+| git commit | 관련 Task의 Status 업데이트 | — |
+| `/nova:plan` 완료 | Current Goal/Phase 설정, Refs Plan 경로 기록 | ✓ 50줄 트림 |
+| `/nova:design` 완료 | Phase → building 전환, Refs Design 경로 기록 | ✓ 50줄 트림 |
+| `/nova:deepplan` 완료 | Phase → planning, Refs Plan 경로 기록 | ✓ 50줄 트림 |
+| `/nova:run` 완료 | Recently Done 추가, Phase 갱신 (PASS→done, FAIL→building) | ✓ 50줄 트림 |
+| `/nova:auto` 완료 | Recently Done에 추가 (Verdict + Ref) | ✓ 50줄 트림 |
+| `/nova:review` 완료 | Refs의 Last Verification 갱신 | ✓ 50줄 트림 |
+| `/nova:check` 완료 | Refs의 Last Verification 갱신 | ✓ 50줄 트림 |
+| `/nova:ux-audit` 완료 | Last Activity + Known Risks 갱신 | ✓ 50줄 트림 |
+| `/nova:evolve` 완료 | Last Activity에 evolve 결과 기록 | ✓ 50줄 트림 |
+| 작업 완료 | Tasks에서 제거 → Recently Done 이동 | — |
+
+**정리 의무 (필수)**: 갱신 트리거 9개 진입점(`/nova:plan`, `/nova:design`, `/nova:deepplan`, `/nova:run`, `/nova:auto`, `/nova:review`, `/nova:check`, `/nova:ux-audit`, `/nova:evolve`)은 갱신 직후 NOVA-STATE.md가 50줄을 초과하면 가장 오래된 Last Activity / Recently Done 항목부터 제거하여 50줄 이내로 트림한다. 갱신만 강제하고 정리를 빠뜨리면 단조 증가한다 — 갱신/정리는 한 동작의 두 면이다. orchestrator/deepplan 스킬도 동일 의무를 진다.
 
 ## Last Activity 포맷
 

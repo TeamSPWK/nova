@@ -136,6 +136,7 @@ Safe-default: 실패해도 Plan 작성은 완료로 간주.
   ## Last Activity
   - /nova:plan → 완료 — docs/plans/{slug}.md | {ISO 8601}
   ```
+- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 
 # Related: `/nova:deepplan`과 `/ultraplan`
 

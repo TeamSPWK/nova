@@ -228,6 +228,7 @@ Generator 서브에이전트 spawn (이슈 목록 + 수정 범위 전달)
 - Tasks 테이블에서 해당 작업 제거
 - Recently Done이 3개 초과 시 가장 오래된 항목 제거
 - Phase를 검증 결과에 따라 갱신 (PASS → done, FAIL → building)
+- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 
 # Input
 

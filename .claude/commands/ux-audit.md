@@ -293,6 +293,8 @@ Critical/High 이슈에 대해 수정안 생성:
 - /nova:ux-audit → Critical {N} / High {N} / Medium {N} / Low {N} — {평가 대상} | {ISO 8601}
 ```
 
+- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
+
 접근성/다크 패턴 관련 Critical 발견 시 Known Risks에도 추가.
 
 # Notes

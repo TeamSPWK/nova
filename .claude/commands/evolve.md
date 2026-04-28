@@ -265,6 +265,7 @@ gh issue close {이슈번호} --repo TeamSPWK/nova --comment "v{새버전}에서
 - 기존 `propose` 커맨드의 "반복 패턴 → 규칙화" 기능을 포함한다: 프로젝트 코드에서 반복 패턴을 감지하면 규칙 제안서를 생성한다.
 - 테스트(`bash tests/test-scripts.sh`) 실패 시 해당 변경을 즉시 롤백한다.
 - NOVA-STATE.md를 갱신한다 (Last Activity에 evolve 결과 기록).
+- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 
 # Input
 $ARGUMENTS

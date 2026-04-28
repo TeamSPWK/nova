@@ -371,6 +371,7 @@ Critical 이슈가 발견되면 수정 후 재검증을 권고한다:
   ## Last Activity
   - /nova:review → {PASS/CONDITIONAL/FAIL} — {리뷰 대상 파일/디렉토리} | {ISO 8601}
   ```
+- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 - **보안 이슈 발견 시**: `NOVA-STATE.md`의 "알려진 위험(Known Risks)" 테이블에 해당 이슈를 추가한다. 기존 항목과 중복되면 상태만 갱신한다.
   ```
   ## 알려진 위험 (Known Risks)

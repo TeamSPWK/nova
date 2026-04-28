@@ -274,6 +274,30 @@ assert "/review: 다음 도구 호출로 갱신 지시" \
 
 assert "/check: 다음 도구 호출로 갱신 지시" \
   "grep -q '다음 도구 호출로' '$ROOT_DIR/.claude/commands/check.md'"
+
+# State Prune Symmetry — 갱신/정리 트리거 비대칭 회귀 가드 (v5.19.6+)
+# 6개 갱신 트리거 커맨드 모두에 "갱신 후 정리" 지시문이 존재해야 한다.
+# 갱신만 강제하고 정리를 강제하지 않으면 NOVA-STATE.md가 단조 증가한다.
+for _cmd in plan design check review ux-audit run evolve; do
+  assert "/$_cmd: 갱신 후 정리 트리거 존재 (50줄 초과 시 트림)" \
+    "grep -qE '갱신 후 정리|50줄 초과' '$ROOT_DIR/.claude/commands/$_cmd.md'"
+done
+
+# session-start.sh 3개 프로파일에 STATE 사이즈 룰 키워드 ("50줄") 노출
+# 매 세션 자동 주입되는 글로벌 룰이 룰 자체를 인지시켜야 한다.
+for _profile in lean standard strict; do
+  assert "session-start.sh ($_profile): NOVA-STATE 사이즈 룰 노출 (50줄)" \
+    "NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q '50줄'"
+done
+
+# NOVA-STATE 갱신 지점이 있는 스킬도 정리 트리거 의무를 진다 (orchestrator/deepplan/ux-audit).
+# context-chain SKILL은 자동 갱신 트리거 표에 evolve 행을 포함해야 한다.
+for _skill in orchestrator deepplan ux-audit; do
+  assert "skills/$_skill: 갱신 후 정리 트리거 존재 (50줄)" \
+    "grep -q '50줄' '$ROOT_DIR/.claude/skills/$_skill/SKILL.md'"
+done
+assert "skills/context-chain: 자동 갱신 트리거 표에 evolve 행 존재" \
+  "grep -q 'nova:evolve.*완료' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
 echo ""
 
 # ═══════════════════════════════════════════
