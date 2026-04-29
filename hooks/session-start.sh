@@ -86,6 +86,31 @@ else
   ADDITIONAL_CONTEXT="# Nova Engineering\n\nNova 자동 적용 규칙 — 품질 실행 계약. 상세는 docs/nova-rules.md 및 관련 커맨드가 on-demand 로드. 프로젝트 \`.claude/rules/\`가 있으면 Nova보다 우선.\n\n## 규칙 (핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 인증/DB/결제 +1. 자가 완화 금지. 파일 수 초과 시 즉시 Plan 승격.\n2. **검증 + 하드 게이트**: 검증은 **독립 서브에이전트**(별도 spawn=창 분리). 메인 재확인은 독립 아님. 커밋 전 tsc/lint→Evaluator→PASS→커밋. PASS 없이 커밋 시 exit 2 차단(--emergency 예외). tmux pane: TeamCreate→Agent(name+team_name+run_in_background:true).\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl. 환경 변경 3단계(현재→변경→반영).\n4. **블로커**: Auto/Soft/Hard. 불확실=Hard. 2회 실패 시 강제 분류.\n5. **환경 안전**: 설정 파일 직접 수정 금지. 환경변수/CLI 플래그.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup\n\n## Always-On (MUST)\n\n1. 모든 코드 변경에 자동 규칙.\n2. 3파일+ 변경 시 Plan.\n3. 구현 완료 시 Evaluator를 독립 서브에이전트로 실행.\n4. 커밋 전 /nova:review --fast.\n5. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림).\n6. 블로커 발생 시 즉시 알림."
 fi
 
+# ── §10 MCP 부하 카운트 (P1-2, v5.22.1+) ──
+# 임계 초과(>10) 시만 경고 출력. ≤10 정상 카운트는 미표시.
+# 캐시 1시간 + 캐시 미스 시 백그라운드 갱신 → 본 세션 응답 시간 영향 없음.
+# lean 프로파일은 ≤1200자 보호로 스킵.
+if [ "$NOVA_PROFILE" != "lean" ]; then
+  _MCP_COUNT=""
+  _MCP_CACHE=".nova/mcp-count.cache"
+  if [[ -f "$_MCP_CACHE" ]]; then
+    _CAGE=$(($(date +%s) - $(date -r "$_MCP_CACHE" +%s 2>/dev/null || echo 0)))
+    if (( _CAGE < 3600 )); then
+      _MCP_COUNT=$(cat "$_MCP_CACHE" 2>/dev/null)
+    fi
+  fi
+  if [[ -z "$_MCP_COUNT" ]] && command -v claude >/dev/null 2>&1; then
+    (
+      mkdir -p .nova 2>/dev/null
+      _NEW=$(timeout 5 claude mcp list 2>/dev/null | grep -cE '^[^[:space:]].+ - [✓✗!]' 2>/dev/null)
+      [[ -n "$_NEW" && "$_NEW" -gt 0 ]] && echo "$_NEW" > "$_MCP_CACHE" 2>/dev/null
+    ) &
+  fi
+  if [[ -n "$_MCP_COUNT" && "$_MCP_COUNT" =~ ^[0-9]+$ && "$_MCP_COUNT" -gt 10 ]]; then
+    ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ MCP ${_MCP_COUNT}개 활성 — ECC 권장 ≤10 초과. 컨텍스트 압박 (§10)."
+  fi
+fi
+
 cat << NOVA_EOF
 {
   "hookSpecificOutput": {

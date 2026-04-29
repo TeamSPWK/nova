@@ -298,6 +298,30 @@ for _skill in orchestrator deepplan ux-audit; do
 done
 assert "skills/context-chain: 자동 갱신 트리거 표에 evolve 행 존재" \
   "grep -q 'nova:evolve.*완료' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
+
+# P1-2 MCP 카운트 알림 (v5.22.1+) — 임계 초과 시 standard/strict에 경보, ≤10 정상 미노출, lean 항상 미노출
+_MCP_CACHE_TEST="$ROOT_DIR/.nova/mcp-count.cache"
+_MCP_CACHE_BACKUP=""
+if [[ -f "$_MCP_CACHE_TEST" ]]; then
+  _MCP_CACHE_BACKUP=$(cat "$_MCP_CACHE_TEST")
+fi
+mkdir -p "$ROOT_DIR/.nova" 2>/dev/null
+echo "15" > "$_MCP_CACHE_TEST"
+assert "session-start.sh (standard): MCP >10 임계 초과 시 ⚠️ 경보 노출" \
+  "cd '$ROOT_DIR' && NOVA_PROFILE=standard bash hooks/session-start.sh 2>/dev/null | grep -q 'MCP 15개'"
+assert "session-start.sh (strict): MCP >10 임계 초과 시 ⚠️ 경보 노출" \
+  "cd '$ROOT_DIR' && NOVA_PROFILE=strict bash hooks/session-start.sh 2>/dev/null | grep -q 'MCP 15개'"
+assert "session-start.sh (lean): MCP 경보 미노출 (≤1200자 예산 보호)" \
+  "cd '$ROOT_DIR' && NOVA_PROFILE=lean bash hooks/session-start.sh 2>/dev/null | grep -qv 'MCP 15개'"
+echo "6" > "$_MCP_CACHE_TEST"
+assert "session-start.sh (standard): MCP ≤10 정상 카운트는 미노출 (시그널 보존)" \
+  "cd '$ROOT_DIR' && NOVA_PROFILE=standard bash hooks/session-start.sh 2>/dev/null | grep -qv 'MCP 6개'"
+# 정리
+if [[ -n "$_MCP_CACHE_BACKUP" ]]; then
+  echo "$_MCP_CACHE_BACKUP" > "$_MCP_CACHE_TEST"
+else
+  rm -f "$_MCP_CACHE_TEST"
+fi
 echo ""
 
 # ═══════════════════════════════════════════
