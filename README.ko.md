@@ -29,6 +29,20 @@
 
 품질 기둥은 여전히 가장 강력하다. 독립 검증, 멀티 AI 교차 확인, 설계-구현 갭 탐지는 매 세션 자동 주입된다.
 
+## v5.23.0 신규 — ECC 적대적 갭 클로저
+
+ECC(Everything Claude Code) 생태계에서 측정·검증된 메커니즘을 흡수하면서 Nova의 응집형 정체성은 그대로 유지한 멀티 릴리스 스프린트. **정체성은 메커니즘이 입증된 후에 발견되는 것이지 선험적으로 선언하지 않는다** — 아래 항목들은 어휘 합치가 아니라 적대적 평가를 통과해서 흡수됐다.
+
+| 릴리스 | 추가 | 출처 |
+|--------|------|------|
+| **v5.23.0** | `/nova:audit-self --jury` — Red(공격자)/Blue(방어자)/Auditor(중재자) 3페르소나 적대적 보안 진단. 단일 evaluator의 자기 합리화 편향 상쇄. | ECC AgentShield §P2-3 |
+| **v5.22.3** | `release.sh` Step 2.5 위생 게이트 — review 흔적/`NOVA-STATE.md` 신선도/audit-self 회귀 통합 4종 fail-open 권고 | 자체 갭 (Always-On 4 강화) |
+| **v5.22.2** | `audit-self` 룰 sensitivity 검증 (T11~T25) — 15개 inline 위반 fixture로 룰이 의도된 패턴을 catch함을 증명. T13 jq escape 버그 자체 적발. | 메타-루프 자기 발견 |
+| **v5.22.1** | `hooks/session-start.sh` MCP 부하 알림 — `claude mcp list` 1시간 캐시, >10 서버 활성 시 ⚠️ 경보 | ECC §P1-2 (10/80 룰) |
+| **v5.22.0** | `/nova:audit-self` 커맨드 + 30 룰 보안 룰셋 (5 카테고리: plugin/hooks/agents/skills/commands). Generator-Evaluator 분리를 Nova 자기 코드베이스에 적용. | ECC AgentShield §P1-1 |
+
+**클로저**: Known Risks Medium(release.sh review 흔적 게이트), Info(audit-self 룰 sensitivity). **정체성 레이어 미변경** — 5기둥, 슬로건, Generator-Evaluator 분리, NOVA-STATE 9 진입점 연속성 모두 유지. 흡수 근거와 의도적 거부(183 스킬 양적 추격, 자동 승격, 100% PreToolUse 관측)는 [docs/proposals/2026-04-29-ecc-adversarial-gap.md](docs/proposals/2026-04-29-ecc-adversarial-gap.md) 참조.
+
 ## 빠른 시작
 
 ```bash

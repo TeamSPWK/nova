@@ -33,6 +33,20 @@ Nova is a [Claude Code](https://claude.ai/code) plugin that makes AI agents oper
 
 The Quality pillar remains load-bearing: independent evaluation, multi-AI cross-verification, and design-implementation gap detection are injected into every session automatically.
 
+## What's New in v5.23.0 — ECC Adversarial Gap Closure
+
+A multi-release sprint that adopted measured ideas from the ECC (Everything Claude Code) ecosystem while preserving Nova's cohesive identity. **Identity is discovered after the mechanism proves itself, not declared upfront** — the additions below were absorbed because they passed adversarial evaluation, not because of vocabulary fit.
+
+| Release | Addition | Source |
+|---------|----------|--------|
+| **v5.23.0** | `/nova:audit-self --jury` — Red(attacker) / Blue(defender) / Auditor(arbiter) 3-persona adversarial security audit. Counters single-evaluator self-justification bias. | ECC AgentShield §P2-3 |
+| **v5.22.3** | `release.sh` Step 2.5 hygiene gates — fail-open advisories for review trail / `NOVA-STATE.md` freshness / audit-self regression integration | Self-gap (Always-On 4 enforcement) |
+| **v5.22.2** | `audit-self` rule sensitivity layer (T11–T25) — 15 inline violation fixtures prove rules catch intended patterns. Self-discovered jq escape bug in T13. | Self-discovered via meta-loop |
+| **v5.22.1** | `hooks/session-start.sh` MCP load alert — caches `claude mcp list` 1h, surfaces ⚠️ when >10 servers active | ECC §P1-2 (10/80 rule) |
+| **v5.22.0** | `/nova:audit-self` command + 30-rule security rulebook (5 categories: plugin/hooks/agents/skills/commands). Generator-Evaluator separation applied to Nova's own codebase. | ECC AgentShield §P1-1 |
+
+**Closed**: Known Risks Medium (release.sh review-trail gate) and Info (audit-self rule sensitivity). **Identity layer untouched** — five pillars, slogan, Generator-Evaluator separation, NOVA-STATE 9-entry continuity all intact. See [docs/proposals/2026-04-29-ecc-adversarial-gap.md](docs/proposals/2026-04-29-ecc-adversarial-gap.md) for the full adoption rationale and what was deliberately rejected (183-skill quantity race, auto-promotion, 100% PreToolUse observation).
+
 ## Quick Start
 
 ```bash
