@@ -11,7 +11,7 @@ Nova 플러그인 자기 보안 진단 — 정적 분석 기반.
 ```
 /nova:audit-self                      # 전체 5 카테고리 스캔 (~30K 토큰)
 /nova:audit-self --category hooks     # 단일 카테고리만 (~6K 토큰)
-/nova:audit-self --jury               # (v5.23.0 예정) Red/Blue/Auditor 다관점 — 현재는 placeholder
+/nova:audit-self --jury               # Red/Blue/Auditor 3에이전트 적대적 검증 (~50K 토큰, v5.23.0+)
 ```
 
 ## 비용
@@ -62,6 +62,44 @@ rules_doc: docs/security-rules.md
 ```
 
 서브에이전트는 `agents/security-engineer.md` 의 "Nova 자기 코드 감사 모드" 섹션 규약을 따라 마크다운 리포트를 반환한다 (Critical/Warning/Info 분류).
+
+## Phase 2.5: --jury 분기 (v5.23.0+, ECC §P2-3 흡수)
+
+`--jury` 플래그가 지정된 경우, Phase 2의 단일 security-engineer 결과를 **3 페르소나 적대적 검증**으로 보강한다. `skills/jury/SKILL.md` 모드 3 (보안 진단) 호출.
+
+전달 컨텍스트:
+
+```
+mode: audit
+target: nova-self-codebase
+rules_doc: docs/security-rules.md
+scan_targets: <Phase 1 결과>
+exclusion_list: <exclusion_list 항목>
+security_engineer_report: <Phase 2 결과>
+```
+
+jury 스킬은 다음 3 서브에이전트를 독립 spawn한다 — Generator-Evaluator 분리 (§2):
+
+| 페르소나 | 역할 | 출력 |
+|----------|------|------|
+| **Red (공격자)** | 룰셋 약점·우회 케이스 발굴 — false negative 5개 이내 | 우회 시나리오 + 룰 보강 권고 |
+| **Blue (방어자)** | Phase 2 보고된 위반 검증 — false positive 강등 권고 | KEEP/DEMOTE/DROP 판정 |
+| **Auditor (중재자)** | Red+Blue+원본 보고 통합 → 최종 분류 | Critical/Warning/Info 최종 표 |
+
+**합의 프로토콜** (`skills/jury/SKILL.md` 모드 3):
+
+| Red | Blue | Auditor 최종 |
+|-----|------|-------------|
+| PASS | PASS | **PASS** — 진단 종결 |
+| PASS | CONDITIONAL | **PASS with demotion** — Blue 권고 반영 |
+| FAIL | PASS | **CONDITIONAL** — Red 발견 룰 보강 백로그 추가 |
+| FAIL | CONDITIONAL | **FAIL** — 즉시 검토 |
+
+**비용 가산**: 단일 모드 ~30K → `--jury` 모드 ~50K 토큰 (3 페르소나 + Auditor 통합).
+
+**Phase 4 환각 회로 강화**: Auditor 결과의 모든 `{file:line}` 항목에 메인 컨텍스트가 grep 사실 검증 — Red가 제안한 우회 케이스 (실제 파일에 없을 수 있음)는 "Red 추론" 마커로 분리 표시.
+
+**관찰성**: jury 스킬이 `jury_verdict` 이벤트 기록 (mode=audit 필드). audit-self가 추가로 `audit_self_verdict`를 기록하여 dual log.
 
 ## Phase 3: evaluator 직렬 검증
 
@@ -172,15 +210,15 @@ Safe-default — 기록 실패 시 파이프라인 영향 없음.
 
 ---
 
-## Known Gap (v5.22.0)
+## Known Gap (v5.23.0)
 
 | 영역 | 사유 | 차후 |
 |------|------|------|
 | 동적 분석 (런타임 권한, 세션 오염, MCP 네트워크) | 정적 분석 한계 | e2e CI로 별도 검증 |
-| 공급망 무결성 (룰 파일 변조 탐지) | v5.22.0 범위 외 | v5.23.0 검토 |
-| `--jury` Red/Blue/Auditor 다관점 | jury 페르소나 미정의 | v5.23.0 |
+| 공급망 무결성 (룰 파일 변조 탐지) | 범위 외 | v5.24.0+ 검토 |
 | Cross-harness 보안 (cursor/codex/gemini) | Tier 4 deferred | Claude Code 안정화 후 |
-| 사용자 `.claude/rules/` 통합 | Nova 룰셋 우선 | v5.23.0+ Known Gap |
+| 사용자 `.claude/rules/` 통합 | Nova 룰셋 우선 | v5.24.0+ Known Gap |
+| Auditor 신뢰도 측정 | jury 모드 3 첫 운영 | v5.24.0+ baseline 측정 후 결정 |
 
 ---
 
@@ -193,7 +231,7 @@ Safe-default — 기록 실패 시 파이프라인 영향 없음.
 | security-engineer spawn 실패 | 1회 재시도 후 사용자 보고 |
 | evaluator 직렬 호출 실패 | Phase 3 skip + 출력에 ⚠️ 마커 "Phase 3 미실행 — security-engineer 단독 결과" |
 | Phase 4 grep 매칭 실패 ≥1 | "⚠️ Evaluator 환각 경보" 출력 + 해당 항목 "검증 불가" 마킹 |
-| `--jury` 호출 (v5.22.0) | "v5.23.0 예정" 메시지 출력 후 단일 모드 진행 |
+| `--jury` 호출 시 jury 스킬 모드 3 미정의 | skills/jury/SKILL.md 무결성 의심 — 단일 모드 fallback + 사용자 보고 |
 | 토큰 한계 초과 | `--category` 옵션 권고 메시지 출력 후 진행 |
 
 ---

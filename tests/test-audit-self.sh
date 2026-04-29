@@ -129,6 +129,18 @@ check "T9: '결과 해석 가이드' 또는 'Critical 발견 시'" \
 check "T10: docs/security-rules.md Known Gap 섹션" \
   "grep -q 'Known Gap\|공급망' '$RULES'"
 
+# ── T26~T29: --jury 모드 3 (보안 진단) 통합 (v5.23.0+, ECC §P2-3) ──
+JURY_SKILL="$ROOT_DIR/.claude/skills/jury/SKILL.md"
+[[ -f "$JURY_SKILL" ]] || JURY_SKILL="$ROOT_DIR/skills/jury/SKILL.md"
+check "T26: jury SKILL.md 모드 3 (보안 진단) 섹션 존재" \
+  "grep -q '모드 3.*보안 진단\|보안 진단.*v5.23.0' '$JURY_SKILL'"
+check "T27: jury SKILL.md Red/Blue/Auditor 페르소나 정의" \
+  "grep -qE 'Red.*공격자' '$JURY_SKILL' && grep -qE 'Blue.*방어자' '$JURY_SKILL' && grep -qE 'Auditor.*중재자' '$JURY_SKILL'"
+check "T28: audit-self.md Phase 2.5 --jury 분기 명세" \
+  "grep -q 'Phase 2.5.*--jury\|--jury.*v5.23.0\|jury 스킬.*모드 3' '$CMD'"
+check "T29: audit-self.md placeholder 제거 (Red/Blue/Auditor 본격)" \
+  "! grep -q 'placeholder' '$CMD'"
+
 # ── T11~T25: 룰 sensitivity 검증 (v5.22.2+) ──
 # V12 self-host에서 30/0 매칭 → False Negative 가능성 점검.
 # 카테고리당 3 룰 × 5 = 15 룰의 grep pattern이 의도된 violation 문자열을 catch하는지 inline 검증.
