@@ -1936,6 +1936,20 @@ assert "M18: context-chain SKILL evolve_decision JSONL only" \
 # M19: docs/baselines/ 디렉토리 (snapshot-baseline.sh 산출물 보관)
 assert "M19: docs/baselines/ 디렉토리 존재" "[ -d '$ROOT_DIR/docs/baselines' ]"
 
+# ── v5.20.1 ECC P0/P1 흡수 (docs only) ──
+
+# N1: P0-1 컨텍스트 로스트 진단 카탈로그
+assert "N1: docs/context-rot-diagnosis.md — 4원인 카탈로그" \
+  "[ -f '$ROOT_DIR/docs/context-rot-diagnosis.md' ] && grep -qE '어텐션 희석|명령 충돌|토큰 예산|관련성 미스매치' '$ROOT_DIR/docs/context-rot-diagnosis.md'"
+
+# N2: P0-2 비용 최적화 가이드
+assert "N2: docs/cost-optimization.md — settings.json 권장 키 + 모델 계층화" \
+  "[ -f '$ROOT_DIR/docs/cost-optimization.md' ] && grep -qE 'MAX_THINKING_TOKENS|CLAUDE_AUTOCOMPACT_PCT_OVERRIDE|sonnet|haiku' '$ROOT_DIR/docs/cost-optimization.md'"
+
+# N3: P1-2 MCP 10/80 룰
+assert "N3: docs/nova-rules.md MCP 10/80 룰 노출" \
+  "grep -qE 'MCP.*≤ ?10|≤ ?80|10개.*80개' '$ROOT_DIR/docs/nova-rules.md'"
+
 echo ""
 
 # ═══════════════════════════════════════════
