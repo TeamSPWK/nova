@@ -98,3 +98,7 @@ NOVA-STATE.md의 Last Activity는 **반드시 1줄**로 기록한다:
 - 스프린트 간 새 서브에이전트로 컨텍스트 오염 방지
 - `NOVA-STATE.md` + Design 문서로 새 세션에서 상태 복원
 - `docs/auto-handoff.md`는 더 이상 사용하지 않는다 — `NOVA-STATE.md`가 대체
+
+## 세션-수준 압축은 별도 스킬 (v5.21.0+)
+
+본 스킬은 *상태-수준* 트림(NOVA-STATE 50줄)만 다룬다. Claude Code 세션 컨텍스트 창 자체의 `/clear`·`/compact` 시점은 `skills/strategic-compact/SKILL.md`. 둘은 별도 트리거·별도 효과 — 토큰 압박을 진짜로 해소하려면 둘 다 적용한다.

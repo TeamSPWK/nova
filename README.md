@@ -326,6 +326,7 @@ Skills are multi-step operations that commands invoke internally. They can also 
 | **field-test** | Use when validating the Nova methodology on real projects to find improvement points. |
 | **jury** | Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. |
 | **orchestrator** | Use when a natural-language request needs the entire development cycle auto-handled. |
+| **strategic-compact** | Use when you must decide whether to /clear or /compact the session context. |
 | **ux-audit** | Use when UI/UX quality must be validated adversarially from multiple perspectives. |
 | **worktree-setup** | Use when the main repo's environment setup is needed inside a git worktree. |
 | **writing-nova-skill** | Use when authoring a new Nova skill or revising an existing skill's description. |

@@ -321,6 +321,7 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 | **field-test** | Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. |
 | **jury** | 단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. |
 | **orchestrator** | 자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. |
+| **strategic-compact** | 세션 컨텍스트 압축(/clear · /compact) 시점을 판단해야 할 때. |
 | **ux-audit** | UI/UX 품질을 다관점·적대적으로 검증할 때. |
 | **worktree-setup** | git worktree에서 메인 레포의 환경 설정이 필요할 때. |
 | **writing-nova-skill** | 새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. |
