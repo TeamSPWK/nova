@@ -67,10 +67,10 @@ echo -e "${YELLOW}[구조: 커맨드]${NC}"
 EXPECTED_COMMANDS=(
   run design scan evolve setup next
   auto plan deepplan review check ask ux-audit
-  worktree-setup
+  worktree-setup audit-self
 )
 CMD_COUNT=$(ls "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
-assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 14 ]"
+assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 15 ]"
 
 for cmd in "${EXPECTED_COMMANDS[@]}"; do
   assert "커맨드: $cmd.md" "[ -f '$ROOT_DIR/.claude/commands/$cmd.md' ]"

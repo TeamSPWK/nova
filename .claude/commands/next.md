@@ -102,6 +102,10 @@ description_en: "Diagnose current project state and recommend the next Nova comm
    e. Verification이 완료되고 이슈가 없다 → `/review` 추천
       "검증이 완료되었습니다. 코드 품질을 점검하세요."
 
+   e-0. **Nova 플러그인 자기 코드 변경**이 감지되면 (커밋이 `commands/`, `agents/`, `hooks/`, `skills/`, `.claude-plugin/` 중 하나 포함) → `/nova:audit-self` 병행 추천
+      "Nova 자기 코드가 변경되었습니다. `/nova:audit-self`로 정적 보안 진단을 권장합니다 (5 카테고리 30+ 룰)."
+      이 추천은 e와 병행 표시한다 (e를 대체하지 않음).
+
    e-1. 최근 변경 파일에 프론트엔드 파일이 3개 이상 포함되어 있다 (*.tsx, *.jsx, *.vue, *.svelte, *.css, *.scss) → `/ux-audit` 병행 추천
       "UI 변경이 감지되었습니다. `/nova:ux-audit`로 접근성·인지 부하·성능·다크 패턴을 점검하세요."
       이 추천은 e 항목과 병행 표시한다 (e를 대체하지 않음).

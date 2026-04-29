@@ -55,6 +55,7 @@ description_en: "Review code adversarially and surface hidden issues. — MUST T
 | `server` | 서버 로직, API, DB | 비즈니스 로직, 데이터 관통, 에러 처리 | UI/UX, 프론트엔드 스타일 |
 | `client` | 프론트엔드, UI/UX | 컴포넌트 구조, 상태 관리, 접근성 | 서버 로직, DB 쿼리 |
 | `security` | 보안 집중 | OWASP Top 10, 인증/인가, 입력 검증, 시크릿 | 스타일, 설계 정합성 |
+| `security` (Nova 플러그인 자기 코드) | **`/nova:audit-self` 우선** | Nova plugin.json/hooks/agents/skills/commands 자기 보안 진단 (5 카테고리 30+ 룰) | review --scope security는 사용자 코드 대상, audit-self는 플러그인 자기 코드 대상 |
 | `design` | 설계 정합성 | Design Drift, 아키텍처 일관성, Data Contract | 보안 스캔, 코드 스타일 |
 | `perf` | 성능 | N+1, 불필요 재렌더, 메모리 누수, 캐싱 | 기능 정확성, 보안 |
 
@@ -409,5 +410,6 @@ Nova 자체는 `/ultrareview`를 자동 호출하지 않는다. 사용자가 판
 - **UI/UX 심층 분석**: 프론트엔드 변경(컴포넌트, 스타일, 라우팅)이 주된 리뷰 대상이면, 판정 후 `/nova:ux-audit`를 안내한다. 이 커맨드는 접근성(WCAG 2.2), 인지 부하, 성능(Core Web Vitals), 다크 패턴을 5인 적대적 평가자로 심층 분석한다.
 - **Learned Rules 참조**: 프로젝트에 `.claude/rules/` 파일이 있으면, 리뷰 시 해당 규칙을 Evaluation Criteria에 추가로 적용한다. 반복 지적된 패턴이 있으면 규칙화를 제안한다: "이 패턴이 N회 이상 지적되었습니다. `.claude/rules/`에 규칙으로 등록하시겠습니까?"
 
-# Code to Review
+# Input
+
 $ARGUMENTS

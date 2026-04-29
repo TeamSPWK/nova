@@ -34,3 +34,7 @@ description_en: "Auto-run a natural-language request through the full design →
 | `--fresh` | 기존 Plan/Design 무시, 강제 fresh Architect (escape hatch) |
 | `--deep` | deepplan(Explorer×3 병렬→Synth→Critic→Refiner) 호출 후 결과 Plan으로 파이프라인 진입. 아키텍처 전환·큰 마이그레이션에 권장. Plan이 이미 존재하면 `--deep` 무시 + 경고 |
 | `--fresh --deep` | 기존 Plan 무시 + deepplan으로 새 Plan 생성 후 파이프라인 진입 |
+
+# Input
+
+$ARGUMENTS

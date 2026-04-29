@@ -233,6 +233,7 @@ Nova 자동 판단:
 | Command | Description |
 |---------|------------|
 | `/nova:ask` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
+| `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다. |
 | `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
 | `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |

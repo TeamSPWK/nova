@@ -1,8 +1,8 @@
 {
   "version": "5.21.0",
-  "generatedAt": "2026-04-29T01:03:12Z",
+  "generatedAt": "2026-04-29T02:44:12Z",
   "stats": {
-    "commands": 14,
+    "commands": 15,
     "skills": 11,
     "agents": 6,
     "rules": 10,
@@ -10,6 +10,7 @@
   },
   "commands": [
     {"cmd": "/nova:ask", "description": "멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다.", "description_en": "Run multi-AI consultation. Queries Claude + GPT + Gemini in parallel and analyzes the consensus level."},
+    {"cmd": "/nova:audit-self", "description": "Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감.", "description_en": "Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감."},
     {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다.", "description_en": "Auto-run a natural-language request through the full design → implement → verify → fix cycle."},
     {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후.", "description_en": "Combined code review + design-implementation gap verification in one pass. — MUST TRIGGER: before commit (3+ files changed), at sprint completion, right after a user-reported bug."},
     {"cmd": "/nova:deepplan", "description": "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다.", "description_en": "Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline."},
