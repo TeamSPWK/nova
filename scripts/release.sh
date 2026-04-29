@@ -92,22 +92,52 @@ echo "━━━ Step 2/7: 테스트 실행 ━━━"
 bash tests/test-scripts.sh
 echo ""
 
-# ── Step 2.5: 제거 리포트 체크 ──
-# --removal="..." 플래그 또는 NOVA_REMOVAL_REPORT 환경변수로 제거 항목 기록.
-# 비어 있으면 경고만 (exit 0, 강제 아님).
+# ── Step 2.5: 릴리스 위생 게이트 (fail-open 권고형, v5.22.3+) ──
+# 4회 릴리스 전 review 0회 패턴(NOVA-STATE Known Risks Medium) 인지 강화.
+# 차단하지 않음 — 경고만 출력. 강제 차단은 v5.23.0+에서 검토.
+echo "━━━ Step 2.5/7: 릴리스 위생 게이트 ━━━"
+
+# (a) 제거 리포트 (기존)
 REMOVAL_REPORT="${NOVA_REMOVAL_REPORT:-}"
 for arg in "$@"; do
   case "$arg" in
     --removal=*) REMOVAL_REPORT="${arg#--removal=}" ;;
   esac
 done
-
 if [[ -z "$REMOVAL_REPORT" ]]; then
-  echo "⚠️  제거 리포트가 비어 있습니다. 방법론 A/B 측정 문화를 유지하려면" >&2
-  echo "   이번 릴리스에서 가지치기한 항목을 기록하세요." >&2
-  echo "   방법: --removal=\"제거한 규칙·단계 설명\" 또는 NOVA_REMOVAL_REPORT=\"...\" 환경변수." >&2
-  echo "   superpowers v5.0.6 예시 참조 (25분 오버헤드 제거)." >&2
-  echo "" >&2
+  echo "  ⚠️  제거 리포트가 비어 있습니다 — A/B 측정 문화: --removal=\"...\" 또는 NOVA_REMOVAL_REPORT" >&2
+fi
+
+# (b) /nova:review 흔적 검증 (Always-On 4)
+# 커밋 메시지 또는 환경변수에 review 흔적이 있으면 통과 권고.
+if echo "$COMMIT_MSG" | grep -qiE 'review (PASS|통과)|/nova:review|senior-dev|reviewer (PASS|통과)|reviewed:'; then
+  echo "  ✅ /nova:review 흔적 감지 (커밋 메시지)"
+elif [[ -n "${NOVA_RELEASE_REVIEWED:-}" ]]; then
+  echo "  ✅ NOVA_RELEASE_REVIEWED=$NOVA_RELEASE_REVIEWED 명시"
+else
+  echo "  ⚠️  /nova:review --fast 흔적 미감지 — Always-On 4 (커밋 전 review)" >&2
+  echo "     해소: 커밋 메시지에 'review PASS' 또는 NOVA_RELEASE_REVIEWED=1 환경변수" >&2
+fi
+
+# (c) NOVA-STATE.md 신선도 (Last Activity 1시간 이내)
+if [[ -f NOVA-STATE.md ]]; then
+  _STATE_EPOCH=$(date -r NOVA-STATE.md +%s 2>/dev/null || echo 0)
+  _AGE=$(($(date +%s) - _STATE_EPOCH))
+  if (( _AGE > 3600 )); then
+    echo "  ⚠️  NOVA-STATE.md 마지막 수정 ${_AGE}s 전 — 본 릴리스 반영 의심" >&2
+    echo "     해소: Last Activity 1줄 추가 + 50줄 트림" >&2
+  else
+    echo "  ✅ NOVA-STATE.md 신선 (${_AGE}s)"
+  fi
+else
+  echo "  ⚠️  NOVA-STATE.md 부재 — /nova:setup 또는 init-nova-state.sh 권장" >&2
+fi
+
+# (d) audit-self 회귀 통합 (v5.22.2+ test-scripts.sh에 위임 통합 확인)
+if grep -q 'tests/test-audit-self.sh' tests/test-scripts.sh 2>/dev/null; then
+  echo "  ✅ audit-self 회귀 통합 (test-scripts.sh)"
+else
+  echo "  ⚠️  audit-self 회귀 미통합 — Nova 자기 보안 진단 회귀 가드 누락" >&2
 fi
 echo ""
 

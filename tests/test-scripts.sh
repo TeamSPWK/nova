@@ -2000,6 +2000,16 @@ assert "O5: tests/skill-triggering/prompts/strategic-compact-positive.txt 존재
 assert "P1: tests/test-audit-self.sh 통과 (룰 스키마 + sensitivity)" \
   "bash '$ROOT_DIR/tests/test-audit-self.sh' >/dev/null 2>&1"
 
+# Q1~Q4: release.sh 위생 게이트 (v5.22.3+) — Known Risks Medium 클로저
+assert "Q1: release.sh 위생 게이트 섹션 존재" \
+  "grep -q '릴리스 위생 게이트' '$ROOT_DIR/scripts/release.sh'"
+assert "Q2: release.sh /nova:review 흔적 검증 (Always-On 4)" \
+  "grep -q 'Always-On 4' '$ROOT_DIR/scripts/release.sh'"
+assert "Q3: release.sh NOVA-STATE.md 신선도 체크" \
+  "grep -q 'NOVA-STATE.md.*신선\|마지막 수정.*전' '$ROOT_DIR/scripts/release.sh'"
+assert "Q4: release.sh audit-self 회귀 통합 검증" \
+  "grep -q 'audit-self 회귀' '$ROOT_DIR/scripts/release.sh'"
+
 echo ""
 
 # ═══════════════════════════════════════════
