@@ -10,6 +10,11 @@
 [![Version](https://img.shields.io/badge/version-5.23.1-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**Self-only metrics** (n < threshold = gray-out, honest signal):
+<!-- nova-metrics:badges:start -->
+![process_consistency](https://img.shields.io/badge/process_consistency-n%3D0%20insufficient-lightgrey) ![gap_detection_rate](https://img.shields.io/badge/gap_detection_rate-n%3D0%20insufficient-lightgrey) ![rule_evolution_rate](https://img.shields.io/badge/rule_evolution_rate-n%3D0%20insufficient-lightgrey) ![multi_perspective_impact](https://img.shields.io/badge/multi_perspective_impact-n%3D0%20insufficient-lightgrey)
+<!-- nova-metrics:badges:end -->
+
 **Verify before you ship. Every time.**
 AI-generated code, cross-checked by an independent adversarial evaluator — before commit, before deploy.
 

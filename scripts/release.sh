@@ -139,6 +139,17 @@ if grep -q 'tests/test-audit-self.sh' tests/test-scripts.sh 2>/dev/null; then
 else
   echo "  ⚠️  audit-self 회귀 미통합 — Nova 자기 보안 진단 회귀 가드 누락" >&2
 fi
+
+# (e) .nova/ 차단 가드 (Sprint 3, measurement-spec.md §4 — privacy 사고 방지, fail-closed)
+# .nova/events.jsonl 등이 staged면 즉시 abort. 사용자 환경 데이터를 절대 commit하지 않는다.
+if git diff --cached --name-only 2>/dev/null | grep -E '^\.nova/' >/dev/null; then
+  echo "  ❌ FATAL: .nova/ 파일이 staged — privacy 사고 위험" >&2
+  echo "     git rm --cached .nova/<파일> 후 재시도" >&2
+  exit 2
+fi
+if git diff --name-only 2>/dev/null | grep -E '^\.nova/' >/dev/null; then
+  echo "  ⚠️  .nova/ 파일 변경 감지 (unstaged) — 절대 commit 금지" >&2
+fi
 echo ""
 
 # ── Step 3: 변경사항 커밋 ──

@@ -37,6 +37,7 @@ docs/.pdca-status.json
 # IDE
 .vscode/
 .idea/
+*.anno.json
 
 # Dependencies
 node_modules/

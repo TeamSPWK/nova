@@ -1,0 +1,103 @@
+name: Metrics Validation
+
+# Sprint 3, measurement-spec.md §4 — baselines JSON 무결성 + privacy 가드
+# 트리거: docs/baselines/*.json 또는 README badge 영역 변경 시
+
+on:
+  pull_request:
+    paths:
+      - 'docs/baselines/**.json'
+      - 'README.md'
+      - 'README.ko.md'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/baselines/**.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install jq
+        run: sudo apt-get update -qq && sudo apt-get install -y jq
+
+      - name: Schema validation (baselines JSON)
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in docs/baselines/*.json; do
+            if ! jq -e '
+              .schema_version == 1 and
+              (.period | test("^[0-9]{4}-W[0-9]{2}$")) and
+              (.period_start | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and
+              (.period_end   | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and
+              (.kpis | type == "array" and length == 4) and
+              (.kpis | all(
+                (.kpi | type == "string") and
+                (.n | type == "number") and
+                (.n_threshold | type == "number") and
+                (.status == "sufficient" or .status == "insufficient") and
+                (.badge_url | test("^https://img\\.shields\\.io/badge/"))
+              ))
+            ' "$f" >/dev/null; then
+              echo "::error file=$f::baselines schema invalid"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Forbidden fields check (cwd_hash / session_id / raw events)
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in docs/baselines/*.json; do
+            if jq -e 'any(.kpis[]?; has("cwd_hash") or has("session_id"))' "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::forbidden field detected (cwd_hash or session_id) — privacy violation"
+              fail=1
+            fi
+            if jq -e 'has("events") or has("extra")' "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::raw event payload included — privacy violation"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: README badge marker integrity
+        run: |
+          fail=0
+          for readme in README.md README.ko.md; do
+            [ ! -f "$readme" ] && continue
+            if ! grep -q '<!-- nova-metrics:badges:start -->' "$readme"; then
+              echo "::error file=$readme::nova-metrics:badges:start marker missing"
+              fail=1
+            fi
+            if ! grep -q '<!-- nova-metrics:badges:end -->' "$readme"; then
+              echo "::error file=$readme::nova-metrics:badges:end marker missing"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: .nova/ leak check
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^\.nova/' >/dev/null; then
+            echo "::error::.nova/ 파일이 PR에 포함됨 — privacy 사고 (절대 commit 금지)"
+            exit 1
+          fi
+
+      - name: Comment on PR if failed
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Metrics Validation FAIL** — 위 단계 로그를 확인하세요.\n\n주요 원인 후보:\n- baselines JSON schema 위반 (measurement-spec.md §4)\n- 금지 필드 노출 (cwd_hash / session_id / events / extra)\n- README badge 마커 부재 (`<!-- nova-metrics:badges:start/end -->`)\n- `.nova/` 파일이 PR에 포함됨 (privacy 사고)'
+            })

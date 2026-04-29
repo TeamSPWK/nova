@@ -109,6 +109,20 @@ if [ "$NOVA_PROFILE" != "lean" ]; then
   if [[ -n "$_MCP_COUNT" && "$_MCP_COUNT" =~ ^[0-9]+$ && "$_MCP_COUNT" -gt 10 ]]; then
     ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ MCP ${_MCP_COUNT}개 활성 — ECC 권장 ≤10 초과. 컨텍스트 압박 (§10)."
   fi
+
+  # ── measurement Phase 1 4주 미갱신 리마인더 (Sprint 3, measurement-spec.md §4 알고리즘 4) ──
+  # 조건부 1줄 — baselines 파일 존재 + 가장 최신 mtime 28일+ 만 출력
+  # 첫 주(파일 0건)는 미출력 (신규 사용자 보호)
+  if [[ -d docs/baselines ]]; then
+    _LATEST_BASELINE=$(ls -1 docs/baselines/*.json 2>/dev/null | sort | tail -1)
+    if [[ -n "$_LATEST_BASELINE" ]]; then
+      _BASE_MTIME=$(stat -f%m "$_LATEST_BASELINE" 2>/dev/null || stat -c%Y "$_LATEST_BASELINE" 2>/dev/null || echo 0)
+      _AGE_DAYS=$(( ($(date +%s) - _BASE_MTIME) / 86400 ))
+      if (( _AGE_DAYS > 28 )); then
+        ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ baselines ${_AGE_DAYS}일 미갱신 — bash scripts/publish-metrics.sh 권장."
+      fi
+    fi
+  fi
 fi
 
 cat << NOVA_EOF

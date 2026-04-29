@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
-# Nova Metrics — KPI 4종 산출 (Sprint 1)
+# Nova Metrics — KPI 4종 산출 (Sprint 1; --json Sprint 2)
 #
 # 사용법:
-#   bash scripts/nova-metrics.sh [--since 7d|30d|all] [--fixture <path>]
+#   bash scripts/nova-metrics.sh [--since 7d|30d|all] [--fixture <path>] [--json]
 #
-# 출력 (고정 형식, 스냅샷 비교 가능):
+# 텍스트 출력 (기본, 고정 형식):
 #   Process consistency:    78% (n=41)
 #   Gap detection rate:     85% (n=13)
 #   Rule evolution rate:    N/A (insufficient data)
 #   Multi-perspective:      62% (n=8)
+#
+# JSON 출력 (--json, measurement-spec.md §4 schema):
+#   [ {kpi, label, pct, n, n_threshold, status, delta_pct, badge_url}, … 4 KPI ]
 
 set -u
 
 SINCE="30d"
 FIXTURE=""
+JSON_MODE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -25,8 +29,12 @@ while [[ $# -gt 0 ]]; do
       FIXTURE="${2:-}"
       shift 2
       ;;
+    --json)
+      JSON_MODE=1
+      shift
+      ;;
     -h|--help)
-      sed -n '1,11p' "$0" | sed 's/^# \?//'
+      sed -n '1,13p' "$0" | sed 's/^# \?//'
       exit 0
       ;;
     *)
@@ -56,7 +64,16 @@ format_ratio() {
   printf "%-24s %s%% (n=%s)\n" "$label" "$pct" "$den"
 }
 
+NOVA_ROOT_SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+HELPER="${NOVA_ROOT_SCRIPTS}/_metrics-helpers.py"
+
 if [[ ! -f "$EVENTS_FILE" ]]; then
+  if (( JSON_MODE == 1 )); then
+    # JSON 모드: 빈 stdin → helper json_all이 모든 KPI insufficient 출력
+    echo "[nova:metrics] events.jsonl 없음: $EVENTS_FILE — 모든 KPI insufficient" >&2
+    : | python3 "$HELPER" json_all
+    exit 0
+  fi
   echo "[nova:metrics] events.jsonl 없음: $EVENTS_FILE — 모든 KPI N/A" >&2
   format_na "Process consistency:"
   format_na "Gap detection rate:"
@@ -103,8 +120,11 @@ window_events() {
   jq -c --argjson since "$BOOTSTRAP_EPOCH" '. | select(.timestamp_epoch >= $since)' "$EVENTS_FILE" 2>/dev/null || true
 }
 
-NOVA_ROOT_SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
-HELPER="${NOVA_ROOT_SCRIPTS}/_metrics-helpers.py"
+# ── JSON 모드 (Sprint 2, measurement-spec.md §4) ──
+if (( JSON_MODE == 1 )); then
+  window_events | python3 "$HELPER" json_all
+  exit 0
+fi
 
 # ── KPI 1: process_consistency ──
 # 분자: sprint_completed(planned_files>=3) 중 같은 orchestration_id에 이전 plan_created가 존재
@@ -118,17 +138,10 @@ gd_result=$(window_events | python3 "$HELPER" gap_detection_rate 2>/dev/null || 
 gd_num=$(echo "$gd_result" | awk '{print $1}')
 gd_den=$(echo "$gd_result" | awk '{print $2}')
 
-# ── KPI 3: rule_evolution_rate (docs/rules-changelog.md 파싱) ──
-RULES_LOG="docs/rules-changelog.md"
-re_num=0
-re_den=0
-if [[ -f "$RULES_LOG" ]]; then
-  # grep -c: match 없으면 exit 1이라도 stdout에 "0"을 출력한다. || true로 exit만 봉합.
-  re_den=$({ grep -c '^## .* — proposed' "$RULES_LOG" 2>/dev/null || true; } | head -1)
-  re_num=$({ grep -c '^## .* — approved' "$RULES_LOG" 2>/dev/null || true; } | head -1)
-  re_den="${re_den:-0}"
-  re_num="${re_num:-0}"
-fi
+# ── KPI 3: rule_evolution_rate (Sprint 2 재정의 — evolve_decision 이벤트 기반, measurement-spec.md §6) ──
+re_result=$(window_events | python3 "$HELPER" rule_evolution_rate 2>/dev/null || echo "0 0")
+re_num=$(echo "$re_result" | awk '{print $1}')
+re_den=$(echo "$re_result" | awk '{print $2}')
 
 # ── KPI 4: multi_perspective_impact ──
 mp_result=$(window_events | python3 "$HELPER" multi_perspective_impact 2>/dev/null || echo "0 0")
