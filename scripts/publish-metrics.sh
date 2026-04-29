@@ -22,6 +22,8 @@
 #   2 = 사전조건 (jq 미설치, repo 외부, 등)
 #   3 = privacy 위배 (FATAL — commit 차단)
 #   4 = git rebase 충돌
+#
+# 상세 가이드: docs/guides/measurement.md (절차/FAIL 해결/cheatsheet)
 
 set -u
 
@@ -35,7 +37,7 @@ while [[ $# -gt 0 ]]; do
     --fixture) FIXTURE="${2:-}"; shift 2 ;;
     --since)   SINCE="${2:-30d}"; shift 2 ;;
     -h|--help)
-      sed -n '1,25p' "$0" | sed 's/^# \?//'
+      sed -n '1,27p' "$0" | sed 's/^# \?//'
       exit 0
       ;;
     *) shift ;;

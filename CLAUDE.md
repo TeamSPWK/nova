@@ -68,6 +68,22 @@ Nova는 Claude Code 플러그인이다. **이 CLAUDE.md는 Nova 개발용이지,
 
 > 1, 4번은 테스트가 누락을 자동으로 잡는다. 2, 3번은 "사용자가 커맨드를 명시적으로 호출하지 않아도 자연스럽게 발견하는가?"를 수동 판단한다.
 
+### 신규 스크립트 / Workflow / 인프라 추가 체크리스트
+
+새 `scripts/*.sh` 또는 `.github/workflows/*.yml` 또는 외부 호출 진입점(예: `record-event.sh`, `publish-metrics.sh`)을 추가할 때:
+
+```
+1. docs/guides/<주제>.md 사용자 가이드 작성 (TL;DR + 절차 + FAIL 시 해결 + cheatsheet)  ← 테스트가 자동 검증
+2. README.md / README.ko.md에 가이드 링크 (사용자 명시 호출 흐름 노출)
+3. tests/test-scripts.sh에 가이드 파일 존재 + 핵심 키워드 회귀 가드 추가              ← 테스트가 자동 검증
+4. -h|--help 인자로 즉시 가이드 경로 안내 (사용자가 스크립트만 실행해도 발견 가능)
+5. bash tests/test-scripts.sh 통과 확인
+```
+
+> 갭 사례: v5.24.0 measurement-closed-loop release 시 publish-metrics.sh 가이드 누락. 사용자 지적으로 v5.25.0에서 발견. 본 체크리스트는 동일 갭 재발 차단용.
+
+> "데이터 계약(spec)"과 "사용자 가이드"는 별개다. spec은 개발자/AI용 (스키마/임계/계약), 가이드는 사용자용 (절차/해결/심리). 두 문서 모두 신규 산출물에 필요.
+
 ## Release Workflow (필수)
 
 Nova는 Claude Code 플러그인이므로 **모든 커밋은 릴리스 단위**다.
