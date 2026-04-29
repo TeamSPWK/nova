@@ -1996,6 +1996,10 @@ assert "O4: context-chain SKILL — strategic-compact cross-ref" \
 assert "O5: tests/skill-triggering/prompts/strategic-compact-positive.txt 존재" \
   "[ -f '$ROOT_DIR/tests/skill-triggering/prompts/strategic-compact-positive.txt' ]"
 
+# P1: audit-self 테스트 위임 (v5.22.2+) — 룰 sensitivity 검증 포함
+assert "P1: tests/test-audit-self.sh 통과 (룰 스키마 + sensitivity)" \
+  "bash '$ROOT_DIR/tests/test-audit-self.sh' >/dev/null 2>&1"
+
 echo ""
 
 # ═══════════════════════════════════════════
