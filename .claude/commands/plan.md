@@ -9,6 +9,7 @@ CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.
 
 - `docs/nova-rules.md §1` 작업 전 복잡도 + 위험도 판단 (간단/보통/복잡 분기, 자가 완화 금지, 작업 중 재판단)
 - `docs/nova-rules.md §10` 관찰성 계약 — Plan 저장 직후 `plan_created` 이벤트 기록
+- **UI 감지 시 G1 시각 의도 캡처** (Sprint A1+) — `bash scripts/detect-ui-change.sh --planning`이 `likely_ui:true`면 `bash scripts/capture-visual-intent.sh --slug <slug> --from-prompt "<원본 사용자 prompt>"` 실행. 결과 `docs/plans/{slug}-intent.json` freeze. 사용자 부담 최소화 시 `--quick` 옵션. 비-UI(`likely_ui:false`)는 호출하지 않음 (false positive 방지)
 
 ## 관찰성 훅 (v5.12.0+)
 
@@ -122,8 +123,15 @@ Safe-default: 실패해도 Plan 작성은 완료로 간주.
 예상 수정 파일이 7개 이하면 스프린트 분할 없이 단일 구현으로 진행한다.
 
 4. 작성된 문서를 `docs/plans/{slug}.md`에 저장한다.
-5. 다관점 수집이 필요한 설계 판단이 있으면 `/ask` 사용을 제안한다.
-6. Plan 헤더의 `Design:` 필드는 비워둔다. `/design` 실행 시 자동으로 채워진다.
+5. **G1 시각 의도 캡처 (UI 작업 한정)**:
+   - `bash scripts/detect-ui-change.sh --planning` 호출
+   - `likely_ui == true`인 경우에만:
+     - `bash scripts/capture-visual-intent.sh --slug {slug} --from-prompt "{원본 사용자 prompt}"` 실행
+     - 결과 `docs/plans/{slug}-intent.json`이 생성됨
+     - Plan 본문에 `> Visual Intent: docs/plans/{slug}-intent.json` 한 줄 추가
+   - `likely_ui == false`인 경우 이 단계를 건너뛴다 (false positive 방지)
+6. 다관점 수집이 필요한 설계 판단이 있으면 `/ask` 사용을 제안한다.
+7. Plan 헤더의 `Design:` 필드는 비워둔다. `/design` 실행 시 자동으로 채워진다.
 # CRITICAL: NOVA-STATE.md 갱신 (이 단계를 건너뛰지 마라)
 
 **Plan 작성이 끝나면 반드시 NOVA-STATE.md를 업데이트한다.** 이 단계 없이 커맨드를 종료하면 안 된다.

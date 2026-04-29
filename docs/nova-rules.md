@@ -411,3 +411,51 @@ Nova subagent bootstrap skipped — 상세 규칙은 메인 컨텍스트 참조.
 
 - `NOVA_SUBAGENT` 감지는 환경변수 기반이므로 사용자가 직접 설정해야 한다. Claude Code가 서브에이전트를 자동으로 표시하는 플랫폼 변수(`CLAUDE_CODE_SUBAGENT`)가 공식 지원되면 자동 감지로 업그레이드 예정.
 - 서브에이전트가 메인 컨텍스트 없이 독립 실행되는 경우(예: 별도 터미널 세션)에는 `NOVA_SUBAGENT=1`을 설정하지 않아야 한다.
+
+## §14. UI/UX Visual Intent + Self-Verify (G1+G3 페어 게이트, v5.26.0+)
+
+UI 작업에서 에이전트가 **시각 의도를 묻지 않고**, **시각 검증 없이** "완료" 선언하는 갭을 차단하는 페어 게이트.
+
+### G1: 시각 의도 캡처 (Plan/Design 단계)
+
+UI 변경이 감지되면 (`detect-ui-change.sh --planning` → `likely_ui:true`), 다음을 사용자에게 캡처:
+
+1. **디자인 어휘** — Material 3 / Apple HIG / shadcn / Linear / Vercel / Notion / Tailwind UI / Radix / Mantine / Chakra / Liquid Glass (11종 카탈로그)
+2. **스코프** — single-component / screen / feature / full-renewal (사용자 명시 vs 에이전트 해석 분리)
+3. **디자인 시스템 활용 의도** — `detect-design-system.sh` 결과 노출 후 use-existing / extend / create-new / none 결정
+4. **시각 reference** — Figma URL / 스크린샷 / 자연어 / wireframe / 영감 사이트 URL
+
+결과는 `docs/plans/{slug}-intent.json`으로 freeze (스키마 v1.0).
+
+`/nova:plan`이 자동 호출. `--quick` 옵션으로 1초 컷 (사용자 prompt에서 자동 추출 default 사용). `--skip-visual-verify`로 opt-out.
+
+### G3: 시각 자가 검증 (Run/Check 단계)
+
+UI 변경 감지 + intent.json 존재 시, `bash scripts/visual-self-verify.sh` 호출 → Agent 서브에이전트(vision-capable Claude)가 verdict 생성.
+
+**폴백 체인 (4단계 — 모든 사용자 동작 보장)**:
+1. Playwright MCP 가동 → 자동 스크린샷 → Agent verdict
+2. 사용자 수동 스크린샷 (interactive 환경만) → Agent verdict
+3. ux-audit Lite (코드 분석) → 차단 X, 안내만
+4. 안내만
+
+**차단 정책**:
+- `verdict == fail` (critical 1+ 또는 high 2+) → 커밋 차단
+- `verdict == degraded` (폴백 모드) → 경고만, 차단 X
+- `verdict == pass` → 캐시 갱신 → 통과
+
+### 외부 의존성 정책 (★ 모든 사용자 보장)
+
+| 의존성 | 정책 |
+|--------|------|
+| Anthropic API 키 | **불필요** — Agent 서브에이전트는 사용자 Claude Code 세션 모델 사용 |
+| Playwright MCP | **선택적** — 미설치 시 사용자 수동 또는 코드 분석 폴백 |
+| dev server | Playwright 사용 시만 필요 |
+
+→ 키 없는 사용자도 최소 3차 폴백(코드 분석)으로 동작 보장.
+
+### Spec / Guide
+
+- Plan: `docs/plans/visual-intent-verify.md`
+- Design: `docs/designs/visual-intent-verify.md`
+- 사용자 가이드: `docs/guides/ui-quality-gate.md`

@@ -928,6 +928,219 @@ assert "Sprint B #11 (Nice): metrics.jsonl 1000줄 초과 시 회전" \
 echo ""
 
 # ═══════════════════════════════════════════
+# visual-intent-verify Sprint A1 — G1 시각 의도 캡처 회귀 가드
+# Plan: docs/plans/visual-intent-verify.md
+# Design: docs/designs/visual-intent-verify.md
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[visual-intent-verify Sprint A1: G1 시각 의도 캡처]${NC}"
+
+# A1-1: 인프라 존재
+assert "A1: capture-visual-intent.sh 존재 + 실행 가능" \
+  "[ -f '$ROOT_DIR/scripts/capture-visual-intent.sh' ] && [ -x '$ROOT_DIR/scripts/capture-visual-intent.sh' ]"
+
+assert "A1: design-vocabulary.json 카탈로그 존재" \
+  "[ -f '$ROOT_DIR/docs/catalogs/design-vocabulary.json' ]"
+
+assert "A1: 카탈로그 vocabulary 항목 ≥ 11" \
+  "[ \"\$(jq '.vocabulary | length' '$ROOT_DIR/docs/catalogs/design-vocabulary.json')\" -ge 11 ]"
+
+# A1-2: 핵심 어휘 존재 (사용자 답변에서 자주 등장하는 디자인 시스템)
+for VOCAB in shadcn material-3 apple-hig linear vercel notion tailwind-ui radix mantine chakra liquid-glass; do
+  assert "A1: 카탈로그에 '$VOCAB' 어휘 존재" \
+    "jq -e --arg k '$VOCAB' '.vocabulary[] | select(.key == \$k)' '$ROOT_DIR/docs/catalogs/design-vocabulary.json' > /dev/null"
+done
+
+# A1-3: --help 출력에 가이드 경로 안내 (CLAUDE.md 5단계 체크리스트 #4)
+assert "A1: capture-visual-intent.sh -h가 가이드 경로 안내" \
+  "bash '$ROOT_DIR/scripts/capture-visual-intent.sh' -h 2>&1 | grep -q 'docs/guides/ui-quality-gate.md'"
+
+# A1-4: --quick 모드 비대화 + valid intent.json 생성 (시간 측정은 별도, macOS timeout 미존재 회피)
+assert "A1: --quick 모드 비대화 + valid intent.json (.version == 1.0)" \
+  "rm -f /tmp/nova-quick-test-intent.json; bash '$ROOT_DIR/scripts/capture-visual-intent.sh' --slug quick-test --quick --output /tmp/nova-quick-test-intent.json --catalog '$ROOT_DIR/docs/catalogs/design-vocabulary.json' > /dev/null 2>&1 < /dev/null && jq -e '.version == \"1.0\" and .meta.captured_by == \"quick\"' /tmp/nova-quick-test-intent.json > /dev/null"
+
+# A1-5: 3 fixture 모두 valid intent.json 생성
+for FX in side-case new-screen non-ui; do
+  assert "A1: fixture '$FX' valid intent.json 생성" \
+    "bash '$ROOT_DIR/tests/run-fixture-visual-intent.sh' '$FX' > /dev/null 2>&1 && jq -e '.version == \"1.0\" and .meta.slug == \"$FX\" and .vocabulary.primary' '$ROOT_DIR/tests/.cache/${FX}-intent.json' > /dev/null"
+done
+
+# A1-6: prompt에 명시된 어휘 자동 추출 (shadcn / liquid-glass)
+assert "A1: prompt 'shadcn 스타일로' 자동 추출 → vocabulary.primary == shadcn" \
+  "rm -f /tmp/nova-vocab-shadcn-intent.json; bash '$ROOT_DIR/scripts/capture-visual-intent.sh' --slug vocab-shadcn --non-interactive --from-prompt 'shadcn 스타일로 만들어줘' --output /tmp/nova-vocab-shadcn-intent.json --catalog '$ROOT_DIR/docs/catalogs/design-vocabulary.json' > /dev/null 2>&1 && jq -e '.vocabulary.primary == \"shadcn\"' /tmp/nova-vocab-shadcn-intent.json > /dev/null"
+
+assert "A1: prompt 'WWDC 2026 Liquid Glass' 자동 추출 → vocabulary.primary == liquid-glass" \
+  "rm -f /tmp/nova-vocab-liquid-intent.json; bash '$ROOT_DIR/scripts/capture-visual-intent.sh' --slug vocab-liquid --non-interactive --from-prompt 'WWDC 2026 Liquid Glass 적용' --output /tmp/nova-vocab-liquid-intent.json --catalog '$ROOT_DIR/docs/catalogs/design-vocabulary.json' > /dev/null 2>&1 && jq -e '.vocabulary.primary == \"liquid-glass\"' /tmp/nova-vocab-liquid-intent.json > /dev/null"
+
+# A1-7: intent.json 필수 필드 검증 (Data Contract)
+assert "A1: intent.json 필수 필드 (meta/vocabulary/scope/design_system/references) 모두 존재" \
+  "jq -e '.meta.slug and .meta.created_at and .meta.captured_by and .vocabulary.primary and .scope.scope_type and .design_system.mode and .references' '$ROOT_DIR/tests/.cache/side-case-intent.json' > /dev/null"
+
+# A1-8: raw_user_phrase 보존 (사이드 사례 차단의 핵심)
+assert "A1: 사이드 사례 raw_user_phrase 보존 ('최신 트렌드' 표현)" \
+  "jq -e '.vocabulary.raw_user_phrase | contains(\"최신 트렌드\")' '$ROOT_DIR/tests/.cache/side-case-intent.json' > /dev/null"
+
+# A1-9: plan.md / design.md 통합 (grep)
+assert "A1: plan.md에 capture-visual-intent.sh 통합" \
+  "grep -q 'capture-visual-intent.sh' '$ROOT_DIR/.claude/commands/plan.md'"
+
+assert "A1: plan.md에 detect-ui-change.sh --planning 호출" \
+  "grep -q 'detect-ui-change.sh --planning' '$ROOT_DIR/.claude/commands/plan.md'"
+
+assert "A1: design.md에 intent.json 통합" \
+  "grep -q '.*intent\\.json' '$ROOT_DIR/.claude/commands/design.md'"
+
+# A1-10: false positive 차단 — non-ui 작업에서 detect-ui-change가 likely_ui:false 반환 (이미 인프라 있음, 회귀 가드만)
+assert "A1: detect-ui-change.sh가 비-UI 입력에서 likely_ui:false 반환 (false positive 방지)" \
+  "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && git init -q && echo 'console.log(1)' > app.js && git add app.js && bash '$ROOT_DIR/scripts/detect-ui-change.sh' --planning | jq -e '.likely_ui == false') > /dev/null 2>&1; STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# visual-intent-verify Sprint A2 — G3 시각 자가 검증 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[visual-intent-verify Sprint A2: G3 시각 자가 검증]${NC}"
+
+# A2-1: 인프라 존재
+assert "A2: visual-self-verify.sh 존재 + 실행 가능" \
+  "[ -f '$ROOT_DIR/scripts/visual-self-verify.sh' ] && [ -x '$ROOT_DIR/scripts/visual-self-verify.sh' ]"
+
+# A2-2: --help 출력에 가이드 경로 + 외부 의존성 정책 명시
+assert "A2: visual-self-verify.sh -h가 가이드 경로 안내" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' -h 2>&1 | grep -q 'docs/guides/ui-quality-gate.md'"
+
+assert "A2: -h에 'NOT REQUIRED' API 키 정책 명시 (모든 사용자 보장 원칙)" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' -h 2>&1 | grep -q 'NOT REQUIRED'"
+
+assert "A2: -h에 Playwright MCP 'OPTIONAL' 명시" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' -h 2>&1 | grep -q 'OPTIONAL'"
+
+# A2-3: 옵션 동작 — --skip-visual-verify
+assert "A2: --skip-visual-verify 즉시 skipped 출력" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent /dev/null --skip-visual-verify | jq -e '.skipped == true and .skip_reason' > /dev/null"
+
+# A2-4: 옵션 동작 — non-interactive + Playwright 미설치 → fallback level 3 (code-only)
+assert "A2: non-interactive + 폴백 → ready_for_judge=true, fallback_level=3 (code-only)" \
+  "bash '$ROOT_DIR/tests/run-fixture-visual-intent.sh' side-case > /dev/null 2>&1 && bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -e '.ready_for_judge == true and .fallback_level == 3 and .screenshot_source == \"code-only-fallback\"' > /dev/null"
+
+# A2-5: --strict-vlm → agent_model_hint == opus
+assert "A2: --strict-vlm → agent_model_hint == opus" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive --strict-vlm < /dev/null | jq -e '.agent_model_hint == \"opus\"' > /dev/null"
+
+# A2-6: --mode code-only → 1·2차 스킵, 즉시 3차 폴백
+assert "A2: --mode code-only → fallback_level=3 즉시 진입" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --mode code-only --non-interactive < /dev/null | jq -e '.fallback_level == 3' > /dev/null"
+
+# A2-7: evaluator_prompt에 사용자 raw_phrase 인용 (사이드 사례 차단의 핵심)
+assert "A2: evaluator_prompt에 사용자 원본 표현 인용 (raw_phrase 패스스루)" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -r '.evaluator_prompt' | grep -q '최신 트렌드'"
+
+# A2-8: intent.json 미존재 시 에러 (pipefail 회피 위해 출력 캡처)
+assert "A2: intent.json 미존재 시 명확한 에러 출력" \
+  "OUT=\$(bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent /tmp/non-existent-intent.json 2>&1 || true); echo \"\$OUT\" | grep -q 'intent.json not found'"
+
+# A2-9: 잘못된 intent.json 거부 (스키마 v1.0 강제)
+assert "A2: invalid intent.json 거부 (version != 1.0)" \
+  "echo '{\"version\":\"0.9\"}' > /tmp/bad-intent.json && ! bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent /tmp/bad-intent.json 2>&1 | grep -q ready_for_judge; rm -f /tmp/bad-intent.json"
+
+# A2-10: run.md / check.md / orchestrator SKILL 통합
+assert "A2: run.md에 Phase 5.5b 추가" \
+  "grep -q 'Phase 5.5b' '$ROOT_DIR/.claude/commands/run.md'"
+
+assert "A2: run.md에 visual-self-verify.sh 호출" \
+  "grep -q 'visual-self-verify.sh' '$ROOT_DIR/.claude/commands/run.md'"
+
+assert "A2: run.md에 'API 키 불필요' 정책 명시 (모든 사용자 보장)" \
+  "grep -q '불필요' '$ROOT_DIR/.claude/commands/run.md' && grep -q 'API' '$ROOT_DIR/.claude/commands/run.md'"
+
+assert "A2: check.md에 Phase 3.5 추가" \
+  "grep -q 'Phase 3.5' '$ROOT_DIR/.claude/commands/check.md'"
+
+assert "A2: check.md에 visual-self-verify.sh 호출" \
+  "grep -q 'visual-self-verify.sh' '$ROOT_DIR/.claude/commands/check.md'"
+
+assert "A2: orchestrator SKILL.md에 Phase 5.5a/5.5b 분리" \
+  "grep -q 'Phase 5.5a' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md' && grep -q 'Phase 5.5b' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+assert "A2: orchestrator Phase 5.5b에 visual-self-verify.sh 호출" \
+  "grep -q 'visual-self-verify.sh' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+
+# A2-11: 폴백 체인 4단계 모두 명세 (Computer Use 제외, 모든 사용자 보장 원칙)
+assert "A2: Design 폴백 체인 4단계 명세" \
+  "grep -q 'playwright-mcp\\|user-manual\\|code-only-fallback' '$ROOT_DIR/docs/designs/visual-intent-verify.md'"
+
+assert "A2: Design에 'API 키 의존성 0' 원칙 명시 (모든 사용자 보장)" \
+  "grep -q '키 의존성 0\\|키 불필요\\|NOT REQUIRED' '$ROOT_DIR/docs/designs/visual-intent-verify.md'"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# visual-intent-verify Sprint A3 — 통합 + 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[visual-intent-verify Sprint A3: 통합 + 회귀 가드]${NC}"
+
+# A3-1: session-start.sh 동기화 (3 모드 모두)
+assert "A3: session-start.sh standard 모드에 visual gate 1줄 추가 (Always-On 7번)" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext' | grep -q 'G1.*G3\\|시각 의도\\|visual'"
+
+assert "A3: session-start.sh strict 모드에 visual gate" \
+  "NOVA_PROFILE=strict bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext' | grep -q 'G1.*G3\\|시각 게이트'"
+
+assert "A3: session-start.sh JSON 유효 (3 모드)" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null && NOVA_PROFILE=strict bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null && NOVA_PROFILE=lean bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null"
+
+# A3-2: session-start standard 모드 크기 hard limit 2500 미만 (메모리 lightweight 원칙)
+assert "A3: session-start standard 모드 hard limit 2500 미만" \
+  "[ \"\$(bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext' | wc -c | tr -d ' ')\" -lt 2500 ]"
+
+# A3-3: nova-rules.md §14 추가
+assert "A3: nova-rules.md §14 UI Visual Intent + Self-Verify 섹션" \
+  "grep -q '## §14.*Visual Intent\\|## §14.*Self-Verify' '$ROOT_DIR/docs/nova-rules.md'"
+
+assert "A3: nova-rules.md §14에 G1/G3 페어 명시" \
+  "grep -q 'G1.*시각 의도' '$ROOT_DIR/docs/nova-rules.md' && grep -q 'G3.*자가 검증\\|G3.*시각' '$ROOT_DIR/docs/nova-rules.md'"
+
+assert "A3: nova-rules.md §14에 'API 키 불필요' 정책 명시 (모든 사용자 보장)" \
+  "grep -q '키.*불필요\\|키 0\\|NOT REQUIRED' '$ROOT_DIR/docs/nova-rules.md'"
+
+# A3-4: docs/guides/ui-quality-gate.md (CLAUDE.md 5단계 체크리스트)
+assert "A3: docs/guides/ui-quality-gate.md 존재" \
+  "[ -f '$ROOT_DIR/docs/guides/ui-quality-gate.md' ]"
+
+assert "A3: 가이드에 핵심 키워드 (TL;DR + cheatsheet + FAIL 4종)" \
+  "[ \"\$(grep -cE 'TL;DR|cheatsheet|FAIL [0-9]' '$ROOT_DIR/docs/guides/ui-quality-gate.md')\" -ge 4 ]"
+
+assert "A3: 가이드에 어휘 카탈로그 11종 명시" \
+  "[ \"\$(grep -cE 'material-3|apple-hig|shadcn|linear|vercel|notion|tailwind-ui|radix|mantine|chakra|liquid-glass' '$ROOT_DIR/docs/guides/ui-quality-gate.md')\" -ge 11 ]"
+
+# A3-5: capture-visual-intent.sh / visual-self-verify.sh -h가 가이드 경로 안내
+assert "A3: capture-visual-intent.sh -h 가이드 경로 안내" \
+  "bash '$ROOT_DIR/scripts/capture-visual-intent.sh' -h 2>&1 | grep -q 'docs/guides/ui-quality-gate.md'"
+
+assert "A3: visual-self-verify.sh -h 가이드 경로 안내" \
+  "bash '$ROOT_DIR/scripts/visual-self-verify.sh' -h 2>&1 | grep -q 'docs/guides/ui-quality-gate.md'"
+
+# A3-6: next.md 워크플로우 추천 — UI 시나리오 분기 추가
+assert "A3: next.md에 UI 작업 + intent.json 부재 추천 (e-2)" \
+  "grep -q 'capture-visual-intent\\|intent.json' '$ROOT_DIR/.claude/commands/next.md'"
+
+# A3-7: measurement-spec.md KPI 보조 지표 4개 추가
+assert "A3: measurement-spec.md 보조 지표 4개 (capture/block/quick_skip/cache_hit)" \
+  "[ \"\$(grep -cE 'visual_intent_capture_rate|visual_verify_block_rate|visual_quick_skip_rate|visual_cache_hit_rate' '$ROOT_DIR/docs/measurement-spec.md')\" -ge 4 ]"
+
+# A3-8: 가이드 안에 "API 키 불필요" 명시 (사용자 안심)
+assert "A3: 가이드에 'API 키 불필요' 정책 명시" \
+  "grep -q '불필요\\|NOT REQUIRED' '$ROOT_DIR/docs/guides/ui-quality-gate.md'"
+
+# A3-9: .gitignore에 tests/.cache 등록
+assert "A3: .gitignore에 tests/.cache 등록" \
+  "grep -q 'tests/.cache' '$ROOT_DIR/.gitignore'"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # Sprint 3: deepplan 동기화
 # ═══════════════════════════════════════════
 

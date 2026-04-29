@@ -21,6 +21,26 @@
 - KPI 1·2·3 = 10: 100% 정밀도가 무의미해지는 최소 분모. 10건 미만이면 단일 노이즈 1건이 ±10% 변동을 야기.
 - KPI 4 = 5: jury는 비용 ~50K로 고비용 이벤트, 현실적 자연 발생 빈도가 낮음. 5건이면 분포 의미 시작.
 
+### 1.1 visual-intent-verify 보조 지표 (v5.26.0+, Phase 0 — KPI 후보)
+
+G1+G3 페어 게이트 효과 측정. baselines 누적 후 KPI 5~8로 승격 평가.
+
+| 키 | 한국어 라벨 | 분자 | 분모 | 발화 이벤트 |
+|------|------------|------|------|------------|
+| `visual_intent_capture_rate` | Visual Intent Capture | `intent_captured` 이벤트 (UI 작업 시) | UI 작업 sprint 총수 (`sprint_completed` + `is_ui:true`) | `intent_captured` |
+| `visual_verify_block_rate` | Visual Verify Block | `visual_verify_completed verdict=fail` | `visual_verify_completed` 총수 | `visual_verify_completed` |
+| `visual_quick_skip_rate` | Quick / Skip Rate | `intent_captured` 중 `captured_by in [quick, non-interactive]` + `visual_verify_skipped` | `intent_captured` + `visual_verify_skipped` 총합 | `intent_captured` + `visual_verify_skipped` |
+| `visual_cache_hit_rate` | Visual Cache Hit | `visual_verify_cache_hit` | `visual_verify_completed` + `visual_verify_cache_hit` 총합 | `visual_verify_cache_hit` |
+
+**발화 시점**:
+- `intent_captured` — capture-visual-intent.sh가 intent.json freeze 직후
+- `visual_verify_fallback` — visual-self-verify.sh fallback level (1~4)
+- `visual_verify_completed` — Agent verdict 수신 후 (메인 컨텍스트가 기록)
+- `visual_verify_cache_hit` — cache hit으로 Agent 호출 스킵
+- `visual_verify_skipped` — opt-out (--skip-visual-verify 또는 nova-config)
+
+**Phase 0 위치**: 본 KPI 4종은 Phase 0 spec에 정식. 위 보조 지표는 baselines 누적 후 효과 입증 시 KPI 승격 (별도 spec PR로).
+
 ---
 
 ## 2. n 임계 미달 처리 (badge gray-out 책임)

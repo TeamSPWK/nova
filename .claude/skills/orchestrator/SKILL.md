@@ -411,7 +411,17 @@ QA 프롬프트에 반드시 포함할 항목:
 | 실제 동작 (curl/playwright) | 생략 | 필수 |
 | 경계값 시나리오 | 생략 | 필수 |
 
-### Phase 5.5: UI 변경 감지 + ux-audit Lite (자동)
+### Phase 5.5: UI 변경 감지 + 자동 검증 (G3 페어 게이트)
+
+Phase 5가 PASS면 다음을 수행한다.
+
+**Phase 5.5는 5.5a (코드 기반 ux-audit Lite, 기존)와 5.5b (시각 기반 visual-self-verify, 신규) 두 단계로 구성된다.**
+
+- 5.5a는 항상 수행 (UI 변경 감지 시) — 코드 분석으로 빠른 1차 게이트
+- 5.5b는 `docs/plans/{slug}-intent.json` 존재 시 추가 수행 — 시각 기반 G3 차단 게이트
+- intent.json 미존재 (사용자가 G1 스킵 또는 비-UI plan) → 5.5b 스킵
+
+### Phase 5.5a: UI 변경 감지 + ux-audit Lite (자동, 코드 기반)
 
 Phase 5가 PASS면 다음을 수행한다:
 
@@ -454,7 +464,47 @@ Phase 5가 PASS면 다음을 수행한다:
 8. `result.critical >= 1` AND (`nova-config.json` 미존재 OR `.auto.uiAuditBlockOnCritical != false`):
    - 커밋 차단 + 사용자에게 Critical 목록 보고
    - 옵션 제시: 재시도 / `--no-ux-audit` / 수동 fix
-9. 그 외: Phase 7으로 (보고에 audit 결과 통합)
+9. 그 외: Phase 5.5b 진입 (intent.json 존재 시) 또는 Phase 7으로
+
+### Phase 5.5b: G3 Visual Self-Verify (자동, 시각 기반)
+
+Phase 5.5a PASS 후 다음을 수행한다 (intent.json 존재 시만):
+
+1. `intent_path = docs/plans/{slug}-intent.json` 확인
+   - 미존재 → 즉시 Phase 7으로 (G1 스킵된 워크플로우)
+
+2. `vsv = bash scripts/visual-self-verify.sh --intent <intent_path> --output .nova/visual-audit/{ts}.json`
+
+3. `vsv.cache_hit == true`:
+   - "[Nova] 동일한 변경 — 시각 검증 캐시 hit (생략)" 1줄 출력
+   - `bash scripts/log-metric.sh --event visual_verify_cache_hit`
+   - Phase 7으로
+
+4. `vsv.skipped == true`:
+   - opt-out 메트릭 (스크립트가 자동 기록)
+   - Phase 7으로
+
+5. **Agent 서브에이전트 spawn (vision-capable Claude — Anthropic API 키 불필요)**:
+   ```
+   Agent({
+     description: "Visual Intent Verifier",
+     subagent_type: "general-purpose",
+     model: vsv.agent_model_hint == "opus" ? "opus" : undefined,
+     prompt: vsv.evaluator_prompt + (vsv.screenshot_paths 존재 시 첨부)
+   })
+   ```
+   - Agent는 verdict JSON 출력: `{verdict, overall_score, mismatches, strengths, rationale}`
+
+6. **차단 정책 적용**:
+   - `verdict == fail` → 커밋 차단 + 사용자에게 mismatches 보고. Phase 6 (Auto-Fix) 진입 가능
+   - `verdict == degraded` → 경고만, 차단 X. "[Nova] 시각 검증 폴백 — 사용자 수동 확인 권장" 안내
+   - `verdict == pass` → 캐시 갱신 (`.nova/last-visual-audit.json` — hash + verdict + ts), Phase 7으로
+
+7. 메트릭 기록:
+   ```
+   bash scripts/log-metric.sh --event visual_verify_completed \
+     --verdict <pass|fail|degraded> --critical N --high N --medium N --source <source>
+   ```
 
 ### Phase 6: 수정 (Auto-Fix)
 

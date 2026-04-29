@@ -49,3 +49,6 @@ mcp-server/node_modules/
 # Nova Orbit (별도 프로젝트)
 nova-orbit/
 .nova/
+
+# Test cache (fixture 실행 산출물)
+tests/.cache/

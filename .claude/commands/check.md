@@ -122,6 +122,25 @@ description_en: "Combined code review + design-implementation gap verification i
 
 `--fast` 옵션 시 이 Phase는 **생략**한다.
 
+## Phase 3.5: G3 Visual Self-Verify (UI 변경 한정)
+
+> Phase 3 PASS 후, UI 변경이 있고 `intent.json`이 존재하면 발화. 비-UI 또는 intent 미존재 시 즉시 Output Format으로.
+> Spec: `docs/designs/visual-intent-verify.md`. Guide: `docs/guides/ui-quality-gate.md`.
+
+`/nova:run` Phase 5.5b와 동일한 절차 (run.md 참조). 핵심:
+
+1. `bash scripts/detect-ui-change.sh --post-impl` → `is_ui:true` + `docs/plans/{slug}-intent.json` 존재 시 발화
+2. `bash scripts/visual-self-verify.sh --intent <intent-path>` → 정보 수집
+3. `screenshot_source`에 따라 Playwright MCP / 사용자 수동 / 코드 분석 폴백
+4. Agent 서브에이전트(vision-capable Claude) spawn → verdict 받기
+5. `verdict == fail` → Critical Issue 섹션에 추가, 차단
+6. `verdict == degraded` → Output 끝에 "[Nova] 시각 검증 폴백 모드" 안내 1줄
+7. `verdict == pass` → 캐시 갱신, Output Format으로
+
+`--fast` 옵션 시 이 Phase는 **생략**한다 (Phase 3과 동일 정책).
+
+**외부 의존성 정책**: Anthropic API 키 불필요 (Agent는 세션 모델 사용). Playwright MCP 선택적 (미설치 시 graceful fallback).
+
 # Output Format — 통합 리포트
 
 단일 통합 리포트로 출력한다. 코드 품질과 설계 정합성 결과를 따로 보여주지 않는다.

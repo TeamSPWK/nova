@@ -221,6 +221,72 @@ Generator 서브에이전트 spawn (이슈 목록 + 수정 범위 전달)
 
 > **대형 PR 전 2차 감사**: 8+파일 또는 인증/DB/결제 변경이면 인간 리뷰 직전에 Claude Code `/ultrareview`(클라우드 멀티 에이전트 + 재현 검증)를 병용할 수 있다. Nova 체인에 자동 포함되지 않으며, 정책·비용 판단은 사용자. 상세는 `commands/review.md` "Related" 참조.
 
+## Phase 5.5b: G3 Visual Self-Verify (UI 변경 한정)
+
+> Phase 4 PASS 후, UI 변경이 있고 `intent.json`이 존재하면 발화. 비-UI 또는 intent 미존재 시 즉시 Phase 6으로.
+> Spec: `docs/designs/visual-intent-verify.md` Phase 5.5b. Guide: `docs/guides/ui-quality-gate.md`.
+
+### 발화 조건
+
+다음 모두 만족 시:
+1. `bash scripts/detect-ui-change.sh --post-impl`이 `is_ui:true` 반환
+2. `docs/plans/{slug}-intent.json` 존재 (G1 단계에서 캡처됨)
+3. 사용자가 `--skip-visual-verify` 미지정 + nova-config.json `auto.visualVerify != false`
+
+### 실행 절차
+
+1. **정보 수집**:
+   ```
+   bash scripts/visual-self-verify.sh \
+     --intent docs/plans/{slug}-intent.json \
+     --output .nova/visual-audit/{slug}-{ts}.json \
+     [--strict-vlm]   # high stakes 변경 시 메인이 추가
+   ```
+   - 출력: `ready_for_judge`, `screenshot_paths`, `screenshot_source`, `evaluator_prompt`, `agent_model_hint`, `cache_hit`
+   - `cache_hit:true` → 즉시 PASS, Phase 6으로
+   - `skipped:true` → opt-out 메트릭 기록 후 Phase 6으로
+
+2. **시각 캡처 (`screenshot_source`에 따라)**:
+   - `playwright-mcp`: Playwright MCP 도구로 dev server URL 스크린샷 캡처. 캡처 후 paths 갱신.
+   - `user-manual`: 사용자가 이미 입력한 경로 사용.
+   - `code-only-fallback`: 캡처 없음. ux-audit Lite로 위임 (차단 X, 안내만).
+
+3. **Agent 서브에이전트 spawn (vision-capable Claude — Anthropic API 키 불필요)**:
+   ```
+   Agent({
+     description: "Visual Intent Verifier",
+     subagent_type: "general-purpose",   // 또는 ux-audit
+     model: agent_model_hint == "opus" ? "opus" : undefined,  // default: 세션 모델
+     prompt: evaluator_prompt + "\n\n[스크린샷]\n" + 첨부 이미지 경로
+   })
+   ```
+   - Agent는 intent.json + 스크린샷을 받아 verdict JSON 출력 (pass | fail | degraded)
+
+4. **차단 정책 적용**:
+   - `verdict == fail` → 커밋 차단 (NO_PASS 토큰). 사용자에게 mismatches 보고. Phase 5(Auto-Fix) 진입 가능.
+   - `verdict == degraded` → 경고만, 차단 X. "[Nova] 시각 검증 폴백 모드 — 사용자 수동 확인 권장" 안내.
+   - `verdict == pass` → 캐시 갱신 (`.nova/last-visual-audit.json` — hash + verdict + ts). Phase 6으로.
+
+5. **메트릭 기록**:
+   ```
+   bash scripts/log-metric.sh --event visual_verify_completed \
+     --verdict <pass|fail|degraded> --critical N --high N --medium N --source <source>
+   ```
+
+### 외부 의존성 정책 (★ 모든 사용자 보장)
+
+| 의존성 | 정책 |
+|--------|------|
+| Anthropic API 키 | **불필요** — Agent 서브에이전트는 사용자 Claude Code 세션 모델 사용 |
+| Playwright MCP | **선택적** — 미설치 시 사용자 수동 캡처 폴백, 그것도 거부 시 코드 분석 폴백 |
+| dev server | Playwright 사용 시만 필요. 폴백 시 무관 |
+
+### opt-out
+
+- `--skip-visual-verify` 플래그
+- `nova-config.json` `{ "auto": { "visualVerify": false } }`
+- 둘 다 메트릭 기록 후 Phase 6으로 즉시 진행
+
 ## Phase 6: State Update
 
 `NOVA-STATE.md`가 프로젝트 루트에 있으면 검증 결과를 자동 반영한다:

@@ -80,8 +80,16 @@ Plan에 스프린트가 정의되어 있으면 스프린트별로, 없으면 기
 - [ ] 설계의 각 컴포넌트가 Plan의 문제를 해결하는가?
 - [ ] 누락된 엣지 케이스가 없는가?
 
-5. 작성된 문서를 `docs/designs/{slug}.md`에 저장한다.
-6. 저장 후, 원본 Plan 문서의 헤더에 `> Design: designs/{slug}.md` 경로를 추가한다.
+5. **G1 Sprint Contract 자동 행 추가 (UI 작업 한정)**:
+   - `docs/plans/{slug}-intent.json`이 존재하면 (Plan 단계에서 G1 발화):
+     - 해당 intent.json을 읽어 `vocabulary.primary` / `scope.scope_type` / `design_system.mode` / `references` 정보를 Design Context 섹션에 1~2줄로 요약 추가
+     - Sprint Contract 표에 다음 행 자동 추가:
+       ```
+       | 1 | intent.json visual_checks 모두 vlm-judge PASS | VLM-judge | bash scripts/visual-self-verify.sh --intent docs/plans/{slug}-intent.json | Critical |
+       ```
+   - intent.json이 없으면 (비-UI 또는 G1 스킵) — 이 단계는 건너뛴다
+6. 작성된 문서를 `docs/designs/{slug}.md`에 저장한다.
+7. 저장 후, 원본 Plan 문서의 헤더에 `> Design: designs/{slug}.md` 경로를 추가한다.
 # CRITICAL: NOVA-STATE.md 갱신 (이 단계를 건너뛰지 마라)
 
 **Design 작성이 끝나면 반드시 NOVA-STATE.md를 업데이트한다.** 이 단계 없이 커맨드를 종료하면 안 된다.

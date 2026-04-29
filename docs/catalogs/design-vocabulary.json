@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-04-29",
+  "vocabulary": [
+    {
+      "key": "material-3",
+      "name": "Material Design 3 (Material You)",
+      "url": "https://m3.material.io/",
+      "tags": ["google", "android", "modern", "expressive"],
+      "summary": "Google의 최신 디자인 시스템. Dynamic Color + Expressive 토큰 + Adaptive layout."
+    },
+    {
+      "key": "apple-hig",
+      "name": "Apple Human Interface Guidelines",
+      "url": "https://developer.apple.com/design/human-interface-guidelines",
+      "tags": ["apple", "ios", "macos", "polished", "consistent"],
+      "summary": "Apple 플랫폼 표준. Translucency + Depth + Motion."
+    },
+    {
+      "key": "shadcn",
+      "name": "shadcn/ui",
+      "url": "https://ui.shadcn.com/",
+      "tags": ["radix", "tailwind", "open-source", "developer-favorite", "minimal"],
+      "summary": "Radix UI + Tailwind 기반. 코드 복사 모델. 미니멀 + 접근성 우선."
+    },
+    {
+      "key": "linear",
+      "name": "Linear",
+      "url": "https://linear.app/",
+      "tags": ["b2b-saas", "speed", "minimal", "dark-first"],
+      "summary": "고밀도 정보 + 키보드 우선 + 매우 빠른 인터랙션."
+    },
+    {
+      "key": "vercel",
+      "name": "Vercel / Geist UI",
+      "url": "https://vercel.com/geist/introduction",
+      "tags": ["geist", "typography-first", "monospace-accent", "developer"],
+      "summary": "타이포그래피 강조 + Monospace 강세 + Subtle gradient."
+    },
+    {
+      "key": "notion",
+      "name": "Notion",
+      "url": "https://www.notion.com/",
+      "tags": ["block-based", "warm-neutral", "writing-first", "soft"],
+      "summary": "블록 기반 + Warm neutral palette + 부드러운 인터랙션."
+    },
+    {
+      "key": "tailwind-ui",
+      "name": "Tailwind UI",
+      "url": "https://tailwindui.com/",
+      "tags": ["tailwind", "marketing", "comprehensive", "pragmatic"],
+      "summary": "Tailwind CSS 공식 컴포넌트 라이브러리. 마케팅 + 어플리케이션 패턴 포괄."
+    },
+    {
+      "key": "radix",
+      "name": "Radix UI",
+      "url": "https://www.radix-ui.com/",
+      "tags": ["primitives", "accessibility", "unstyled", "headless"],
+      "summary": "접근성 우선 unstyled 프리미티브. shadcn의 기반."
+    },
+    {
+      "key": "mantine",
+      "name": "Mantine",
+      "url": "https://mantine.dev/",
+      "tags": ["b2b-saas", "react", "polished", "comprehensive", "form-heavy"],
+      "summary": "B2B SaaS에 강한 polished React 라이브러리. 100+ 컴포넌트, 폼/데이터 입력 우수."
+    },
+    {
+      "key": "chakra",
+      "name": "Chakra UI",
+      "url": "https://chakra-ui.com/",
+      "tags": ["accessibility-first", "react", "themeable", "dx-friendly"],
+      "summary": "접근성 우선. props 기반 스타일링 + 강력한 테마 시스템."
+    },
+    {
+      "key": "liquid-glass",
+      "name": "Apple Liquid Glass (WWDC 2026)",
+      "url": "https://developer.apple.com/design/human-interface-guidelines/materials",
+      "tags": ["apple", "visionos", "ios-26", "glass-morphism", "depth", "translucency"],
+      "summary": "WWDC 2026 신규. Liquid Glass material — 깊이 있는 translucency + adaptive tinting + dynamic light interaction."
+    }
+  ]
+}

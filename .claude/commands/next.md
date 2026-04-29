@@ -110,6 +110,11 @@ description_en: "Diagnose current project state and recommend the next Nova comm
       "UI 변경이 감지되었습니다. `/nova:ux-audit`로 접근성·인지 부하·성능·다크 패턴을 점검하세요."
       이 추천은 e 항목과 병행 표시한다 (e를 대체하지 않음).
 
+   e-2. **신규 UI 작업**이 감지되었으나 `docs/plans/{slug}-intent.json`이 부재 → `/nova:plan` 권유 (G1 시각 의도 캡처)
+      조건: `bash scripts/detect-ui-change.sh --planning`이 `likely_ui:true` 반환 + 해당 slug에 intent.json 미존재
+      "UI 작업이 감지되었습니다. `/nova:plan`을 호출하면 시각 의도를 캡처합니다 (어휘/스코프/디자인 시스템/reference). 의도 없이 코딩 시 G3 시각 자가 검증이 작동하지 않습니다. 가이드: docs/guides/ui-quality-gate.md"
+      이 추천은 e-1과 별개 (e-1은 검증, e-2는 캡처 시점).
+
    f. Review까지 완료된 흔적이 있다 (최근 커밋에 review/refactor 관련 메시지) → 완료 안내
       "리뷰가 완료되었습니다. 반복 패턴이 있으면 CLAUDE.md에 기록하세요."
 
