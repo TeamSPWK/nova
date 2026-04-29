@@ -1285,7 +1285,7 @@ assert "S2b.6: record-event.sh tool_constraint_violation 기록 + schema 유효"
   "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && \
     bash '$ROOT_DIR/hooks/record-event.sh' tool_constraint_violation '{\"agent\":\"test\",\"tool_attempted\":\"Bash\",\"matched_pattern\":\"Bash(rm -rf *)\"}' && \
     [ \"\$(jq -r '.event_type' .nova/events.jsonl | head -1)\" = 'tool_constraint_violation' ] && \
-    [ \"\$(jq -r '.schema_version' .nova/events.jsonl | head -1)\" = '1' ] \
+    [ \"\$(jq -r '.schema_version' .nova/events.jsonl | head -1)\" = '2' ] \
   ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
 
 # S2b.7: evaluator SKILL.md — tool_constraint_violation 감사 섹션
@@ -1861,6 +1861,80 @@ assert "S9.18: tests/fixtures/nova-state-*.md 6개 존재 (pass/empty/no_pass/st
    [ -f '$FIXTURE_DIR/nova-state-stale.md' ] && \
    [ -f '$FIXTURE_DIR/nova-state-timestamp_broken.md' ] && \
    [ -f '$FIXTURE_DIR/nova-state-conflict.md' ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# 10. v5.20.0 Measurement Infrastructure
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[v5.20.0: Measurement Infrastructure]${NC}"
+
+PID_LIB="$ROOT_DIR/scripts/lib/pattern-id.sh"
+
+# M1: pattern-id.sh 존재 + 실행 권한
+assert "M1: scripts/lib/pattern-id.sh 존재 + 실행 권한" "[ -x '$PID_LIB' ]"
+
+# M2: record-event.sh schema v2
+assert "M2: record-event.sh schema_version=2" \
+  "grep -q 'schema_version: 2' '$ROOT_DIR/hooks/record-event.sh'"
+
+# M3: record-event.sh extra payload 가이드 (tool, duration_ms, pattern_id, decision)
+assert "M3: record-event.sh extra payload 가이드 (tool/duration_ms/pattern_id ≥ 3)" \
+  "[ \$(grep -cE 'tool|duration_ms|pattern_id' '$ROOT_DIR/hooks/record-event.sh') -ge 3 ]"
+
+# M4: pattern_id 동일 입력 → 동일 출력
+PID1=$(bash -c "source '$PID_LIB' && compute_pattern_id tool_call Bash 2026-04-29T00:00:00" 2>/dev/null)
+PID2=$(bash -c "source '$PID_LIB' && compute_pattern_id tool_call Bash 2026-04-29T00:00:00" 2>/dev/null)
+assert "M4: compute_pattern_id 동일 입력 → 동일 출력" "[ -n '$PID1' ] && [ '$PID1' = '$PID2' ]"
+
+# M5: pattern_id 8-hex 형식
+assert "M5: compute_pattern_id 8-hex 형식" "[[ '$PID1' =~ ^[0-9a-f]{8}$ ]]"
+
+# M6~M11: 신뢰도 6 케이스 (clamp 경계 포함)
+assert "M6: confidence 0/0/0 → 0.30 (베이스)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 0 0 0')\" = '0.30' ]"
+assert "M7: confidence 6/0/0 → 0.90 (N=6)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 6 0 0')\" = '0.90' ]"
+assert "M8: confidence 7/0/0 → 1.00 (clamp 상한)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 7 0 0')\" = '1.00' ]"
+assert "M9: confidence 0/2/0 → 0.70 (accept x2)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 0 2 0')\" = '0.70' ]"
+assert "M10: confidence 0/0/1 → 0.00 (reject clamp 하한)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 0 0 1')\" = '0.00' ]"
+assert "M11: confidence 0/0/2 → 0.00 (음수 방어)" \
+  "[ \"\$(bash -c 'source $PID_LIB && compute_confidence 0 0 2')\" = '0.00' ]"
+
+# M12: analyze --pattern confidence --format json 유효 JSON
+assert "M12: analyze --pattern confidence --format json 유효 JSON" \
+  "bash '$ROOT_DIR/scripts/analyze-observations.sh' --pattern confidence --format json 2>/dev/null | jq -e . >/dev/null"
+
+# M13: analyze 기본 출력 헤더 존재 (회귀 0). pipefail + SIGPIPE 회피 위해 grep -c 사용
+assert "M13: analyze 기본 출력 'Nova Behavior Analysis' 헤더" \
+  "[ \$(bash '$ROOT_DIR/scripts/analyze-observations.sh' 2>/dev/null | grep -c 'Nova Behavior Analysis') -ge 1 ]"
+
+# M14: evolve.md --accept/--reject + evolve_decision 노출
+assert "M14: evolve.md --accept/--reject 옵션 + evolve_decision 키워드" \
+  "grep -q -- '--accept' '$ROOT_DIR/.claude/commands/evolve.md' && grep -q -- '--reject' '$ROOT_DIR/.claude/commands/evolve.md' && grep -q 'evolve_decision' '$ROOT_DIR/.claude/commands/evolve.md'"
+
+# M15: evolve.md NOVA-STATE 트리거 제외 명시
+assert "M15: evolve.md NOVA-STATE 트리거 제외/JSONL only 명시" \
+  "grep -qE 'NOVA-STATE.*갱신.*X|NOVA-STATE.*트리거.*X|JSONL only|9 진입점 동결|9 진입점 유지' '$ROOT_DIR/.claude/commands/evolve.md'"
+
+# M16: snapshot-baseline.sh 존재
+assert "M16: scripts/snapshot-baseline.sh 실행 권한" \
+  "[ -x '$ROOT_DIR/scripts/snapshot-baseline.sh' ]"
+
+# M17: nova-rules.md §10 신뢰도 공식 노출
+assert "M17: docs/nova-rules.md 신뢰도 공식 노출" \
+  "grep -qE 'clamp.*0.*1|0\.3 \+ 0\.1' '$ROOT_DIR/docs/nova-rules.md'"
+
+# M18: context-chain SKILL evolve_decision 명시
+assert "M18: context-chain SKILL evolve_decision JSONL only" \
+  "grep -qE 'evolve_decision.*JSONL only|evolve_decision.*트리거 제외|evolve_decision.*9 진입점' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
+
+# M19: docs/baselines/ 디렉토리 (snapshot-baseline.sh 산출물 보관)
+assert "M19: docs/baselines/ 디렉토리 존재" "[ -d '$ROOT_DIR/docs/baselines' ]"
 
 echo ""
 

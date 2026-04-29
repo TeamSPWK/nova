@@ -4,6 +4,13 @@
 # 사용법:
 #   bash hooks/record-event.sh <event_type> [<extra_json>]
 #
+# extra payload 권장 nullable 필드 (schema v2, v5.20.0+):
+#   - tool         : 도구 이름 (예: "Bash", "Read"). PostToolUse 훅(v5.21.0+)에서 채움
+#   - duration_ms  : 도구 실행 시간 (밀리초). PostToolUse stdin payload에서 추출
+#   - pattern_id   : 패턴 식별자 (8자 hex). evolve_decision 이벤트에만 명시 기록
+#   - decision     : "accept" 또는 "reject" (evolve_decision 이벤트일 때만)
+# confidence는 events.jsonl에 기록하지 않는다 — analyze-observations.sh가 산출 시점에 in-memory 계산.
+#
 # 환경변수:
 #   NOVA_DISABLE_EVENTS=1      → 즉시 exit 0 (옵트아웃)
 #   NOVA_EVENTS_PATH=<path>    → 기본 .nova/events.jsonl 대신 지정 경로
@@ -123,7 +130,7 @@ LINE=$(jq -cn \
   --argjson extra "$EXTRA_CLEAN" \
   --arg cwdh "$CWD_HASH" \
   '{
-    schema_version: 1,
+    schema_version: 2,
     timestamp: $ts,
     timestamp_epoch: $ts_epoch,
     monotonic_ns: $mono,

@@ -17,7 +17,9 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 - `--apply` : 제안서 기반 구현 + 품질 게이트 실행
 - `--auto` : scan + apply + 자율 범위 내 자동 머지
 - `--sources` : 스캔 소스를 지정 (기본: 전체). 예: `--sources anthropic,opensource`
-- `--from-observations` : 외부 스캔 대신 사용자 행동 패턴에서 CPS Problem 초안 제안. `scripts/analyze-observations.sh`를 호출해 `.nova/events.jsonl`을 분석하고 Top N 반복 패턴을 CPS Problem 초안으로 드래프트한다. **자동 승격 금지, 사용자 승인 필수.**
+- `--from-observations` : 외부 스캔 대신 사용자 행동 패턴에서 CPS Problem 초안 제안. `scripts/analyze-observations.sh --pattern confidence --threshold 0.7`를 호출해 신뢰도 ≥0.7 패턴을 표시한다. **자동 승격 금지, 사용자 승인 필수 — 본 명령은 분석 결과만 표시, Skill 자동 생성/승격 X.**
+- `--accept <pattern_id>` : `--from-observations` 출력의 8자 hex pattern_id를 채택 기록. `hooks/record-event.sh evolve_decision`을 호출해 `decision="accept"` 이벤트를 `.nova/events.jsonl`에 append. **NOVA-STATE.md 갱신 트리거 X** (9 진입점 동결, Plan 결정 v5.20.0). 다음 분석에서 신뢰도 +0.2 반영.
+- `--reject <pattern_id>` : 동일 인터페이스로 거부 기록. `decision="reject"` → 다음 분석에서 신뢰도 -0.3 반영.
 
 # Execution
 
@@ -205,6 +207,42 @@ gh issue close {이슈번호} --repo TeamSPWK/nova --comment "v{새버전}에서
 ```
 
 # Output Format
+
+## Phase 5: `--from-observations` / `--accept` / `--reject` 모드 (v5.20.0+)
+
+### `--from-observations` 동작
+
+```bash
+bash scripts/analyze-observations.sh --pattern confidence --threshold 0.7
+```
+
+출력 표는 `pattern_id, event_type, tool, week, N_sessions, N_accept, N_reject, confidence` 컬럼을 포함한다. **자동 승격 금지** — 사용자가 명시적으로 `--accept` 또는 `--reject`를 호출해야 신뢰도가 갱신된다. AI는 이 결정을 자가 기록할 수 없다.
+
+### `--accept <pattern_id>` / `--reject <pattern_id>` 동작
+
+1. `pattern_id` 형식 검증 — `^[0-9a-f]{8}$` 매치 안 되면 exit 1 + 에러 메시지.
+2. `record-event.sh evolve_decision` 호출:
+
+```bash
+PATTERN_ID="$1"
+DECISION="accept"  # 또는 "reject"
+bash hooks/record-event.sh evolve_decision \
+  "$(jq -cn --arg p "$PATTERN_ID" --arg d "$DECISION" \
+       '{pattern_id:$p, decision:$d}')"
+```
+
+3. **NOVA-STATE.md 갱신 X** — `evolve_decision` 이벤트는 JSONL only. 9 진입점(`/nova:plan`/`/nova:design`/`/nova:deepplan`/`/nova:run`/`/nova:auto`/`/nova:review`/`/nova:check`/`/nova:ux-audit`/`/nova:evolve` 완료) 동결. 본 결정의 사유는 v5.20.0 Plan 문서(`docs/plans/measurement-infrastructure.md` 결정 #3) 참조 — `--accept`/`--reject` 다중 호출이 NOVA-STATE 트림 루프 유발 위험 회피.
+
+4. 결과 출력:
+```
+✅ accept 기록: a3f2e1c8
+ℹ️  자동 승격 금지 — Skill 승격은 사용자가 명시적으로 결정
+   다음 /nova:evolve --from-observations 호출 시 신뢰도가 갱신된다.
+```
+
+자동 승격 금지: 본 명령은 신뢰도 점수에만 영향. Skill 자동 생성/승격 X.
+
+---
 
 ## --scan 모드 (기본)
 
