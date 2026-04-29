@@ -7,7 +7,7 @@
 > *Illustrative playback of the `/nova:review` + pre-commit gate flow. Source: [`assets/demo-play.sh`](assets/demo-play.sh) + [`assets/demo.cast`](assets/demo.cast).*
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-5.22.2-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-5.22.3-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Verify before you ship. Every time.**
