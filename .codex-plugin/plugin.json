@@ -11,11 +11,33 @@
   "repository": "https://github.com/TeamSPWK/nova",
   "license": "MIT",
   "skills": "./.claude/skills/",
+  "mcpServers": "./.codex-plugin/.mcp.json",
   "keywords": [
     "quality-gate",
     "adversarial-review",
     "cross-verification",
     "cps",
     "code-review"
-  ]
+  ],
+  "interface": {
+    "displayName": "Nova",
+    "shortDescription": "Quality gates for AI coding agents",
+    "longDescription": "Use Nova in Codex for adversarial review, quality gates, cross-verification, project state continuity, and access to the Nova MCP tools.",
+    "developerName": "Spacewalk Engineering",
+    "category": "Development",
+    "capabilities": [
+      "Read",
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/TeamSPWK/nova",
+    "privacyPolicyURL": "https://github.com/TeamSPWK/nova",
+    "termsOfServiceURL": "https://github.com/TeamSPWK/nova/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Use Nova to review this change",
+      "Use Nova to plan this task",
+      "Check this project with Nova"
+    ],
+    "brandColor": "#3B82F6",
+    "screenshots": []
+  }
 }

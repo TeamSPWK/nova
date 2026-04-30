@@ -444,22 +444,45 @@ claude plugin marketplace remove nova-marketplace
 
 ### Codex CLI (Beta)
 
-Nova는 [Codex CLI](https://github.com/openai/codex) 사용자를 위한 별도 매니페스트를 제공한다. Phase 1에서는 스킬(7종)과 MCP를 사용할 수 있다.
+Nova는 [Codex CLI](https://github.com/openai/codex) 사용자를 위한 별도 매니페스트를 제공한다. Phase 1에서는 스킬과 MCP를 사용할 수 있다.
+
+팀 표준 추천 플러그인 세트(Browser Use, Documents, Spreadsheets, Presentations, Nova)는 한 줄로 설치할 수 있다. 자세한 절차와 장애 대응은 [Codex 플러그인 팀 설치 가이드](docs/guides/codex-plugins.md)를 참고한다.
 
 ```bash
-# 1) Codex 플러그인 디렉토리에 클론
-git clone https://github.com/TeamSPWK/nova.git ~/.agents/plugins/nova
-
-# 2) MCP 서버 빌드
-cd ~/.agents/plugins/nova/mcp-server && pnpm install && pnpm build
-
-# 3) Codex CLI의 `/plugins` 커맨드로 활성화하거나,
-#    `~/.agents/plugins/marketplace.json`에 Nova 엔트리를 수동 등록
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
 ```
 
-> **주의**: `session-start.sh` 훅(10개 자동 적용 규칙)은 Claude Code 전용 기능으로 **Codex CLI에서는 동작하지 않는다**. 슬래시 커맨드(`/nova:*`)와 전문 에이전트도 Phase 1에서는 사용 불가. 세션 시작 시 `docs/nova-rules.md`를 수동으로 첨부해 규칙을 적용한다.
+수동 설치는 아래 절차를 따른다.
 
-**MCP 수동 등록 (폴백 — 번들된 `.codex-plugin/.mcp.json`이 자동 로드되지 않을 경우):**
+```bash
+# 1) Nova 마켓플레이스 추가
+codex plugin marketplace add TeamSPWK/nova
+
+# 로컬 개발 중이면 현재 클론을 직접 등록
+codex plugin marketplace add /absolute/path/to/nova
+
+# 2) 설치된 marketplace root에서 MCP 서버 의존성 빌드
+#    (add 명령 출력에 installed root 경로가 표시됨)
+cd <installed-marketplace-root>/mcp-server && pnpm install && pnpm build
+```
+
+그 다음 Codex 플러그인 UI에서 `nova@nova-marketplace`를 활성화한다. 설정 파일로 직접 켜려면 먼저 플러그인이 Codex plugin cache에 설치되거나 materialize된 상태여야 한다.
+
+```toml
+# ~/.codex/config.toml
+[plugins."nova@nova-marketplace"]
+enabled = true
+```
+
+팀 설정용으로는 Nova 등록, plugin cache materialize, 추천 Codex 플러그인 활성화, Nova MCP 폴백 등록까지 처리하는 설치 스크립트를 제공한다.
+
+```bash
+bash scripts/install-codex-recommended-plugins.sh --local /absolute/path/to/nova
+```
+
+> **주의**: `session-start.sh` 훅(10개 자동 적용 규칙)은 Claude Code 전용 기능으로 **Codex CLI에서는 동작하지 않는다**. 슬래시 커맨드(`/nova:*`)와 전문 에이전트도 Phase 1에서는 사용 불가. Codex에서는 Nova 스킬과 MCP 도구를 사용하고, 전체 룰북이 필요하면 `get_rules()`를 호출한다.
+
+**MCP 수동 등록 폴백** — 번들된 `.codex-plugin/.mcp.json`이 자동 로드되지 않을 때만 사용:
 
 ```toml
 # ~/.codex/config.toml

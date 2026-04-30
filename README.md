@@ -449,22 +449,45 @@ claude plugin marketplace remove nova-marketplace
 
 ### Codex CLI (Beta)
 
-Nova provides a separate manifest for [Codex CLI](https://github.com/openai/codex) users. Skills (7 types) and MCP are available in Phase 1.
+Nova provides a separate manifest for [Codex CLI](https://github.com/openai/codex) users. Skills and MCP are available in Phase 1.
+
+The team-standard recommended plugin set (Browser Use, Documents, Spreadsheets, Presentations, Nova) can be installed with one command. See the [Codex plugin team install guide](docs/guides/codex-plugins.md) for troubleshooting and options.
 
 ```bash
-# 1) Clone into Codex plugin directory
-git clone https://github.com/TeamSPWK/nova.git ~/.agents/plugins/nova
-
-# 2) Build the MCP server
-cd ~/.agents/plugins/nova/mcp-server && pnpm install && pnpm build
-
-# 3) Activate via Codex CLI `/plugins` command,
-#    or register manually in ~/.agents/plugins/marketplace.json
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
 ```
 
-> **Note**: The `session-start.sh` hook (10 auto-apply rules) is a Claude Code-only feature and **does not work with Codex CLI**. Slash commands (`/nova:*`) and specialist agents are also unavailable in Phase 1. Attach `docs/nova-rules.md` manually at session start to get the rules.
+For manual installation, use the steps below.
 
-**MCP registration (fallback — if the bundled `.codex-plugin/.mcp.json` does not auto-load):**
+```bash
+# 1) Add the Nova marketplace
+codex plugin marketplace add TeamSPWK/nova
+
+# For local development, point Codex at your clone instead:
+codex plugin marketplace add /absolute/path/to/nova
+
+# 2) Build the MCP server dependencies in the installed marketplace root
+#    (the add command prints the installed root path)
+cd <installed-marketplace-root>/mcp-server && pnpm install && pnpm build
+```
+
+Then enable `nova@nova-marketplace` in the Codex plugin UI. If you prefer editing config directly, make sure the plugin has first been installed or materialized in Codex's plugin cache:
+
+```toml
+# ~/.codex/config.toml
+[plugins."nova@nova-marketplace"]
+enabled = true
+```
+
+For team setup, this repository also includes an installer that registers Nova, materializes the plugin cache, enables the recommended Codex plugins, and adds a Nova MCP fallback:
+
+```bash
+bash scripts/install-codex-recommended-plugins.sh --local /absolute/path/to/nova
+```
+
+> **Note**: The `session-start.sh` hook (10 auto-apply rules) is a Claude Code-only feature and **does not work with Codex CLI**. Slash commands (`/nova:*`) and specialist agents are also unavailable in Phase 1. Use Nova skills and MCP tools instead; call `get_rules()` when you need the full rulebook.
+
+**MCP registration fallback** — only use this if the bundled `.codex-plugin/.mcp.json` does not auto-load:
 
 ```toml
 # ~/.codex/config.toml

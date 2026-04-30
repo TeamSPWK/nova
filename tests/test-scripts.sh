@@ -153,6 +153,56 @@ assert ".codex-plugin/plugin.json 존재" "[ -f '$ROOT_DIR/.codex-plugin/plugin.
 assert ".codex-plugin/plugin.json: name" "jq -e '.name' '$ROOT_DIR/.codex-plugin/plugin.json' > /dev/null 2>&1"
 assert ".codex-plugin/plugin.json: version" "jq -e '.version' '$ROOT_DIR/.codex-plugin/plugin.json' > /dev/null 2>&1"
 assert ".codex-plugin/plugin.json: description" "jq -e '.description' '$ROOT_DIR/.codex-plugin/plugin.json' > /dev/null 2>&1"
+assert ".codex-plugin/plugin.json: skills 경로 존재" \
+  "CODEX_SKILLS=\$(jq -r '.skills' '$ROOT_DIR/.codex-plugin/plugin.json') && [ -d '$ROOT_DIR/'\"\${CODEX_SKILLS#./}\" ]"
+assert ".codex-plugin/plugin.json: mcpServers 연결" \
+  "[ \"\$(jq -r '.mcpServers' '$ROOT_DIR/.codex-plugin/plugin.json')\" = './.codex-plugin/.mcp.json' ]"
+assert ".codex-plugin/plugin.json: interface.displayName" \
+  "jq -e '.interface.displayName == \"Nova\"' '$ROOT_DIR/.codex-plugin/plugin.json' > /dev/null 2>&1"
+assert ".codex-plugin/.mcp.json 존재 + JSON 유효" \
+  "[ -f '$ROOT_DIR/.codex-plugin/.mcp.json' ] && jq -e '.mcpServers.nova.command' '$ROOT_DIR/.codex-plugin/.mcp.json' > /dev/null 2>&1"
+CODEX_MCP_ENTRY=$(jq -r '.mcpServers.nova.args[]?' "$ROOT_DIR/.codex-plugin/.mcp.json" 2>/dev/null | grep -F 'dist/' | sed 's|^\./||' | head -1)
+assert "Codex MCP entrypoint 파일 존재 ($CODEX_MCP_ENTRY)" \
+  "[ -n '$CODEX_MCP_ENTRY' ] && [ -f '$ROOT_DIR/$CODEX_MCP_ENTRY' ]"
+assert "Codex MCP entrypoint가 .gitignore에 걸리지 않음" \
+  "(cd '$ROOT_DIR' && ! git check-ignore '$CODEX_MCP_ENTRY' > /dev/null 2>&1)"
+assert "Codex marketplace 존재 + JSON 유효" \
+  "[ -f '$ROOT_DIR/.agents/plugins/marketplace.json' ] && jq -e '.plugins[0].name' '$ROOT_DIR/.agents/plugins/marketplace.json' > /dev/null 2>&1"
+assert "Codex marketplace: plugin name == manifest name" \
+  "[ \"\$(jq -r '.plugins[0].name' '$ROOT_DIR/.agents/plugins/marketplace.json')\" = \"\$(jq -r '.name' '$ROOT_DIR/.codex-plugin/plugin.json')\" ]"
+assert "Codex marketplace: 단일 repo path ./ 사용" \
+  "[ \"\$(jq -r '.plugins[0].source.path' '$ROOT_DIR/.agents/plugins/marketplace.json')\" = './' ]"
+assert "Codex marketplace에 version 없음 (plugin.json이 유일한 source)" \
+  "! jq -e '.plugins[0].version' '$ROOT_DIR/.agents/plugins/marketplace.json' > /dev/null 2>&1"
+assert "Codex marketplace가 .gitignore에 걸리지 않음" \
+  "(cd '$ROOT_DIR' && ! git check-ignore '.agents/plugins/marketplace.json' > /dev/null 2>&1)"
+echo ""
+
+# ═══════════════════════════════════════════
+# 5-2. Codex 추천 플러그인 설치 스크립트
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[플러그인: Codex 추천 설치]${NC}"
+
+CODEX_INSTALLER="$ROOT_DIR/scripts/install-codex-recommended-plugins.sh"
+CODEX_GUIDE="$ROOT_DIR/docs/guides/codex-plugins.md"
+
+assert "Codex 추천 설치 스크립트 존재 + 실행 가능" \
+  "[ -x '$CODEX_INSTALLER' ]"
+assert "Codex 추천 설치 스크립트 shell syntax" \
+  "bash -n '$CODEX_INSTALLER'"
+assert "Codex 추천 설치 스크립트: plugin cache materialize 포함" \
+  "grep -q 'materialize_nova_plugin_cache' '$CODEX_INSTALLER' && grep -q 'plugins/cache' '$CODEX_INSTALLER'"
+assert "Codex 추천 설치 스크립트 help에서 가이드 노출" \
+  "bash '$CODEX_INSTALLER' --help | grep -q 'docs/guides/codex-plugins.md'"
+assert "Codex 플러그인 팀 설치 가이드 존재" \
+  "[ -f '$CODEX_GUIDE' ]"
+assert "Codex 플러그인 팀 설치 가이드: 원라이너 포함" \
+  "grep -q 'install-codex-recommended-plugins.sh' '$CODEX_GUIDE'"
+assert "README: Codex 플러그인 가이드 링크" \
+  "grep -q 'docs/guides/codex-plugins.md' '$ROOT_DIR/README.md'"
+assert "README.ko: Codex 플러그인 가이드 링크" \
+  "grep -q 'docs/guides/codex-plugins.md' '$ROOT_DIR/README.ko.md'"
 echo ""
 
 # ═══════════════════════════════════════════
