@@ -1046,6 +1046,9 @@ assert "A1: design.md에 intent.json 통합" \
 assert "A1: detect-ui-change.sh가 비-UI 입력에서 likely_ui:false 반환 (false positive 방지)" \
   "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && git init -q && echo 'console.log(1)' > app.js && git add app.js && bash '$ROOT_DIR/scripts/detect-ui-change.sh' --planning | jq -e '.likely_ui == false') > /dev/null 2>&1; STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
 
+assert "A1: detect-ui-change.sh가 shallow clone 전체 트리 UI 오탐 방지" \
+  "TMPD=\$(mktemp -d); SRC=\"\$TMPD/src\"; mkdir -p \"\$SRC/tests/fixtures/react-component/src\" && (cd \"\$SRC\" && git init -q && printf 'export function Button(){return <button className=\"x\" />}' > tests/fixtures/react-component/src/Button.tsx && git add . && git -c user.email=nova@example.com -c user.name=Nova commit -qm init) && git clone --depth 1 \"file://\$SRC\" \"\$TMPD/shallow\" > /dev/null 2>&1 && (cd \"\$TMPD/shallow\" && bash '$ROOT_DIR/scripts/detect-ui-change.sh' --post-impl | jq -e '.is_ui == false') > /dev/null; STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

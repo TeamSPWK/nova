@@ -25,6 +25,14 @@ CSS_IN_JS_IMPORTS='styled-components|@emotion/styled|@emotion/react|@linaria/cor
 UI_KEYWORDS='className=|style=\{|styled\.|css\(|class=|:class=|<style|<template|\b(color|background|border|padding|margin|font-size|font-weight|font-family|line-height|width|height|display|position|gap|grid|flex)\b|#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\('
 
 # 변경 파일 목록 추출 (staged → HEAD~1..HEAD → HEAD 단독커밋 → worktree 전체)
+head_parent_available() {
+  git rev-parse -q --verify HEAD^ >/dev/null 2>&1
+}
+
+is_shallow_boundary() {
+  [ "$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)" = "true" ] && ! head_parent_available
+}
+
 get_changed_files() {
   if [ "$MODE" = "--planning" ]; then
     git status --porcelain 2>/dev/null | awk '{print $2}' || true
@@ -33,14 +41,17 @@ get_changed_files() {
   # staged
   STAGED=$(git diff --name-only --cached 2>/dev/null || true)
   if [ -n "$STAGED" ]; then echo "$STAGED"; return; fi
-  # HEAD~1..HEAD (2개 이상 커밋)
-  PARENT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
-  if [ "$PARENT_COUNT" -ge 2 ]; then
-    git diff --name-only HEAD~1..HEAD 2>/dev/null || true
-  else
-    # 첫 커밋: show --name-only로 전체 파일 목록
-    git show --name-only --format="" HEAD 2>/dev/null | grep -v '^$' || true
+  # HEAD^..HEAD when the parent object exists. In shallow CI checkouts the
+  # parent can be unavailable; treating that as a root commit would scan the
+  # whole tree and create false UI positives from fixtures.
+  if head_parent_available; then
+    git diff --name-only HEAD^..HEAD 2>/dev/null || true
+    return
   fi
+  is_shallow_boundary && return
+
+  # Actual root commit: show --name-only로 전체 파일 목록
+  git show --name-only --format="" HEAD 2>/dev/null | grep -v '^$' || true
 }
 
 # diff 텍스트 추출
@@ -54,13 +65,14 @@ get_diff_text() {
     git diff --cached 2>/dev/null || true
     return
   fi
-  PARENT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
-  if [ "$PARENT_COUNT" -ge 2 ]; then
-    git diff HEAD~1..HEAD 2>/dev/null || true
-  else
-    # 첫 커밋: show로 diff 추출
-    git show HEAD 2>/dev/null | grep -E '^[+-][^+-]' || true
+  if head_parent_available; then
+    git diff HEAD^..HEAD 2>/dev/null || true
+    return
   fi
+  is_shallow_boundary && return
+
+  # Actual root commit: show로 diff 추출
+  git show HEAD 2>/dev/null | grep -E '^[+-][^+-]' || true
 }
 
 # --check-cache 모드
@@ -132,8 +144,10 @@ if [ ${#UI_FILES_ARGS[@]} -gt 0 ]; then
     STAGED_CHECK=$(git diff --name-only --cached 2>/dev/null || true)
     if [ -n "$STAGED_CHECK" ]; then
       UI_DIFF_TEXT=$(git diff --cached -- "${UI_FILES_ARGS[@]}" 2>/dev/null || true)
-    elif [ "$(git rev-list --count HEAD 2>/dev/null || echo 0)" -ge 2 ]; then
-      UI_DIFF_TEXT=$(git diff HEAD~1..HEAD -- "${UI_FILES_ARGS[@]}" 2>/dev/null || true)
+    elif head_parent_available; then
+      UI_DIFF_TEXT=$(git diff HEAD^..HEAD -- "${UI_FILES_ARGS[@]}" 2>/dev/null || true)
+    elif is_shallow_boundary; then
+      UI_DIFF_TEXT=""
     else
       UI_DIFF_TEXT=$(git show HEAD -- "${UI_FILES_ARGS[@]}" 2>/dev/null | grep -E '^[+-][^+-]' || true)
     fi
