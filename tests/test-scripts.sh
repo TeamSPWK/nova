@@ -195,9 +195,11 @@ assert "Codex 추천 설치 스크립트: plugin cache materialize 포함" \
   "grep -q 'materialize_nova_plugin_cache' '$CODEX_INSTALLER' && grep -q 'plugins/cache' '$CODEX_INSTALLER'"
 assert "Codex 추천 설치 스크립트 help에서 가이드 노출" \
   "bash '$CODEX_INSTALLER' --help | grep -q 'docs/guides/codex-plugins.md'"
-assert "Codex 플러그인 팀 설치 가이드 존재" \
+assert "Codex 추천 설치 스크립트: stdin 실행(curl | bash)에서도 원격 설치" \
+  "TMPD=\$(mktemp -d); STATUS=0; BIN=\"\$TMPD/bin\"; mkdir -p \"\$BIN\" && printf '#!/bin/sh\nexit 0\n' > \"\$BIN/codex\" && chmod +x \"\$BIN/codex\" && (cd \"\$TMPD\" && PATH=\"\$BIN:\$PATH\" CODEX_CONFIG=\"\$TMPD/config.toml\" CODEX_PLUGIN_CACHE_DIR=\"\$TMPD/cache\" NOVA_GIT_URL='file://$ROOT_DIR' NOVA_INSTALL_DIR=\"\$TMPD/nova-install\" bash -s -- --skip-mcp-build < '$CODEX_INSTALLER' >/dev/null) && grep -q 'nova@nova-marketplace' \"\$TMPD/config.toml\" && [ -f \"\$TMPD/nova-install/.codex-plugin/plugin.json\" ] || STATUS=\$?; rm -rf \"\$TMPD\"; [ \"\$STATUS\" -eq 0 ]"
+assert "Codex 플러그인 설치 가이드 존재" \
   "[ -f '$CODEX_GUIDE' ]"
-assert "Codex 플러그인 팀 설치 가이드: 원라이너 포함" \
+assert "Codex 플러그인 설치 가이드: 원라이너 포함" \
   "grep -q 'install-codex-recommended-plugins.sh' '$CODEX_GUIDE'"
 assert "README: Codex 플러그인 가이드 링크" \
   "grep -q 'docs/guides/codex-plugins.md' '$ROOT_DIR/README.md'"

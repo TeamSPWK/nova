@@ -59,7 +59,7 @@ EOF
 }
 
 log() {
-  printf '==> %s\n' "$1"
+  printf '==> %s\n' "$1" >&2
 }
 
 ok() {
@@ -117,6 +117,18 @@ repo_root_from() {
   return 1
 }
 
+script_dir_from_bash_source() {
+  local source_path="${BASH_SOURCE[0]:-}"
+  local source_dir=""
+
+  [[ -n "$source_path" ]] || return 1
+
+  source_dir="$(cd "$(dirname "$source_path")" 2>/dev/null && pwd || true)"
+  [[ -n "$source_dir" ]] || return 1
+
+  printf '%s\n' "$source_dir"
+}
+
 clone_or_update_nova() {
   require_command git
 
@@ -147,9 +159,7 @@ detect_nova_root() {
 
   if [[ "$FORCE_REMOTE" -eq 0 ]]; then
     local script_dir=""
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)"
-
-    if [[ -n "$script_dir" ]] && repo_root_from "$script_dir/.." >/dev/null 2>&1; then
+    if script_dir="$(script_dir_from_bash_source)" && repo_root_from "$script_dir/.." >/dev/null 2>&1; then
       repo_root_from "$script_dir/.."
       return 0
     fi
@@ -409,7 +419,7 @@ main() {
 
 Done. Restart Codex so the plugin list and MCP server reload.
 
-Team one-liner:
+Install one-liner:
   curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
 
 Guide:
