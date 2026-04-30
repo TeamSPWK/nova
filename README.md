@@ -7,10 +7,10 @@
 > *Illustrative playback of the `/nova:review` + pre-commit gate flow. Source: [`assets/demo-play.sh`](assets/demo-play.sh) + [`assets/demo.cast`](assets/demo.cast).*
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-5.26.0-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-5.26.1-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Self-only metrics** (n < threshold = gray-out, honest signal — see [`docs/guides/measurement.md`](docs/guides/measurement.md)):
+**Self-only metrics** (n < threshold = gray-out, honest signal — see [`docs/guides/measurement.md`](docs/guides/measurement.md)) · **UI changes** gated by G1+G3 pair — see [`docs/guides/ui-quality-gate.md`](docs/guides/ui-quality-gate.md):
 <!-- nova-metrics:badges:start -->
 ![process_consistency](https://img.shields.io/badge/process_consistency-n%3D0%20insufficient-lightgrey) ![gap_detection_rate](https://img.shields.io/badge/gap_detection_rate-n%3D0%20insufficient-lightgrey) ![rule_evolution_rate](https://img.shields.io/badge/rule_evolution_rate-n%3D0%20insufficient-lightgrey) ![multi_perspective_impact](https://img.shields.io/badge/multi_perspective_impact-n%3D0%20insufficient-lightgrey)
 <!-- nova-metrics:badges:end -->
