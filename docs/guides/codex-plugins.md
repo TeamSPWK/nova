@@ -1,8 +1,8 @@
-# Codex 플러그인 팀 설치 가이드
+# Codex 플러그인 설치 가이드
 
 ## TL;DR
 
-팀원에게 아래 한 줄을 전달한다.
+일반 사용자는 아래 한 줄로 Nova와 추천 Codex 플러그인 세트를 설치할 수 있다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
@@ -16,7 +16,7 @@ cd nova
 bash scripts/install-codex-recommended-plugins.sh
 ```
 
-설치 후 Codex를 재시작한다.
+설치 후 Codex를 완전히 재시작한다. Nova가 보이지 않으면 아래 "실패 시 해결" 섹션을 확인한다.
 
 ## 설치되는 것
 
@@ -47,6 +47,24 @@ bash scripts/install-codex-recommended-plugins.sh
 4. Codex가 스킬을 로드하는 `~/.codex/plugins/cache/nova-marketplace/nova/<version>/`에 Nova 플러그인을 materialize한다.
 5. `~/.codex/config.toml`에 추천 플러그인 활성화 블록을 추가/갱신한다.
 6. `.codex-plugin/.mcp.json` 자동 로드가 안 되는 환경을 위해 `[mcp_servers.nova]` 폴백도 등록한다.
+
+## Nova만 수동 설치하는 경우
+
+추천 플러그인 세트가 아니라 Nova만 직접 등록하려면 아래 절차를 따른다.
+
+```bash
+codex plugin marketplace add TeamSPWK/nova
+cd <installed-marketplace-root>/mcp-server
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+그 다음 Codex 플러그인 UI에서 `nova@nova-marketplace`를 활성화한다. 설정 파일로 직접 켜려면 `~/.codex/config.toml`에 아래 블록이 있어야 한다.
+
+```toml
+[plugins."nova@nova-marketplace"]
+enabled = true
+```
 
 ## 옵션
 
@@ -112,7 +130,7 @@ command = "node"
 args = ["/absolute/path/to/nova/mcp-server/dist/index.js"]
 ```
 
-## 팀 공유 문구
+## 공유 문구
 
 ```text
 Codex 추천 플러그인 세트 설치:

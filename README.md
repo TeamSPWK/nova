@@ -54,6 +54,19 @@ A multi-release sprint that adopted measured ideas from the ECC (Everything Clau
 
 ## Quick Start
 
+### Codex Desktop / CLI (Beta)
+
+```bash
+# Install Nova with the recommended Codex plugin set
+curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
+```
+
+Restart Codex after installation. See the [Codex plugin install guide](docs/guides/codex-plugins.md) for options and troubleshooting.
+
+> In Codex Phase 1, Nova skills and MCP tools are available. Claude Code-only hooks and slash-command differences are covered in the install section below.
+
+### Claude Code
+
 ```bash
 # Install (30 seconds)
 claude plugin marketplace add TeamSPWK/nova
@@ -447,11 +460,11 @@ claude plugin uninstall nova@nova-marketplace
 claude plugin marketplace remove nova-marketplace
 ```
 
-### Codex CLI (Beta)
+### Codex Desktop / CLI (Beta)
 
-Nova provides a separate manifest for [Codex CLI](https://github.com/openai/codex) users. Skills and MCP are available in Phase 1.
+Nova provides a separate manifest for [Codex](https://github.com/openai/codex) users. Skills and MCP are available in Phase 1.
 
-The team-standard recommended plugin set (Browser Use, Documents, Spreadsheets, Presentations, Nova) can be installed with one command. See the [Codex plugin team install guide](docs/guides/codex-plugins.md) for troubleshooting and options.
+The recommended plugin set (Browser Use, Documents, Spreadsheets, Presentations, Nova) can be installed with one command. See the [Codex plugin install guide](docs/guides/codex-plugins.md) for troubleshooting and options.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-codex-recommended-plugins.sh | bash
