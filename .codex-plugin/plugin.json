@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "5.26.2",
+  "version": "5.27.0",
   "description": "AI 개발 품질 게이트 — 적대적 코드 리뷰, 멀티 AI 교차검증, 설계-구현 정합성 검증으로 재작업을 제거한다.",
   "author": {
     "name": "Spacewalk Engineering",
