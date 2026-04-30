@@ -1021,8 +1021,9 @@ assert "A2: --skip-visual-verify 즉시 skipped 출력" \
   "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent /dev/null --skip-visual-verify | jq -e '.skipped == true and .skip_reason' > /dev/null"
 
 # A2-4: 옵션 동작 — non-interactive + Playwright 미설치 → fallback level 3 (code-only)
+# v5.26.1 (M2): NOVA_DISABLE_PLAYWRIGHT_MCP=1로 결정론 보장 (사용자 환경의 Playwright MCP 설치 여부 무관)
 assert "A2: non-interactive + 폴백 → ready_for_judge=true, fallback_level=3 (code-only)" \
-  "bash '$ROOT_DIR/tests/run-fixture-visual-intent.sh' side-case > /dev/null 2>&1 && bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -e '.ready_for_judge == true and .fallback_level == 3 and .screenshot_source == \"code-only-fallback\"' > /dev/null"
+  "bash '$ROOT_DIR/tests/run-fixture-visual-intent.sh' side-case > /dev/null 2>&1 && NOVA_DISABLE_PLAYWRIGHT_MCP=1 bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -e '.ready_for_judge == true and .fallback_level == 3 and .screenshot_source == \"code-only-fallback\"' > /dev/null"
 
 # A2-5: --strict-vlm → agent_model_hint == opus
 assert "A2: --strict-vlm → agent_model_hint == opus" \

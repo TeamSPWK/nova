@@ -51,6 +51,7 @@ SCREENSHOTS_GLOB=""
 MODE="auto"
 NON_INTERACTIVE=false
 SKIP=false
+SKIP_REASON=""
 STRICT_VLM=false
 OUTPUT_PATH=""
 
@@ -67,6 +68,7 @@ OPTIONS:
   --mode {auto|manual|code-only}   Capture mode (default: auto)
   --non-interactive        Skip user-manual fallback (CI mode)
   --skip-visual-verify     Opt-out (returns skipped:true)
+  --skip-reason "<text>"   명시 skip 사유 (UI 변경 감지 시 필수, silently bypass 차단)
   --strict-vlm             Hint caller to use opus model in Agent
   --output <path>          Output JSON path
   -h, --help               This help
@@ -92,6 +94,7 @@ while [ $# -gt 0 ]; do
     --mode) MODE="$2"; shift 2 ;;
     --non-interactive) NON_INTERACTIVE=true; shift ;;
     --skip-visual-verify) SKIP=true; shift ;;
+    --skip-reason) SKIP_REASON="$2"; shift 2 ;;
     --strict-vlm) STRICT_VLM=true; shift ;;
     --output) OUTPUT_PATH="$2"; shift 2 ;;
     -h|--help) show_help; exit 0 ;;
@@ -99,17 +102,33 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Helper: UI change actually present? (silently bypass 차단용 — v5.26.1)
+ui_change_detected() {
+  if [ ! -x "$ROOT_DIR/scripts/detect-ui-change.sh" ]; then
+    return 1
+  fi
+  local detect
+  detect=$(bash "$ROOT_DIR/scripts/detect-ui-change.sh" --post-impl 2>/dev/null || echo '{}')
+  [ "$(echo "$detect" | jq -r '.is_ui // false')" = "true" ]
+}
+
 # === Skip path (opt-out) ===
 if [ "$SKIP" = true ]; then
-  jq -cn '{
+  # v5.26.1: UI 변경이 실제로 있으면 명시 사유(--skip-reason "...") 요구 — silently bypass 차단
+  if ui_change_detected && [ -z "$SKIP_REASON" ]; then
+    echo "Error: UI change detected but --skip-visual-verify used without --skip-reason" >&2
+    echo "Hint: --skip-reason \"<명시 사유>\" 추가하거나 visual verify 진행" >&2
+    exit 1
+  fi
+  jq -cn --arg reason "${SKIP_REASON:-user --skip-visual-verify}" '{
     ready_for_judge: false,
     skipped: true,
-    skip_reason: "user --skip-visual-verify",
+    skip_reason: $reason,
     cache_hit: false
   }'
-  # log-metric (best-effort)
+  # 감사 이벤트 (best-effort + skip_reason payload)
   if [ -x "$ROOT_DIR/scripts/log-metric.sh" ]; then
-    bash "$ROOT_DIR/scripts/log-metric.sh" --event visual_verify_skipped --reason flag 2>/dev/null || true
+    bash "$ROOT_DIR/scripts/log-metric.sh" --event visual_verify_skipped --reason flag --skip_reason "${SKIP_REASON:-flag}" 2>/dev/null || true
   fi
   exit 0
 fi
@@ -118,14 +137,21 @@ fi
 if [ -f "nova-config.json" ]; then
   CFG_OPT=$(jq -r '.auto.visualVerify // true' nova-config.json 2>/dev/null || echo "true")
   if [ "$CFG_OPT" = "false" ]; then
-    jq -cn '{
+    # v5.26.1: nova-config opt-out도 UI 변경 시 명시 사유 요구
+    CFG_REASON=$(jq -r '.auto.visualVerifySkipReason // ""' nova-config.json 2>/dev/null || echo "")
+    if ui_change_detected && [ -z "$CFG_REASON" ]; then
+      echo "Error: UI change detected but nova-config.json auto.visualVerify=false without auto.visualVerifySkipReason" >&2
+      echo "Hint: nova-config.json에 auto.visualVerifySkipReason 추가하거나 auto.visualVerify=true" >&2
+      exit 1
+    fi
+    jq -cn --arg reason "${CFG_REASON:-nova-config.json auto.visualVerify=false}" '{
       ready_for_judge: false,
       skipped: true,
-      skip_reason: "nova-config.json auto.visualVerify=false",
+      skip_reason: $reason,
       cache_hit: false
     }'
     if [ -x "$ROOT_DIR/scripts/log-metric.sh" ]; then
-      bash "$ROOT_DIR/scripts/log-metric.sh" --event visual_verify_skipped --reason config 2>/dev/null || true
+      bash "$ROOT_DIR/scripts/log-metric.sh" --event visual_verify_skipped --reason config --skip_reason "${CFG_REASON:-config}" 2>/dev/null || true
     fi
     exit 0
   fi
@@ -191,6 +217,8 @@ FALLBACK_LEVEL=0
 
 # Helper: detect Playwright MCP availability
 playwright_mcp_available() {
+  # v5.26.1 (M2): NOVA_DISABLE_PLAYWRIGHT_MCP=1 시 강제 비활성화 (테스트 결정론)
+  [ "${NOVA_DISABLE_PLAYWRIGHT_MCP:-0}" = "1" ] && return 1
   # Check if Claude Code config or env hints at Playwright MCP
   # Conservative detection: env var, config file, or existing MCP config
   [ -n "${NOVA_PLAYWRIGHT_MCP:-}" ] && return 0
@@ -205,7 +233,8 @@ if [ -n "$SCREENSHOTS_GLOB" ]; then
   SCREENSHOT_PATHS=$(ls -1 $SCREENSHOTS_GLOB 2>/dev/null | jq -R . | jq -sc . || echo '[]')
   SCREENSHOT_COUNT=$(echo "$SCREENSHOT_PATHS" | jq 'length')
   if [ "$SCREENSHOT_COUNT" -gt 0 ]; then
-    SCREENSHOT_SOURCE="provided"
+    # v5.26.1: enum 정규화 — 사용자가 직접 제공한 스크린샷도 user-manual 카테고리
+    SCREENSHOT_SOURCE="user-manual"
     FALLBACK_LEVEL=1
   fi
 fi
@@ -306,12 +335,19 @@ EOF
 AGENT_MODEL_HINT="default"
 [ "$STRICT_VLM" = true ] && AGENT_MODEL_HINT="opus"
 
+# v5.26.1 (H2): OUTPUT_PATH 기본값 — 항상 감사 추적 파일 작성 (--output 미지정 시)
+if [ -z "$OUTPUT_PATH" ]; then
+  TS_FILE=$(date -u +"%Y%m%dT%H%M%SZ" 2>/dev/null || echo "unknown")
+  OUTPUT_PATH=".nova/visual-audit/${SLUG}-${TS_FILE}.json"
+fi
+
 # log-metric for fallback level
 if [ -x "$ROOT_DIR/scripts/log-metric.sh" ]; then
   bash "$ROOT_DIR/scripts/log-metric.sh" --event visual_verify_fallback --level "$FALLBACK_LEVEL" --source "$SCREENSHOT_SOURCE" 2>/dev/null || true
 fi
 
-jq -cn \
+# Build result JSON once, emit to stdout AND write to OUTPUT_PATH
+RESULT_JSON=$(jq -cn \
   --arg ip "$INTENT_PATH" \
   --argjson sp "$SCREENSHOT_PATHS" \
   --arg src "$SCREENSHOT_SOURCE" \
@@ -330,29 +366,13 @@ jq -cn \
     hash: $h,
     skipped: false,
     agent_model_hint: $amh
-  }'
+  }')
 
-# Write to output file if specified
-if [ -n "$OUTPUT_PATH" ]; then
-  mkdir -p "$(dirname "$OUTPUT_PATH")"
-  jq -cn \
-    --arg ip "$INTENT_PATH" \
-    --argjson sp "$SCREENSHOT_PATHS" \
-    --arg src "$SCREENSHOT_SOURCE" \
-    --arg ep "$EVALUATOR_PROMPT" \
-    --arg h "$CURRENT_HASH" \
-    --arg amh "$AGENT_MODEL_HINT" \
-    --argjson level "$FALLBACK_LEVEL" \
-    '{
-      ready_for_judge: true,
-      intent_path: $ip,
-      screenshot_paths: $sp,
-      screenshot_source: $src,
-      fallback_level: $level,
-      evaluator_prompt: $ep,
-      cache_hit: false,
-      hash: $h,
-      skipped: false,
-      agent_model_hint: $amh
-    }' > "$OUTPUT_PATH"
+echo "$RESULT_JSON"
+
+# v5.26.1 (H2): always write — 감사 추적 파일 작성. 실패 시 non-zero exit.
+mkdir -p "$(dirname "$OUTPUT_PATH")"
+if ! echo "$RESULT_JSON" > "$OUTPUT_PATH"; then
+  echo "Error: failed to write audit file: $OUTPUT_PATH" >&2
+  exit 2
 fi

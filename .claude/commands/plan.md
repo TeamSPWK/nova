@@ -124,12 +124,14 @@ Safe-default: 실패해도 Plan 작성은 완료로 간주.
 
 4. 작성된 문서를 `docs/plans/{slug}.md`에 저장한다.
 5. **G1 시각 의도 캡처 (UI 작업 한정)**:
-   - `bash scripts/detect-ui-change.sh --planning` 호출
-   - `likely_ui == true`인 경우에만:
-     - `bash scripts/capture-visual-intent.sh --slug {slug} --from-prompt "{원본 사용자 prompt}"` 실행
+   - 다음 두 신호 중 **하나라도** 만족하면 G1 발화:
+     - **신호 A — 파일 변경 감지**: `bash scripts/detect-ui-change.sh --planning` → `likely_ui == true` (이미 UI 파일이 수정된 상태)
+     - **신호 B — 사용자 의도 키워드** (신규 UI 기획 단계 — 파일 미수정이라도 발화): 사용자 prompt에 다음 표현 중 하나라도 포함되면 likely_ui:false여도 G1 발화. `화면 / 페이지 / UI / UX / 컴포넌트 / 디자인 / 레이아웃 / 버튼 / 카드 / 모달 / 폼 / 랜딩 / 스크린 / 뷰 / 대시보드 / screen / page / component / design / layout / button / card / modal / form / landing / view / dashboard`. 자연어 판정이며 명백한 UI 의도일 때만 (e.g. "주문 데이터 처리" 같은 비-UI 맥락에서 "데이터 뷰"가 부수적으로 등장한 경우 발화하지 않음).
+   - 두 신호 모두 false면 이 단계를 건너뛴다 (false positive 방지).
+   - 발화 시:
+     - `bash scripts/capture-visual-intent.sh --slug {slug} --from-prompt "{원본 사용자 prompt}"` 실행. **prompt 본문에 백틱·달러·따옴표 같은 셸 특수문자가 있으면** quote escape 필수 또는 `--from-prompt -` 후 stdin pipe 사용 (raw 보간 시 명령 깨짐).
      - 결과 `docs/plans/{slug}-intent.json`이 생성됨
      - Plan 본문에 `> Visual Intent: docs/plans/{slug}-intent.json` 한 줄 추가
-   - `likely_ui == false`인 경우 이 단계를 건너뛴다 (false positive 방지)
 6. 다관점 수집이 필요한 설계 판단이 있으면 `/ask` 사용을 제안한다.
 7. Plan 헤더의 `Design:` 필드는 비워둔다. `/design` 실행 시 자동으로 채워진다.
 # CRITICAL: NOVA-STATE.md 갱신 (이 단계를 건너뛰지 마라)

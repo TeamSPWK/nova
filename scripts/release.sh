@@ -92,6 +92,7 @@ echo "━━━ Step 2/7: 테스트 실행 ━━━"
 bash tests/test-scripts.sh
 echo ""
 
+
 # ── Step 2.5: 릴리스 위생 게이트 (fail-open 권고형, v5.22.3+) ──
 # 4회 릴리스 전 review 0회 패턴(NOVA-STATE Known Risks Medium) 인지 강화.
 # 차단하지 않음 — 경고만 출력. 강제 차단은 v5.23.0+에서 검토.
@@ -153,14 +154,20 @@ fi
 echo ""
 
 # ── Step 3: 변경사항 커밋 ──
+# v5.26.2+: staged/unstaged 분리 로직 제거 — 모든 working tree 변경을 통합 commit.
+# 이전 로직(staged만 commit)은 사용자가 일부만 git add 했을 때 unstaged 변경이
+# 누락된 채 push되는 사고 원인이었음 (v5.26.1: 13 fix 선언했으나 7 spec 파일만 commit).
+# .gitignore가 .nova/, secrets, OS 노이즈 등을 차단하므로 git add -A는 안전.
+# 의도적으로 일부만 commit하려면 release.sh 우회하고 직접 git commit.
 echo "━━━ Step 3/7: 커밋 ━━━"
-# unstaged 파일이 있으면 staged만 커밋
-if ! git diff --cached --quiet; then
-  git commit -m "$COMMIT_MSG"
-else
-  git add -A
-  git commit -m "$COMMIT_MSG"
-fi
+
+# 변경 통계 미리 노출 (사용자가 콘솔에서 확인 가능, 의도와 다르면 Ctrl+C로 중단)
+echo "  ─ 통합 commit 대상 (staged + unstaged + untracked):"
+git status --short | sed 's/^/    /'
+echo ""
+
+git add -A
+git commit -m "$COMMIT_MSG"
 echo ""
 
 # ── Step 3: 버전 범프 (nova-meta.json + README 자동 갱신 포함) ──
@@ -179,7 +186,31 @@ git add scripts/.nova-version .claude-plugin/plugin.json README.md README.ko.md 
 git commit -m "chore(v${NEW_VERSION}): 버전 범프"
 echo ""
 
-# ── Step 5: 태그 + 푸시 ──
+# ── Step 5.5: clean-clone 재실행 가드 (v5.26.1+) ──
+# v5.26.0 사고: 작성자 로컬엔 있지만 git에 등록 안 된 파일이 release에 빠진 채 push.
+# commit 직후 push 직전에 git clone --local 하여 "tracked 파일만으로 정말 동작하는가" 검증.
+# 다른 머신/CI에서 받게 될 정확한 상태를 시뮬.
+# NOVA_SKIP_CLEAN_CLONE=1 로 override 가능 (긴급 hotfix 등 — 책임 사용자에게).
+if [[ "${NOVA_SKIP_CLEAN_CLONE:-0}" != "1" ]]; then
+  echo "━━━ Step 5.5/7: clean-clone 재실행 가드 ━━━"
+  CLEAN_CLONE_DIR=$(mktemp -d)
+  trap 'rm -rf "$CLEAN_CLONE_DIR"' EXIT
+  git clone --local --quiet "$ROOT" "$CLEAN_CLONE_DIR/nova" 2>/dev/null
+  if ! ( cd "$CLEAN_CLONE_DIR/nova" && bash tests/test-scripts.sh > /tmp/clean-clone-test.log 2>&1 ); then
+    echo "❌ clean-clone 환경에서 테스트 실패 — push 차단"
+    echo "   로그: /tmp/clean-clone-test.log"
+    tail -10 /tmp/clean-clone-test.log
+    echo ""
+    echo "   힌트: 마지막 2개 commit 이후에도 git tracked 파일만으로 동작해야 함."
+    echo "   누락 파일이 있으면 git add 후 amend 또는 새 commit으로 추가 → 다시 release.sh 시도."
+    echo "   NOVA_SKIP_CLEAN_CLONE=1 로 우회 가능하나 v5.26.0 사고 재발 위험."
+    exit 1
+  fi
+  echo "  ✅ clean-clone 환경 테스트 통과 — push 진행"
+  echo ""
+fi
+
+# ── Step 6: 태그 + 푸시 ──
 echo "━━━ Step 6/7: 태그 + 푸시 ━━━"
 git tag "v${NEW_VERSION}"
 git push origin main --tags

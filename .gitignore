@@ -10,14 +10,12 @@
 .DS_Store
 Thumbs.db
 
-# Project outputs (사용자별 산출물)
-docs/plans/
-docs/designs/
-docs/verifications/
-
 # 세션 상태 파일 (사용자별, 커밋 금지)
 NOVA-STATE.md
 .nova-orchestration.json
+
+# Visual intent (사용자별 작업 단위 산출물 — Nova 자체 영구 spec과 분리)
+docs/plans/*-intent.json
 
 # record-event.sh CI 분기 출력 (CI=true + CI_ARTIFACTS 미지정 시 프로젝트 루트에 생성됨)
 nova-events/

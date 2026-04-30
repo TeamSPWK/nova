@@ -27,6 +27,7 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 SLUG=""
 QUICK=false
 NON_INTERACTIVE=false
+NO_RAW_PHRASE=false
 PROMPT_TEXT=""
 OUTPUT_PATH=""
 CATALOG_PATH="$ROOT_DIR/docs/catalogs/design-vocabulary.json"
@@ -39,10 +40,11 @@ USAGE:
   bash scripts/capture-visual-intent.sh --slug <slug> [options]
 
 OPTIONS:
-  --slug <slug>            Plan slug (required)
+  --slug <slug>            Plan slug (required, regex ^[a-z0-9][a-z0-9-]*$)
   --quick                  1-second capture (shadcn default + auto-detected)
   --from-prompt "<text>"   Auto-extract hints from prompt
   --non-interactive        CI mode (placeholder + extracted defaults)
+  --no-raw-phrase          raw_user_phrase 평문 저장 안 함 (privacy mode)
   --output <path>          Override output path
   --catalog <path>         Override catalog path
   -h, --help               This help
@@ -65,6 +67,7 @@ while [ $# -gt 0 ]; do
     --quick) QUICK=true; shift ;;
     --from-prompt) PROMPT_TEXT="$2"; shift 2 ;;
     --non-interactive) NON_INTERACTIVE=true; shift ;;
+    --no-raw-phrase) NO_RAW_PHRASE=true; shift ;;
     --output) OUTPUT_PATH="$2"; shift 2 ;;
     --catalog) CATALOG_PATH="$2"; shift 2 ;;
     -h|--help) show_help; exit 0 ;;
@@ -75,6 +78,13 @@ done
 if [ -z "$SLUG" ]; then
   echo "Error: --slug required" >&2
   show_help
+  exit 1
+fi
+
+# Slug regex validation (path traversal 차단 — v5.26.1)
+if ! [[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "Error: --slug must match ^[a-z0-9][a-z0-9-]*\$ (got: $SLUG)" >&2
+  echo "Hint: lowercase alphanumeric + hyphens only, must start with [a-z0-9]" >&2
   exit 1
 fi
 
@@ -250,14 +260,31 @@ if [ "$QUICK" = true ] || [ "$NON_INTERACTIVE" = true ]; then
   # Freeze with auto-extracted defaults
   CAPTURED_BY="quick"
   [ "$NON_INTERACTIVE" = true ] && CAPTURED_BY="non-interactive"
+
+  # v5.26.1 (H5 privacy): --no-raw-phrase 시 raw_user_phrase 빈 문자열로
+  EFFECTIVE_PROMPT="$PROMPT_TEXT"
+  [ "$NO_RAW_PHRASE" = true ] && EFFECTIVE_PROMPT=""
+  PROMPT_TEXT_BACKUP="$PROMPT_TEXT"
+  PROMPT_TEXT="$EFFECTIVE_PROMPT"
+
   INTENT_JSON=$(write_intent_json \
     "$DEFAULT_VOCAB" "$DEFAULT_VOCAB_URL" \
     "$DEFAULT_SCOPE_TYPE" "$SCOPE_FILES" \
     "$DEFAULT_DS_MODE" "$CAPTURED_BY")
 
+  PROMPT_TEXT="$PROMPT_TEXT_BACKUP"
+
   mkdir -p "$(dirname "$OUTPUT_PATH")"
   echo "$INTENT_JSON" | jq . > "$OUTPUT_PATH"
   echo "[Nova] Intent captured ($CAPTURED_BY): $OUTPUT_PATH" >&2
+
+  # v5.26.1 (H1): intent_captured 이벤트 발화 (measurement-spec.md 계약 충족)
+  if [ -x "$ROOT_DIR/scripts/log-metric.sh" ]; then
+    bash "$ROOT_DIR/scripts/log-metric.sh" --event intent_captured \
+      --slug "$SLUG" --captured_by "$CAPTURED_BY" \
+      --no_raw_phrase "$NO_RAW_PHRASE" 2>/dev/null || true
+  fi
+
   echo "$OUTPUT_PATH"
   exit 0
 fi
@@ -323,13 +350,17 @@ if [ "$DS_DETECTED" = "true" ]; then
   DS_TOKENS=$(echo "$DS_RESULT" | jq -c '.tokens // {}')
 fi
 
+# v5.26.1 (H5 privacy): --no-raw-phrase 시 raw_phrase는 빈 문자열로
+EFFECTIVE_RAW_PHRASE="$PROMPT_TEXT"
+[ "$NO_RAW_PHRASE" = true ] && EFFECTIVE_RAW_PHRASE=""
+
 INTENT_JSON=$(jq -cn \
   --arg slug "$SLUG" \
   --arg ts "$TS" \
   --arg plan_path "docs/plans/${SLUG}.md" \
   --arg vocab "$VOCAB_KEY" \
   --arg vocab_url "$VOCAB_URL" \
-  --arg raw_phrase "$PROMPT_TEXT" \
+  --arg raw_phrase "$EFFECTIVE_RAW_PHRASE" \
   --argjson scope_files "$SCOPE_FILES" \
   --arg scope_type "$SCOPE_TYPE" \
   --arg ds_mode "$DS_MODE" \
@@ -373,4 +404,12 @@ mkdir -p "$(dirname "$OUTPUT_PATH")"
 echo "$INTENT_JSON" | jq . > "$OUTPUT_PATH"
 echo "" >&2
 echo "[Nova] Intent captured: $OUTPUT_PATH" >&2
+
+# v5.26.1 (H1): intent_captured 이벤트 발화 (measurement-spec.md 계약 충족)
+if [ -x "$ROOT_DIR/scripts/log-metric.sh" ]; then
+  bash "$ROOT_DIR/scripts/log-metric.sh" --event intent_captured \
+    --slug "$SLUG" --captured_by "user" \
+    --no_raw_phrase "$NO_RAW_PHRASE" 2>/dev/null || true
+fi
+
 echo "$OUTPUT_PATH"

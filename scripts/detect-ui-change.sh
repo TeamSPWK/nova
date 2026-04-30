@@ -148,11 +148,8 @@ if [ -n "$UI_DIFF_TEXT" ]; then
   [[ "$UI_LOC" =~ ^[0-9]+$ ]] || UI_LOC=0
 fi
 
-# 임계치: ui_files >= 2 OR ui_loc >= 20
-if [ "$UI_COUNT" -lt 2 ] && [ "$UI_LOC" -lt 20 ]; then
-  printf '{"is_ui":false,"files":[],"loc":%d,"reason":"below threshold","hash":"","cache_hit":false}\n' "$UI_LOC"
-  exit 0
-fi
+# v5.26.1: 임계치(ui_files>=2 OR ui_loc>=20) 제거 — 작은 UI 변경(1파일/Tailwind 1~2줄/theme token)도 G3 발화하도록.
+# false positive 차단은 아래 키워드 정밀 체크가 담당 (logic-only ts 변경은 키워드 미매칭으로 제외).
 
 # diff 키워드 정밀 체크 (UI 파일 diff만 검사)
 if [ -z "$UI_DIFF_TEXT" ] || ! echo "$UI_DIFF_TEXT" | grep -qE "$UI_KEYWORDS"; then
