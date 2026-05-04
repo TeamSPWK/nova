@@ -68,7 +68,7 @@ Before repository work, use the Nova `repo-preflight` skill.
 Project-specific instructions live in `CLAUDE.md`.
 ```
 
-`CLAUDE.md`, `AGENTS.md`, rules, settings, hooks의 역할을 나눠 정리하려면 `/nova:claude-md --check`를 실행하고 [Agent Instruction Guide](docs/guides/claude-md.md)를 참고한다.
+`CLAUDE.md`, `AGENTS.md`, rules, settings, hooks의 역할을 나눠 정리하려면 `/nova:claude-md`만 입력한다. 짧은 안내 후 수정 없이 현재 레포를 감사한다. 자세한 기준은 [Agent Instruction Guide](docs/guides/claude-md.md)를 참고한다.
 
 ### Claude Code
 
@@ -277,7 +277,7 @@ Nova 자동 판단:
 | `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다. |
 | `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
-| `/nova:claude-md` | CLAUDE.md/AGENTS.md 에이전트 지침을 신규 프로젝트용으로 생성하거나 기존 프로젝트 기준으로 재구성한다. |
+| `/nova:claude-md` | 안내와 함께 CLAUDE.md/AGENTS.md 에이전트 지침을 감사하고 신규/기존 프로젝트 기준으로 재구성안을 만든다. |
 | `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |
 | `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
 | `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |

@@ -1,6 +1,6 @@
 {
   "version": "5.29.0",
-  "generatedAt": "2026-05-04T03:59:44Z",
+  "generatedAt": "2026-05-04T04:43:14Z",
   "stats": {
     "commands": 16,
     "skills": 13,
@@ -13,7 +13,7 @@
     {"cmd": "/nova:audit-self", "description": "Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감.", "description_en": "Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감."},
     {"cmd": "/nova:auto", "description": "자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다.", "description_en": "Auto-run a natural-language request through the full design → implement → verify → fix cycle."},
     {"cmd": "/nova:check", "description": "코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. — MUST TRIGGER: 커밋 전(3파일 이상 변경 시), 스프린트 완료 시, 사용자가 버그를 보고한 직후.", "description_en": "Combined code review + design-implementation gap verification in one pass. — MUST TRIGGER: before commit (3+ files changed), at sprint completion, right after a user-reported bug."},
-    {"cmd": "/nova:claude-md", "description": "CLAUDE.md/AGENTS.md 에이전트 지침을 신규 프로젝트용으로 생성하거나 기존 프로젝트 기준으로 재구성한다.", "description_en": "Create or reorganize CLAUDE.md/AGENTS.md agent instructions for a new or existing project."},
+    {"cmd": "/nova:claude-md", "description": "안내와 함께 CLAUDE.md/AGENTS.md 에이전트 지침을 감사하고 신규/기존 프로젝트 기준으로 재구성안을 만든다.", "description_en": "Show a guided intro, audit CLAUDE.md/AGENTS.md instructions, and propose a new/existing project reorganization."},
     {"cmd": "/nova:deepplan", "description": "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다.", "description_en": "Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline."},
     {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다.", "description_en": "Write a Design document using the CPS (Context-Problem-Solution) framework."},
     {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다.", "description_en": "Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf."},

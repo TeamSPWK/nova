@@ -217,6 +217,10 @@ assert "claude-md 공개 가이드: placement + settings/hooks/rules 설명" \
    grep -q '.claude/settings.json' '$CLAUDE_MD_GUIDE' && \
    grep -q '.claude/rules' '$CLAUDE_MD_GUIDE' && \
    grep -q 'hooks' '$CLAUDE_MD_GUIDE'"
+assert "claude-md: no-args guided mode 문서화" \
+  "grep -q 'Guided Mode' '$ROOT_DIR/.claude/commands/claude-md.md' && \
+   grep -q '인자 없음' '$ROOT_DIR/.claude/skills/claude-md/SKILL.md' && \
+   grep -q '/nova:claude-md           # 처음 사용자용 안내' '$CLAUDE_MD_GUIDE'"
 assert "README 양쪽에 claude-md 공개 가이드 링크" \
   "grep -q 'docs/guides/claude-md.md' '$ROOT_DIR/README.md' && \
    grep -q 'docs/guides/claude-md.md' '$ROOT_DIR/README.ko.md'"

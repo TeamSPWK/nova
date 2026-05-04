@@ -37,6 +37,7 @@ user-invocable: true
 
 | 조건 | 모드 | 동작 |
 |------|------|------|
+| 인자 없음 (`/nova:claude-md`) | Guided | 짧은 가이드 출력 후 현재 레포 기준으로 Audit/New 안전 흐름 시작 |
 | `--check` | Audit | 파일 수정 없이 현황, 중복, 과밀, 미강제 규칙을 보고 |
 | `--apply` | Apply | 사용자가 승인한 분리안을 파일에 반영 |
 | `--new` 또는 CLAUDE.md/AGENTS.md 없음 | New Project | 최소 지침 구조와 빈칸을 생성 |
@@ -45,6 +46,32 @@ user-invocable: true
 | `--global-karpathy` 또는 사용자가 전역 Karpathy 설정 요청 | Global Karpathy | 개인 전역 지침에 Karpathy 압축 원칙 추가/갱신 |
 
 기본은 안전하게 **Audit → 제안 → 승인 후 Apply**다. 사용자가 명시적으로 "바로 적용" 또는 `--apply`를 주면 적용까지 진행한다.
+
+## Guided Mode
+
+사용자가 `/nova:claude-md`만 입력하면 플래그 설명부터 요구하지 않는다. 먼저 아래 4줄 안내를 보여준 뒤, 현재 레포를 조사해서 안전한 다음 단계를 제안한다.
+
+```text
+━━━ /nova:claude-md ━━━━━━━━━━━━━
+이 명령은 CLAUDE.md를 길게 만드는 도구가 아니라, 에이전트 지침을 올바른 위치로 나누는 도구입니다.
+
+1. 프로젝트 핵심 맥락은 CLAUDE.md/AGENTS.md에 둡니다.
+2. 경로별 규칙은 .claude/rules로 분리합니다.
+3. 배포·릴리스 같은 절차는 skills/commands로 분리합니다.
+4. 반드시 막아야 할 것은 settings/hooks/CI로 강제합니다.
+
+현재 레포를 먼저 감사하고, 변경 없이 분리 제안만 만들겠습니다.
+개인 전역 Karpathy 원칙도 확인할까요? (yes/no)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+동작 규칙:
+
+1. `CLAUDE.md` 또는 `AGENTS.md`가 있으면 `--check`와 같은 감사 흐름으로 간다.
+2. 둘 다 없으면 `--new`와 같은 신규 골격 제안 흐름으로 간다.
+3. Karpathy 질문에 yes면 Global Karpathy 옵션을 먼저 처리하고 프로젝트 감사로 돌아온다.
+4. 사용자가 no 또는 무응답이면 전역 파일을 건드리지 않고 프로젝트 감사만 진행한다.
+5. Guided Mode에서도 파일 수정은 하지 않는다. 수정은 사용자가 승인하거나 `--apply`를 명시했을 때만 한다.
 
 ## Global Karpathy 옵션
 
