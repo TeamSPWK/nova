@@ -72,6 +72,8 @@ Before repository work, use the Nova `repo-preflight` skill.
 Project-specific instructions live in `CLAUDE.md`.
 ```
 
+To reorganize `CLAUDE.md`, `AGENTS.md`, rules, settings, and hooks without turning one file into a catch-all, run `/nova:claude-md --check` and see the [Agent Instruction Guide](docs/guides/claude-md.md).
+
 ### Claude Code
 
 ```bash
@@ -551,6 +553,7 @@ Prompt engineering shapes *what* the model says. Harness engineering shapes *whe
 ## Documentation
 
 - [Usage Guide](docs/usage-guide.md) — Detailed command and agent reference
+- [Agent Instruction Guide](docs/guides/claude-md.md) — How `/nova:claude-md` splits CLAUDE.md, AGENTS.md, rules, settings, and hooks
 - [Nova Engineering](docs/nova-engineering.md) — Full methodology (4 Pillars, CPS, security)
 - [Tutorial: Todo API](examples/tutorial-todo-api.md) — End-to-end workflow walkthrough
 

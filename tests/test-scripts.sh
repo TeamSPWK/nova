@@ -186,6 +186,7 @@ echo -e "${YELLOW}[플러그인: Codex 추천 설치]${NC}"
 
 CODEX_INSTALLER="$ROOT_DIR/scripts/install-codex-recommended-plugins.sh"
 CODEX_GUIDE="$ROOT_DIR/docs/guides/codex-plugins.md"
+CLAUDE_MD_GUIDE="$ROOT_DIR/docs/guides/claude-md.md"
 
 assert "Codex 추천 설치 스크립트 존재 + 실행 가능" \
   "[ -x '$CODEX_INSTALLER' ]"
@@ -207,6 +208,18 @@ assert "README: Codex 플러그인 가이드 링크" \
   "grep -q 'docs/guides/codex-plugins.md' '$ROOT_DIR/README.md'"
 assert "README.ko: Codex 플러그인 가이드 링크" \
   "grep -q 'docs/guides/codex-plugins.md' '$ROOT_DIR/README.ko.md'"
+assert "claude-md 공개 가이드 존재 + 한/영 섹션" \
+  "[ -f '$CLAUDE_MD_GUIDE' ] && \
+   grep -q '^## 한국어' '$CLAUDE_MD_GUIDE' && \
+   grep -q '^## English' '$CLAUDE_MD_GUIDE'"
+assert "claude-md 공개 가이드: placement + settings/hooks/rules 설명" \
+  "grep -q 'Instruction placement contract\\|지침 배치 원칙' '$CLAUDE_MD_GUIDE' && \
+   grep -q '.claude/settings.json' '$CLAUDE_MD_GUIDE' && \
+   grep -q '.claude/rules' '$CLAUDE_MD_GUIDE' && \
+   grep -q 'hooks' '$CLAUDE_MD_GUIDE'"
+assert "README 양쪽에 claude-md 공개 가이드 링크" \
+  "grep -q 'docs/guides/claude-md.md' '$ROOT_DIR/README.md' && \
+   grep -q 'docs/guides/claude-md.md' '$ROOT_DIR/README.ko.md'"
 echo ""
 
 # ═══════════════════════════════════════════
