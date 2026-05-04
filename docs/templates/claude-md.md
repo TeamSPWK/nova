@@ -14,6 +14,13 @@
 
 - Claude는 사용자에게 항상 **{언어}**로 응답한다.
 
+## Start Here
+
+- Current state: `NOVA-STATE.md` 또는 {issue tracker}
+- Architecture SOT: {docs/architecture.md 또는 TODO}
+- Infra SOT: {docs/operations/infra-inventory.md 또는 TODO}
+- Deploy workflow: {/.claude/skills/deploy 또는 TODO}
+
 ## Nova Engineering
 
 > **Nova 플러그인 설치 시**: 복잡도·검증·실행 검증·블로커·환경 안전 5개 핵심 규칙은 `hooks/session-start.sh`가 매 세션 자동 주입한다. 이 파일에 중복 기재하지 않는다.
@@ -31,6 +38,7 @@
 | `/nova:check` / `/nova:review` | 구현 완료 후 검증·리뷰 |
 | `/nova:run` | 구현→검증 Full Cycle |
 | `/nova:setup --check` | Nova 도입 수준 측정 (32항목) |
+| `/nova:claude-md` | CLAUDE.md/AGENTS.md 지침 구조 감사·정리 |
 
 ## Tech Stack
 
@@ -71,6 +79,21 @@ refactor: 리팩토링   | chore: 설정/기타
 
 - **절대 git 커밋 금지**: `.env`, `.secret/`, `*.pem`, `*accessKeys*`
 
+## Agent Routing
+
+- Always-on project facts: `CLAUDE.md` 또는 `AGENTS.md`
+- Path-scoped rules: `.claude/rules/`
+- Repeatable workflows: `.claude/skills/` 또는 `.claude/commands/`
+- Hard enforcement: `.claude/settings.json`, hooks, CI
+- Current status: `NOVA-STATE.md`
+- Personal/local details: `CLAUDE.local.md`, `.claude/settings.local.json`
+
+## Instruction Placement Contract
+
+- 새 지침을 추가하기 전 `always-on / path-specific / workflow / hard guard / reference / state / local-only` 중 하나로 분류한다.
+- 중요하다는 이유만으로 CLAUDE.md에 넣지 않는다. 반드시 매 세션 필요한 불변 사실만 남긴다.
+- 반드시 지켜야 하는 규칙은 settings/hooks/CI/script 같은 enforcement owner를 가진다.
+
 ## Principles (선택)
 
 <!-- 프로젝트 고유 개발 철학 — 인프라/복잡 프로젝트 권장.
@@ -110,10 +133,12 @@ refactor: 리팩토링   | chore: 설정/기타
 | 섹션 | 필수 | 이유 |
 |------|------|------|
 | Language | O | AI 응답 언어 통일 |
+| Start Here | O | 현재 상태와 SOT 진입점 |
 | Nova Engineering (참조) | O | 플러그인 자동 주입 + 미설치 폴백 가이드 |
 | Tech Stack + Build & Test | O | Claude가 코드에서 추론 불가한 명령 |
 | Conventions (git) | O | 일관성 유지 |
 | Credentials | O | 보안 사고 방지 |
+| Agent Routing + Instruction Placement | O | CLAUDE.md 비대화와 규칙 산재 방지 |
 | Principles | 선택 | 개발 철학 (정확도>속도 등) — 인프라/복잡 프로젝트 권장 |
 | Coding Rules | 선택 | 강제 규칙 (CSS, DB RLS 등) — 린터로 잡히지 않는 프로젝트 고유 규칙 |
 | Project Structure | 선택 | 복잡한 프로젝트에서 유용 |

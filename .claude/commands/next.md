@@ -79,6 +79,13 @@ description_en: "Diagnose current project state and recommend the next Nova comm
      "환경 기둥 경고: worktree에서 {파일명}이(가) 연결되지 않았습니다. `/nova:worktree-setup`으로 메인 레포의 환경 파일을 링크하세요."
    - 문제 없으면 아래로 진행
 
+   **에이전트 지침 건전성 체크:**
+   - `CLAUDE.md` 또는 `AGENTS.md`가 200줄을 초과하면 → `/nova:claude-md --check` 추천
+     "맥락 기둥 경고: 에이전트 지침 파일이 200줄을 초과했습니다. `/nova:claude-md --check`로 운영 헌법/라우터/스킬/룰 분리를 점검하세요."
+   - `CLAUDE.md`에 Nova 자동 적용 규칙 전문이 중복되어 있거나, `AGENTS.md`와 `CLAUDE.md`가 서로 다른 canonical 지침을 담고 있으면 → `/nova:claude-md --adopt` 추천
+     "에이전트 지침 드리프트가 의심됩니다. `/nova:claude-md --adopt`로 cross-agent 브리지와 Instruction Placement Contract를 정리하세요."
+   - 문제 없으면 아래로 진행
+
    **복잡도 판단:**
    최근 커밋과 변경 파일을 분석하여 현재 작업의 복잡도를 판단한다.
    - 간단 (1~2 파일, 버그 수정, 명확한 변경) → "이 작업은 Plan 없이 바로 진행해도 됩니다." 라고 명시

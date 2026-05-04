@@ -67,7 +67,7 @@ echo -e "${YELLOW}[구조: 커맨드]${NC}"
 EXPECTED_COMMANDS=(
   run design scan evolve setup next
   auto plan deepplan review check ask ux-audit
-  worktree-setup audit-self
+  worktree-setup audit-self claude-md
 )
 CMD_COUNT=$(ls "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
 assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 15 ]"
@@ -791,6 +791,9 @@ assert "hooks.json: worktree-setup.sh 참조" \
 # session-start.sh 커맨드 목록에 /nova:worktree-setup 포함 (자동 감지 테스트가 잡지만 명시)
 assert "session-start.sh: /nova:worktree-setup 포함" \
   "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q '/nova:worktree-setup'"
+
+assert "session-start.sh: /nova:claude-md 포함" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q '/nova:claude-md'"
 
 # 런타임 동작: 메인 레포에서 실행 시 skip
 WT_TMP=$(mktemp -d)
