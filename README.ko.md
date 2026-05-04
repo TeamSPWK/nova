@@ -7,7 +7,7 @@
 > *`/nova:review` + 커밋 전 게이트 플로우의 시연용 재생. 소스: [`assets/demo-play.sh`](assets/demo-play.sh) + [`assets/demo.cast`](assets/demo.cast).*
 
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-5.29.0-blue)](https://github.com/TeamSPWK/nova/releases)
+[![Version](https://img.shields.io/badge/version-5.29.1-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Self-only metrics** (n < threshold = gray-out, 정직한 신호 — [`docs/guides/measurement.md`](docs/guides/measurement.md) 참조) · **UI 변경** G1+G3 페어 게이트 — [`docs/guides/ui-quality-gate.md`](docs/guides/ui-quality-gate.md) 참조:
