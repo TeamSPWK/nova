@@ -10,6 +10,7 @@ import { registerGetState } from "./tools/get-state.js";
 import { registerOrchestrate } from "./tools/orchestrate.js";
 import { registerXVerify } from "./tools/x-verify.js";
 import { registerOrchestrationTracker } from "./tools/orchestration-tracker.js";
+import { registerRepoPreflight } from "./tools/repo-preflight.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // dist/ → mcp-server/ → nova root
@@ -40,6 +41,7 @@ registerGetState(server);
 registerOrchestrate(server);
 registerXVerify(server);
 registerOrchestrationTracker(server);
+registerRepoPreflight(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

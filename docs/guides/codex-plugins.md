@@ -48,6 +48,17 @@ bash scripts/install-codex-recommended-plugins.sh
 5. `~/.codex/config.toml`에 추천 플러그인 활성화 블록을 추가/갱신한다.
 6. `.codex-plugin/.mcp.json` 자동 로드가 안 되는 환경을 위해 `[mcp_servers.nova]` 폴백도 등록한다.
 
+## CLAUDE.md 재사용
+
+Codex는 기본적으로 `AGENTS.md`를 프로젝트 지침으로 사용한다. 기존 Claude Code 레포처럼 `CLAUDE.md`가 이미 운영 지침이라면 두 파일을 계속 동기화하지 말고, `AGENTS.md`를 얇은 브리지로 둔다.
+
+```md
+Before repository work, use the Nova `repo-preflight` skill.
+Project-specific instructions live in `CLAUDE.md`.
+```
+
+Nova의 `repo-preflight` 스킬과 `repo_preflight` MCP 도구는 작업 시작 전에 가까운 `CLAUDE.md`, `AGENTS.md`, `NOVA-STATE.md`를 확인하고 preflight evidence를 남긴다. 충돌 시 우선순위는 system/developer 지침, `AGENTS.md`, `CLAUDE.md`, README/docs 관례 순서다.
+
 ## Nova만 수동 설치하는 경우
 
 추천 플러그인 세트가 아니라 Nova만 직접 등록하려면 아래 절차를 따른다.

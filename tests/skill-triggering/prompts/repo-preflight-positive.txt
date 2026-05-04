@@ -1,0 +1,2 @@
+이 레포는 CLAUDE.md에 프로젝트 지침이 있어요. 작업 시작 전에 Nova preflight로 먼저 확인해주세요.
+

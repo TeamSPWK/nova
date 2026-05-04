@@ -18,7 +18,7 @@
 **Verify before you ship. Every time.**
 AI-generated code, cross-checked by an independent adversarial evaluator — before commit, before deploy.
 
-*A [Claude Code](https://claude.ai/code) plugin. 14 slash commands, 10 skills, 6 specialist agents, local MCP server.*
+*A [Claude Code](https://claude.ai/code) plugin. 15 slash commands, 12 skills, 6 specialist agents, local MCP server.*
 
 [한국어](README.ko.md) · [Install](#quick-start) · [How It Works](#how-it-works-examples) · [FAQ](#faq)
 
@@ -64,6 +64,13 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-
 Restart Codex after installation. See the [Codex plugin install guide](docs/guides/codex-plugins.md) for options and troubleshooting.
 
 > In Codex Phase 1, Nova skills and MCP tools are available. Claude Code-only hooks and slash-command differences are covered in the install section below.
+
+For repositories that already use `CLAUDE.md`, keep `AGENTS.md` as a thin Codex bridge:
+
+```md
+Before repository work, use the Nova `repo-preflight` skill.
+Project-specific instructions live in `CLAUDE.md`.
+```
 
 ### Claude Code
 
@@ -329,9 +336,10 @@ The `.mcp.json` at project root auto-registers the server with Claude Code.
 | `get_rules` | Returns Nova rules (full or by section §1-§9) |
 | `get_commands` | Lists all slash commands with descriptions |
 | `get_state` | Reads NOVA-STATE.md from any project path |
-| `create_plan` | Generates CPS Plan template for a given topic |
 | `orchestrate` | Returns agent formation guide by complexity |
-| `verify` | Returns verification checklist by scope (lite/standard/full) |
+| `repo_preflight` | Finds CLAUDE.md/AGENTS.md/NOVA-STATE.md before repository work |
+| `x_verify` | Runs configured multi-AI cross-verification |
+| `orchestration_start` / `orchestration_update` / `orchestration_status` | Tracks Nova orchestration phases |
 
 ### How It Works
 
@@ -340,6 +348,7 @@ Any Project ──→ Claude Code ──→ Nova MCP Server (localhost, stdio)
                                     │
                                     ├── get_rules()     → Full Nova ruleset
                                     ├── get_state()     → NOVA-STATE.md
+                                    ├── repo_preflight()→ CLAUDE.md/AGENTS.md bridge
                                     └── orchestrate()   → Agent team guide
 ```
 
@@ -359,6 +368,7 @@ Skills are multi-step operations that commands invoke internally. They can also 
 | **field-test** | Use when validating the Nova methodology on real projects to find improvement points. |
 | **jury** | Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. |
 | **orchestrator** | Use when a natural-language request needs the entire development cycle auto-handled. |
+| **repo-preflight** | Use when project instructions must be checked before repository work. |
 | **strategic-compact** | Use when you must decide whether to /clear or /compact the session context. |
 | **ux-audit** | Use when UI/UX quality must be validated adversarially from multiple perspectives. |
 | **worktree-setup** | Use when the main repo's environment setup is needed inside a git worktree. |

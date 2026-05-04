@@ -72,7 +72,7 @@ if [[ -n "$MCP_ENTRY" ]]; then
     git diff --cached --quiet -- "$MCP_SRC_DIR" 2>/dev/null || SRC_CHANGED=1
     if [[ $SRC_CHANGED -eq 1 ]]; then
       echo "  mcp-server 소스 변경 감지 — 빌드 일관성 검증"
-      (cd "$(dirname "$MCP_SRC_DIR")" && pnpm build) > /dev/null 2>&1 || {
+      (cd "$(dirname "$MCP_SRC_DIR")" && COREPACK_ENABLE_AUTO_PIN=0 pnpm build) > /dev/null 2>&1 || {
         echo "❌ mcp-server 빌드 실패 — 릴리스 중단"
         exit 1
       }

@@ -198,7 +198,7 @@ build_mcp_server() {
   log "Building Nova MCP server"
   (
     cd "$mcp_dir"
-    COREPACK_ENABLE_AUTO_PIN=0 pnpm install --frozen-lockfile
+    COREPACK_ENABLE_AUTO_PIN=0 pnpm --config.confirm-modules-purge=false install --frozen-lockfile
     COREPACK_ENABLE_AUTO_PIN=0 pnpm build
   )
   [[ -f "$mcp_dir/dist/index.js" ]] || fail "MCP build output missing: $mcp_dir/dist/index.js"

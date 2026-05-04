@@ -61,6 +61,13 @@ curl -fsSL https://raw.githubusercontent.com/TeamSPWK/nova/main/scripts/install-
 
 > Codex에서는 Phase 1 기준으로 Nova 스킬과 MCP 도구를 사용할 수 있다. Claude Code 전용 훅/슬래시 커맨드 차이는 아래 설치 섹션에 정리되어 있다.
 
+이미 `CLAUDE.md`를 운영하는 레포에서는 `AGENTS.md`를 얇은 Codex 브리지로 유지한다:
+
+```md
+Before repository work, use the Nova `repo-preflight` skill.
+Project-specific instructions live in `CLAUDE.md`.
+```
+
 ### Claude Code
 
 ```bash
@@ -324,9 +331,10 @@ cd mcp-server && pnpm install && pnpm build
 | `get_rules` | Nova 규칙 반환 (전체 또는 섹션별 §1~§9) |
 | `get_commands` | 전체 슬래시 커맨드 목록과 설명 |
 | `get_state` | 지정 프로젝트의 NOVA-STATE.md 읽기 |
-| `create_plan` | 주제에 대한 CPS Plan 템플릿 생성 |
 | `orchestrate` | 복잡도별 에이전트 편성 가이드 반환 |
-| `verify` | 검증 강도별 체크리스트 반환 (lite/standard/full) |
+| `repo_preflight` | 레포 작업 전 CLAUDE.md/AGENTS.md/NOVA-STATE.md 확인 |
+| `x_verify` | 설정된 멀티 AI 교차검증 실행 |
+| `orchestration_start` / `orchestration_update` / `orchestration_status` | Nova 오케스트레이션 Phase 추적 |
 
 ### 동작 방식
 
@@ -335,6 +343,7 @@ cd mcp-server && pnpm install && pnpm build
                                         │
                                         ├── get_rules()     → Nova 규칙 전문
                                         ├── get_state()     → NOVA-STATE.md
+                                        ├── repo_preflight()→ CLAUDE.md/AGENTS.md 브리지
                                         └── orchestrate()   → 에이전트 편성 가이드
 ```
 
@@ -354,6 +363,7 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 | **field-test** | Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. |
 | **jury** | 단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. |
 | **orchestrator** | 자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. |
+| **repo-preflight** | 레포 작업을 시작하기 전에 프로젝트 지침을 확인해야 할 때. |
 | **strategic-compact** | 세션 컨텍스트 압축(/clear · /compact) 시점을 판단해야 할 때. |
 | **ux-audit** | UI/UX 품질을 다관점·적대적으로 검증할 때. |
 | **worktree-setup** | git worktree에서 메인 레포의 환경 설정이 필요할 때. |

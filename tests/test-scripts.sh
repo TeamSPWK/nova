@@ -191,6 +191,8 @@ assert "Codex 추천 설치 스크립트 존재 + 실행 가능" \
   "[ -x '$CODEX_INSTALLER' ]"
 assert "Codex 추천 설치 스크립트 shell syntax" \
   "bash -n '$CODEX_INSTALLER'"
+assert "Codex 추천 설치 스크립트: 비대화 pnpm purge 확인 우회" \
+  "grep -q 'config.confirm-modules-purge=false' '$CODEX_INSTALLER'"
 assert "Codex 추천 설치 스크립트: plugin cache materialize 포함" \
   "grep -q 'materialize_nova_plugin_cache' '$CODEX_INSTALLER' && grep -q 'plugins/cache' '$CODEX_INSTALLER'"
 assert "Codex 추천 설치 스크립트 help에서 가이드 노출" \
@@ -651,6 +653,30 @@ assert "meta.stats.skills == 스킬 수" \
 
 assert "meta.stats.agents == 에이전트 수" \
   "[ '$(jq '.stats.agents' "$META")' = '$ACTUAL_AGENT_COUNT' ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# 12-2. repo-preflight: CLAUDE.md Codex bridge
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[repo-preflight: CLAUDE.md Codex bridge]${NC}"
+
+RP_SKILL="$ROOT_DIR/.claude/skills/repo-preflight/SKILL.md"
+RP_TOOL="$ROOT_DIR/mcp-server/src/tools/repo-preflight.ts"
+
+assert "repo-preflight AGENTS.md 브리지 존재" \
+  "[ -f '$ROOT_DIR/AGENTS.md' ] && grep -q 'repo-preflight' '$ROOT_DIR/AGENTS.md' && grep -q 'CLAUDE.md' '$ROOT_DIR/AGENTS.md'"
+assert "repo-preflight SKILL.md 존재 + MCP 도구 호출 지시" \
+  "[ -f '$RP_SKILL' ] && grep -q 'repo_preflight' '$RP_SKILL'"
+assert "repo-preflight SKILL.md — evidence 섹션 존재" \
+  "grep -q 'Preflight Evidence' '$RP_SKILL' && grep -q 'Conflicts:' '$RP_SKILL'"
+assert "repo-preflight positive fixture 존재" \
+  "[ -s '$ROOT_DIR/tests/skill-triggering/prompts/repo-preflight-positive.txt' ]"
+assert "repo_preflight MCP tool 소스 등록" \
+  "[ -f '$RP_TOOL' ] && grep -q 'registerTool' '$RP_TOOL' && grep -q 'repo_preflight' '$RP_TOOL'"
+assert "repo_preflight MCP index wiring + dist 포함" \
+  "grep -q 'registerRepoPreflight' '$ROOT_DIR/mcp-server/src/index.ts' && grep -q 'repo_preflight' '$ROOT_DIR/mcp-server/dist/index.js'"
 
 echo ""
 
@@ -1731,6 +1757,9 @@ assert "MCP dist 무결성: $MCP_ENTRY 가 .gitignore에 걸려있지 않음" \
 # release.sh가 multiline 커밋 메시지의 첫 줄만 title로 쓰는가 (v5.16.0 릴리스 단계 422 오류 재발 방지)
 assert "release.sh: 릴리스 title에 head -1 + cut 240자 제한" \
   "grep -q 'head -1' '$ROOT_DIR/scripts/release.sh' && grep -q 'cut -c1-240' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: MCP build 시 Corepack auto-pin 비활성화" \
+  "grep -q 'COREPACK_ENABLE_AUTO_PIN=0 pnpm build' '$ROOT_DIR/scripts/release.sh'"
 
 # ═══════════════════════════════════════════
 # Orchestration 추적 계약 (Phase 0 강제 + 사후 감사)
