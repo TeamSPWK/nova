@@ -29,7 +29,7 @@ description_en: "Show a guided intro, audit CLAUDE.md/AGENTS.md instructions, an
 1. 먼저 `skills/claude-md/SKILL.md`를 읽고 그 절차를 따른다.
 2. 기존 지침 파일이 있으면 즉시 덮어쓰지 말고 섹션별 `keep / move / enforce / local-only / remove` 분류표를 만든다.
 3. 신규 프로젝트는 모르는 정보를 추측하지 말고 `TODO(owner)` 또는 질문으로 남긴다.
-4. hard guard는 CLAUDE.md 문장만으로 완료 처리하지 않는다. `.claude/settings.json`, hooks, CI, 스크립트 중 enforcement owner를 표시한다.
+4. hard guard는 현재 enforcement 상태(advisory / enforced / enforcement-optional)를 **표시만** 한다. 사용자가 명시적으로 요청하지 않으면 `.claude/settings.json`을 자동 생성·수정하지 않는다. 권한/차단 설정 적용은 사용자 결정 사항으로 안내한다.
 5. 정리 결과에는 반드시 다음 에이전트가 같은 기준을 적용할 수 있는 `Instruction Placement Contract`를 남긴다.
 6. 인자가 없으면 Guided Mode를 먼저 출력한다. 사용자가 플래그를 몰라도 다음 행동을 선택할 수 있게 한다.
 7. `--global-karpathy`는 프로젝트 파일이 아니라 `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`만 대상으로 하며, 수정 전 반드시 yes/no 확인을 받는다.
