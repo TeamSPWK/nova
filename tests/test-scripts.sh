@@ -2458,6 +2458,52 @@ assert "R27: 가이드 안의 FAIL 4종 매핑 (Schema/Forbidden/Marker/.nova le
    grep -q 'README badge marker' '$ROOT_DIR/docs/guides/measurement.md' && \
    grep -q '.nova/.* leak\\|nova/ leak' '$ROOT_DIR/docs/guides/measurement.md'"
 
+# R28: v5.30.0 evolve apply — Nova MCP 서버 alwaysLoad (CC v2.1.121+)
+assert "R28: .mcp.json — nova 서버에 alwaysLoad: true (즉시 로드, deferred 제거)" \
+  "python3 -c \"import json,sys; d=json.load(open('$ROOT_DIR/.mcp.json')); sys.exit(0 if d['mcpServers']['nova'].get('alwaysLoad') is True else 1)\""
+
+# R29: v5.30.0 evolve apply — PostToolUse 훅 + duration_ms 캡처 (CC v2.1.119+)
+assert "R29a: hooks/post-tool-use-record.sh 존재 + 실행 권한" \
+  "[ -x '$ROOT_DIR/hooks/post-tool-use-record.sh' ]"
+
+assert "R29b: hooks.json에 PostToolUse 등록 + matcher \"\"" \
+  "python3 -c \"import json,sys; d=json.load(open('$ROOT_DIR/hooks/hooks.json')); ps=d['hooks'].get('PostToolUse', []); sys.exit(0 if ps and ps[0].get('matcher')=='' and any('post-tool-use-record.sh' in h.get('command','') for h in ps[0].get('hooks',[])) else 1)\""
+
+assert "R29c: post-tool-use-record.sh — duration_ms + ok 필드 + tool_use_post 이벤트" \
+  "grep -q 'duration_ms' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -q 'tool_use_post' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -qE 'tool_response\\.error|is_error' '$ROOT_DIR/hooks/post-tool-use-record.sh'"
+
+assert "R29d: post-tool-use-record.sh — stdin 누락/jq 누락 시 safe-default exit 0" \
+  "grep -q 'NOVA_DISABLE_EVENTS' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -q 'exit 0' '$ROOT_DIR/hooks/post-tool-use-record.sh'"
+
+# R29e: Gate 2 evaluator 지적 사항 — float duration_ms 입력 시 floor로 정수 변환
+assert "R29e: post-tool-use-record.sh — float duration_ms 입력도 정수 보존 (123.5 → 123)" \
+  "TMPF=\$(mktemp); \
+   echo '{\"tool_name\":\"Bash\",\"duration_ms\":123.5,\"tool_response\":{}}' | \
+     NOVA_EVENTS_PATH=\"\$TMPF\" bash '$ROOT_DIR/hooks/post-tool-use-record.sh'; \
+   sleep 0.3; \
+   RESULT=\$(jq '.extra.duration_ms' \"\$TMPF\" 2>/dev/null); \
+   rm -f \"\$TMPF\"; \
+   [ \"\$RESULT\" = '123' ]"
+
+# R30: v5.30.0 evolve apply — bin/ 사용자 진입점 (CC v2.1.91+)
+assert "R30a: bin/ 디렉토리 + 5 wrapper 존재 + 실행 권한" \
+  "[ -x '$ROOT_DIR/bin/nova-publish-metrics' ] && \
+   [ -x '$ROOT_DIR/bin/nova-analyze-observations' ] && \
+   [ -x '$ROOT_DIR/bin/nova-capture-intent' ] && \
+   [ -x '$ROOT_DIR/bin/nova-self-verify-visual' ] && \
+   [ -x '$ROOT_DIR/bin/nova-release' ]"
+
+assert "R30b: 모든 bin wrapper가 scripts/ 경로 참조 (단순 exec 위임)" \
+  "for w in nova-publish-metrics nova-analyze-observations nova-capture-intent nova-self-verify-visual nova-release; do
+     grep -q 'CLAUDE_PLUGIN_ROOT.*scripts/' \"\$ROOT_DIR/bin/\$w\" || exit 1
+   done"
+
+assert "R30c: nova-publish-metrics -h 위임 — 가이드 경로 노출" \
+  "bash '$ROOT_DIR/bin/nova-publish-metrics' -h 2>/dev/null | grep -q 'measurement\\|publish-metrics'"
+
 echo ""
 
 # ═══════════════════════════════════════════

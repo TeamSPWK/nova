@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/release.sh
+# Guide: CLAUDE.md "Release Workflow"
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/release.sh" "$@"

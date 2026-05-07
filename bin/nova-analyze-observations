@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/analyze-observations.sh
+# Used by /nova:evolve --from-observations
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/analyze-observations.sh" "$@"

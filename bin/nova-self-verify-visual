@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/visual-self-verify.sh
+# Guide: docs/guides/ui-quality-gate.md (G3 — visual self-verify)
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/visual-self-verify.sh" "$@"

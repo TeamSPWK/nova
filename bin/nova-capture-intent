@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/capture-visual-intent.sh
+# Guide: docs/guides/ui-quality-gate.md (G1 — visual intent capture)
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/capture-visual-intent.sh" "$@"

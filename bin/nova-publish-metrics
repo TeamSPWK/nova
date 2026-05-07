@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/publish-metrics.sh
+# Guide: docs/guides/measurement.md
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/publish-metrics.sh" "$@"
