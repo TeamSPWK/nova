@@ -41,6 +41,12 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 1. 각 소스별 최근 변경사항을 WebSearch로 탐색한다
 2. 발견한 항목마다 **출처 URL**을 반드시 기록한다 (환각 방지)
 3. URL이 확인되지 않는 정보는 "미확인"으로 표기하고 제안에서 제외한다
+4. **소스 다양성 의무**: Anthropic 공식 외에 최소 **2개 이상의 외부 소스**를 반드시 포함한다.
+   외부 소스 후보 (택 2 이상): GitHub awesome-list (예: `VoltAgent/awesome-agent-skills`, `hesreallyhim/awesome-claude-code`),
+   외부 코딩 에이전트 공식 가이드 (Cursor / Cline / Aider / Continue.dev / Windsurf 공식 블로그·docs),
+   star 상위 보안·품질 skills 컬렉션 (예: `trailofbits/skills`).
+5. **Limited scan 경고**: 외부 소스에서 관련 발견이 0건이면 보고서 헤더에 `⚠ Limited scan — Anthropic-only`를 명시한다.
+   self-bias가 의심되는 결과(공식 changelog만 인용)는 사용자에게 신뢰성 저하를 알린다.
 
 ```
 [Nova Evolve] Phase 1/4: 기술 동향 스캔 중...
@@ -48,6 +54,7 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
   - Claude Code 생태계: {N}건 발견
   - 하네스 도구: {N}건 발견
   - AI 엔지니어링: {N}건 발견
+  - 외부 소스 다양성: {OK / ⚠ Limited scan}
 ```
 
 ## Phase 2: Relevance Filter (관련성 필터)

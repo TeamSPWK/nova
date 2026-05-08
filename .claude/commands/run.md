@@ -82,6 +82,10 @@ Generator 서브에이전트에 전달할 컨텍스트:
 > Generator는 `senior-dev` 에이전트 타입을 사용한다.
 > Generator에게 "구현만 하라, 검증은 별도 수행한다"고 명시한다.
 > tmux 세션 내라면 별도 pane으로 spawn하여 사용자가 진행 상황을 볼 수 있게 한다.
+>
+> **TDD-first 시그널 (복잡도 보통 이상)**: 검증 가능한 단위가 명확하면 Generator에게 "failing test를 먼저 작성한 뒤 구현"을 지시한다.
+> Evaluator가 PASS/FAIL을 즉시 판정 가능한 신호를 강화하기 위함이며, 복잡도 간단(1~2 파일)에는 오버헤드를 피해 적용하지 않는다.
+> 근거: Cursor/Aider 등 외부 코딩 에이전트 공식 가이드 (2026) — "Agents perform best when they have a clear target to iterate against."
 
 ### ✅ Checkpoint: Generate 완료
 Generator 완료 후, 사용자에게 구현 요약을 보고하고 Verify 진행 여부를 확인받는다:

@@ -784,6 +784,16 @@ assert "run.md Phase 5: CONDITIONAL 자동 재시도 없음 명시" \
 assert "evaluator SKILL.md: CONDITIONAL 자동 재시도 없음 명시" \
   "grep -qE 'CONDITIONAL.*(자동 재시도 없음|자동 재시도 안 함|자동 수정하지 않)' '$ROOT_DIR/.claude/skills/evaluator/SKILL.md'"
 
+# D) evolve 외부 소스 다양성 강제 (P-7, v5.30.2)
+assert "evolve.md: 외부 소스 최소 2개 의무 규칙 명시" \
+  "grep -q '소스 다양성 의무' '$ROOT_DIR/.claude/commands/evolve.md'"
+assert "evolve.md: Limited scan 경고 규칙 명시" \
+  "grep -q 'Limited scan' '$ROOT_DIR/.claude/commands/evolve.md'"
+
+# E) Generator TDD-first 시그널 (P-5, v5.30.2)
+assert "run.md Generator: TDD-first 시그널 가이드 명시" \
+  "grep -q 'TDD-first 시그널' '$ROOT_DIR/.claude/commands/run.md'"
+
 echo ""
 
 # ═══════════════════════════════════════════
@@ -2479,12 +2489,17 @@ assert "R29d: post-tool-use-record.sh — stdin 누락/jq 누락 시 safe-defaul
    grep -q 'exit 0' '$ROOT_DIR/hooks/post-tool-use-record.sh'"
 
 # R29e: Gate 2 evaluator 지적 사항 — float duration_ms 입력 시 floor로 정수 변환
+# v5.30.2: sleep 0.3 → polling 으로 race 제거 (clean-clone 환경 안정성)
 assert "R29e: post-tool-use-record.sh — float duration_ms 입력도 정수 보존 (123.5 → 123)" \
   "TMPF=\$(mktemp); \
    echo '{\"tool_name\":\"Bash\",\"duration_ms\":123.5,\"tool_response\":{}}' | \
      NOVA_EVENTS_PATH=\"\$TMPF\" bash '$ROOT_DIR/hooks/post-tool-use-record.sh'; \
-   sleep 0.3; \
-   RESULT=\$(jq '.extra.duration_ms' \"\$TMPF\" 2>/dev/null); \
+   RESULT=''; \
+   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do \
+     RESULT=\$(jq '.extra.duration_ms' \"\$TMPF\" 2>/dev/null); \
+     [ -n \"\$RESULT\" ] && [ \"\$RESULT\" != 'null' ] && break; \
+     sleep 0.1; \
+   done; \
    rm -f \"\$TMPF\"; \
    [ \"\$RESULT\" = '123' ]"
 
