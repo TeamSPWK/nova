@@ -794,6 +794,36 @@ assert "evolve.md: Limited scan 경고 규칙 명시" \
 assert "run.md Generator: TDD-first 시그널 가이드 명시" \
   "grep -q 'TDD-first 시그널' '$ROOT_DIR/.claude/commands/run.md'"
 
+# F) worktree.baseRef 가이드 (Q-1, v5.30.3)
+assert "worktree-setup/SKILL.md: worktree.baseRef 분기 ref 가이드 명시" \
+  "grep -q 'worktree.baseRef' '$ROOT_DIR/.claude/skills/worktree-setup/SKILL.md'"
+assert "worktree-setup.md (커맨드): baseRef 설정 예시 명시" \
+  "grep -q 'baseRef' '$ROOT_DIR/.claude/commands/worktree-setup.md'"
+
+# G) skill-governance 가이드 (Q-3, v5.30.3)
+SKILL_GOV_GUIDE="$ROOT_DIR/docs/guides/skill-governance.md"
+assert "docs/guides/skill-governance.md 존재" \
+  "[ -f '$SKILL_GOV_GUIDE' ]"
+assert "skill-governance.md: skillOverrides 키워드 명시" \
+  "grep -q 'skillOverrides' '$SKILL_GOV_GUIDE'"
+assert "skill-governance.md: 3가지 모드(off/user-invocable-only/name-only) 명시" \
+  "grep -q 'off' '$SKILL_GOV_GUIDE' && grep -q 'user-invocable-only' '$SKILL_GOV_GUIDE' && grep -q 'name-only' '$SKILL_GOV_GUIDE'"
+assert "README.md: skill-governance.md 링크" \
+  "grep -q 'docs/guides/skill-governance.md' '$ROOT_DIR/README.md'"
+assert "README.ko.md: skill-governance.md 링크" \
+  "grep -q 'docs/guides/skill-governance.md' '$ROOT_DIR/README.ko.md'"
+
+# H) 복잡도 duration heuristic (Q-5, v5.30.3)
+# §1 블록 내부 위치를 awk로 검증 (§1 ~ §2 사이 본문에 키워드 존재해야 PASS)
+assert "nova-rules.md §1 블록 내: Duration heuristic 명시" \
+  "awk '/^## §1\./,/^## §2\./' '$ROOT_DIR/docs/nova-rules.md' | grep -q 'Duration heuristic'"
+assert "nova-rules.md §1 블록 내: 30분 기준 명시" \
+  "awk '/^## §1\./,/^## §2\./' '$ROOT_DIR/docs/nova-rules.md' | grep -q '30분'"
+assert "session-start.sh standard: duration heuristic 미러 명시" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q 'duration heuristic'"
+assert "session-start.sh strict: duration heuristic 미러 명시 (M-1)" \
+  "NOVA_PROFILE=strict bash '$ROOT_DIR/hooks/session-start.sh' | grep -q 'duration heuristic'"
+
 echo ""
 
 # ═══════════════════════════════════════════

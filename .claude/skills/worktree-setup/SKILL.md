@@ -59,7 +59,30 @@ git worktree는 기본적으로 **gitignored 파일**(`.env`, `.secret/`, `.npmr
 3. `readlink -f .env` (Linux) / `readlink .env` (macOS) — 링크 대상 경로 확인
 4. 메인 레포의 파일이 존재하는지 (`.env` 자체가 메인에도 없으면 링크 대상이 없음)
 
-## 범위 밖 (현재 버전 v5.5.0)
+## 분기 ref 선택 (`worktree.baseRef`, CC v2.1.133+)
+
+Claude Code v2.1.133부터 `--worktree`/`EnterWorktree`/agent-isolation 워크트리가 어느 ref에서 분기할지 settings.json `worktree.baseRef`로 명시 선택할 수 있다.
+
+> 타임라인: v2.1.128에서 `EnterWorktree`가 `origin/<default>` 대신 로컬 `HEAD`에서 분기하도록 동작이 수정됐고(unpushed 커밋 누락 차단), v2.1.133에서 사용자가 `head` vs `fresh`를 명시 선택할 수 있는 설정이 도입됐다. v2.1.128~v2.1.132 구간에는 본 설정 자체가 없다.
+
+| 값 (v2.1.133+) | 동작 | Nova 권장 사용처 |
+|----------------|------|------------------|
+| `head` | 로컬 `HEAD`에서 분기 — unpushed 커밋 포함 | **기본 권장** (Nova의 incremental 작업 흐름과 일치, v2.1.128 이후 사실상 기본 동작과 동일). |
+| `fresh` | `origin/<default>`에서 분기 — 깨끗한 원격 기준 | release-track 검증, hot-fix 분기, "메인이 깨끗한 상태에서 시작하고 싶다"는 의도가 명확할 때. |
+
+설정 예시 (`~/.claude/settings.json` 또는 프로젝트 `.claude/settings.json`):
+
+```json
+{
+  "worktree": {
+    "baseRef": "head"
+  }
+}
+```
+
+> 이 스킬(`worktree-setup`)은 **셋업** 담당이고, **분기 ref**는 Claude Code 자체 설정이다. baseRef는 본 스킬이 자동 변경하지 않는다 — 사용자/팀의 settings.json 결정 영역.
+
+## 범위 밖
 
 - Windows `junction` 지원 — 1차는 macOS/Linux만
 - direnv 자동 `allow` — 별도 스킬로 분리 예정
