@@ -463,3 +463,41 @@ UI 변경 감지 + intent.json 존재 시, `bash scripts/visual-self-verify.sh` 
 - Plan: `docs/plans/visual-intent-verify.md`
 - Design: `docs/designs/visual-intent-verify.md`
 - 사용자 가이드: `docs/guides/ui-quality-gate.md`
+
+## §15. Memory Routing — 프로젝트 규칙은 canonical로 (v5.31.0+)
+
+**문제**: Claude Code의 auto-memory 시스템은 디폴트로 *user / feedback / project / reference* 모두를 사용자 개인 메모리 디렉토리(`~/.claude/projects/<repo>/memory/`)에 저장하라고 가르친다. 그러나 *프로젝트 운영 규칙*(예: "모니터링은 1일 단위로", "주차별 보고 불필요")이 개인 메모리에 들어가면 **다른 작업자(Codex, 다른 머신의 Claude, 동료)에게는 안 보이는 곳**에 묶인다. 이는 Idempotent 원칙 — *누가/어디서/어떤 AI로 해도 같은 품질이 나온다* — 의 명백한 위반이다.
+
+### 라우팅 결정 (저장 직전 4가지 질문)
+
+| 질문 | 답이 yes면 |
+|------|-----------|
+| 다른 작업자/AI가 알아야 하는 정보인가? | **프로젝트 canonical** |
+| 이 *프로젝트* 한정 정책·도메인 규칙·워크플로우인가? | **프로젝트 canonical** |
+| 이 *사용자*의 항구적 역할·언어 선호·전역 코딩 태도(Karpathy류)인가? | 개인 memory (`~/.claude/.../memory/`) 또는 개인 전역 (`~/.claude/CLAUDE.md`) |
+| 이 사람·머신 한정 로컬 경로·sandbox URL·로컬 토큰 위치인가? | `CLAUDE.local.md` 또는 `.claude/settings.local.json` |
+
+기본 가정: **프로젝트 작업 중 사용자가 준 규칙·워크플로우·도메인 정책은 개인 memory가 아니라 프로젝트 canonical**. AI는 모르면 어디 둘지를 사용자에게 묻고, 가장 강한 신호("이건 프로젝트 정책이야", "다른 사람도 알아야 해")가 없을 때 함부로 개인 memory로 빠뜨리지 않는다.
+
+### 프로젝트 canonical 라우팅 표
+
+| 내용 종류 | 목적지 |
+|-----------|--------|
+| 매 세션 필요한 불변 사실, 비협상 위험 경계 | `CLAUDE.md` 또는 `AGENTS.md` |
+| 도메인 운영 정책 (예: 모니터링 주기, 데이터 보존 기간), 협업 워크플로우 (예: 보고 단위) | `CLAUDE.md` 또는 `.claude/rules/<주제>.md` |
+| 특정 경로/파일 타입에만 필요한 규칙 | `.claude/rules/*.md` with `paths` |
+| 다단계 절차(배포·릴리스·마이그레이션) | `.claude/skills/*/SKILL.md` 또는 `.claude/commands/*.md` |
+| 자동 차단/검증 규칙 | `.claude/settings.json`, hooks, CI |
+| 휘발성 상태(현재 phase, 최근 검증, blocker) | `NOVA-STATE.md` |
+
+### 안티패턴 (자동 검출 대상)
+
+- 사용자가 **프로젝트 규칙성 발화**("프로젝트는 ~로 한다", "팀은 ~", "우리는 ~", "이 작업에서는 ~")를 했는데 AI가 곧바로 `~/.claude/.../memory/feedback_*.md` 또는 `project_*.md`에 저장.
+- 사용자 개인 정체성 정보가 아닌 *작업 컨벤션*이 user memory에 들어감.
+- "다른 머신/AI도 알아야 한다"는 명시 신호가 있는데도 memory로 빠지는 경우.
+
+### 운영 가드
+
+- `/nova:claude-md` Audit 모드는 *읽기 전용*으로 갭만 보고. 자동 마이그레이션 금지.
+- 기존 잘 정리된 산출물(이미 `.claude/rules/`나 `CLAUDE.md`에 둔 규칙)은 절대 재배치 제안하지 않는다. **현재 위치가 적합한지** 판정하고, 부적합한 갭만 분리해서 보고.
+- 사용자 명시 승인(yes/no) 없이 user memory 파일을 옮기거나 삭제하지 않는다.
