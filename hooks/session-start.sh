@@ -110,7 +110,7 @@ if [ "$NOVA_PROFILE" != "lean" ]; then
     ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ MCP ${_MCP_COUNT}개 활성 — ECC 권장 ≤10 초과. 컨텍스트 압박 (§10)."
   fi
 
-  # ── measurement Phase 1 4주 미갱신 리마인더 (Sprint 3, measurement-spec.md §4 알고리즘 4) ──
+# ── measurement Phase 1 4주 미갱신 리마인더 (Sprint 3, measurement-spec.md §4 알고리즘 4) ──
   # 조건부 1줄 — baselines 파일 존재 + 가장 최신 mtime 28일+ 만 출력
   # 첫 주(파일 0건)는 미출력 (신규 사용자 보호)
   if [[ -d docs/baselines ]]; then
@@ -121,6 +121,19 @@ if [ "$NOVA_PROFILE" != "lean" ]; then
       if (( _AGE_DAYS > 28 )); then
         ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ baselines ${_AGE_DAYS}일 미갱신 — bash scripts/publish-metrics.sh 권장."
       fi
+    fi
+  fi
+
+  # ── §16 impl-tracker 미해소 advisory (v5.32.0+) ──
+  # 코드 파일 임계 도달 + 1시간 이내 + Evaluator/review 흔적 0 시 1줄 노출.
+  # 평소(임계 미도달, 1시간 만료, 마커 없음)에는 미노출.
+  if [[ -f .nova/impl-tracker.json ]] && command -v jq >/dev/null 2>&1; then
+    _IMPL_HIT=$(jq -r '.threshold_hit // false' .nova/impl-tracker.json 2>/dev/null)
+    _IMPL_COUNT=$(jq -r '.count // 0' .nova/impl-tracker.json 2>/dev/null)
+    _IMPL_LAST=$(jq -r '.last_set_epoch // 0' .nova/impl-tracker.json 2>/dev/null)
+    _IMPL_AGE_MIN=$(( ($(date +%s) - _IMPL_LAST) / 60 ))
+    if [[ "$_IMPL_HIT" = "true" ]] && (( _IMPL_AGE_MIN < 60 )); then
+      ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ impl-tracker: 코드 ${_IMPL_COUNT}파일 변경 후 review/evaluator 미실행 (§16). /nova:review --fast 또는 Agent(evaluator) 권장."
     fi
   fi
 fi

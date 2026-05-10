@@ -2383,6 +2383,43 @@ assert "Q3: release.sh NOVA-STATE.md 신선도 체크" \
 assert "Q4: release.sh audit-self 회귀 통합 검증" \
   "grep -q 'audit-self 회귀' '$ROOT_DIR/scripts/release.sh'"
 
+# Q5~Q11: §16 Self-Enforcement (v5.32.0+) — review/STATE hard gate + impl-tracker
+assert "Q5: release.sh hard gate 변수(GATE_FAIL/GATE_REASONS) + ❌ 마커" \
+  "grep -q 'GATE_FAIL=1' '$ROOT_DIR/scripts/release.sh' && \
+   grep -q 'GATE_REASONS' '$ROOT_DIR/scripts/release.sh' && \
+   grep -q '❌ /nova:review' '$ROOT_DIR/scripts/release.sh' && \
+   grep -q '❌ NOVA-STATE.md' '$ROOT_DIR/scripts/release.sh'"
+assert "Q6: release.sh NOVA_RELEASE_ACK_ADVISORY 우회 + evolve_decision 기록" \
+  "grep -q 'NOVA_RELEASE_ACK_ADVISORY' '$ROOT_DIR/scripts/release.sh' && \
+   grep -q 'release_ack_advisory' '$ROOT_DIR/scripts/release.sh'"
+assert "Q7: release.sh hard gate 차단 exit 2" \
+  "awk '/GATE_FAIL == 1/,/^fi$/' '$ROOT_DIR/scripts/release.sh' | grep -q 'exit 2'"
+assert "Q8: release.sh 성공 시 impl-tracker reset" \
+  "grep -q 'rm -f .nova/impl-tracker.json' '$ROOT_DIR/scripts/release.sh'"
+assert "Q9: post-tool-use-record.sh impl-tracker 누적 + 임계 + 1시간 만료" \
+  "grep -q 'impl-tracker' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -q 'threshold_hit' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -q 'first_set_epoch' '$ROOT_DIR/hooks/post-tool-use-record.sh' && \
+   grep -q 'AGE > 3600' '$ROOT_DIR/hooks/post-tool-use-record.sh'"
+assert "Q10: post-tool-use-record.sh 임계 도달 시뮬레이션 (3 Edit → threshold_hit:true)" \
+  "_TMP=\$(mktemp -d) && cd \$_TMP && \
+   for i in 1 2 3; do echo '{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"'\$_TMP'/src/foo'\$i'.sh\"},\"tool_response\":{}}' | bash '$ROOT_DIR/hooks/post-tool-use-record.sh' >/dev/null 2>&1; done && \
+   [ \"\$(jq -r .threshold_hit \$_TMP/.nova/impl-tracker.json 2>/dev/null)\" = 'true' ] && \
+   [ \"\$(jq -r .count \$_TMP/.nova/impl-tracker.json 2>/dev/null)\" = '3' ] && \
+   cd / && rm -rf \$_TMP"
+assert "Q11: post-tool-use-record.sh docs/* 제외 (코드 휴리스틱)" \
+  "_TMP=\$(mktemp -d) && cd \$_TMP && \
+   echo '{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"'\$_TMP'/docs/foo.sh\"},\"tool_response\":{}}' | bash '$ROOT_DIR/hooks/post-tool-use-record.sh' >/dev/null 2>&1; \
+   [ ! -f \$_TMP/.nova/impl-tracker.json ] && cd / && rm -rf \$_TMP"
+assert "Q12: session-start.sh impl-tracker 미해소 advisory 코드 + 1시간 윈도우" \
+  "grep -q 'impl-tracker' '$ROOT_DIR/hooks/session-start.sh' && \
+   grep -q '_IMPL_HIT' '$ROOT_DIR/hooks/session-start.sh' && \
+   grep -q '_IMPL_AGE_MIN < 60' '$ROOT_DIR/hooks/session-start.sh'"
+assert "Q13: docs/nova-rules.md §16 Self-Enforcement 섹션 존재" \
+  "grep -q '## §16. Self-Enforcement' '$ROOT_DIR/docs/nova-rules.md' && \
+   grep -q 'NOVA_RELEASE_ACK_ADVISORY' '$ROOT_DIR/docs/nova-rules.md' && \
+   grep -q 'impl-tracker' '$ROOT_DIR/docs/nova-rules.md'"
+
 # R1~R5: measurement-closed-loop Sprint 1 — Phase 0 spec (v5.24.0+)
 assert "R1: docs/measurement-spec.md 존재 + 8 핵심 결정 키워드" \
   "[ -f '$ROOT_DIR/docs/measurement-spec.md' ] && \

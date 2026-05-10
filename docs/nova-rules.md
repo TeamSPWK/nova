@@ -501,3 +501,36 @@ UI 변경 감지 + intent.json 존재 시, `bash scripts/visual-self-verify.sh` 
 - `/nova:claude-md` Audit 모드는 *읽기 전용*으로 갭만 보고. 자동 마이그레이션 금지.
 - 기존 잘 정리된 산출물(이미 `.claude/rules/`나 `CLAUDE.md`에 둔 규칙)은 절대 재배치 제안하지 않는다. **현재 위치가 적합한지** 판정하고, 부적합한 갭만 분리해서 보고.
 - 사용자 명시 승인(yes/no) 없이 user memory 파일을 옮기거나 삭제하지 않는다.
+
+## §16. Self-Enforcement — Always-On 자가 규칙 강제 (v5.32.0+)
+
+**문제**: Always-On 규칙(3·4·5번)이 advisory로만 발화하면 *사람·AI가 advisory를 무시할 때 무력*해진다. v5.31.0 릴리스에서 review·STATE 갱신 advisory가 정확히 발화했지만 그대로 무시된 채 push까지 진행 — 이미 메모리에 박힌 "Nova 자가 규칙 미준수 갭" 패턴 재현. 시스템이 짚어줘도 의지력에 의존하면 동일 갭이 반복된다.
+
+### 두 시점의 안전망
+
+본 규칙은 두 시점에 신호와 강제력을 분배한다.
+
+**(1) 구현 단계 — PostToolUse → impl-tracker → SessionStart 미해소 advisory**
+
+- `hooks/post-tool-use-record.sh`가 Edit/Write/MultiEdit 성공 시 *코드 파일* 변경을 `.nova/impl-tracker.json`에 누적한다.
+- 코드 파일 휴리스틱: `*.sh / *.ts / *.tsx / *.js / *.jsx / *.py / *.go / *.rs / *.rb / *.swift / *.kt / *.java / *.c / *.cpp / *.h / *.hpp`. `NOVA-STATE.md`, `.nova/`, `docs/`는 제외(자동·문서 영역).
+- 임계 3파일 도달 시 `threshold_hit=true`. 1시간 자동 만료(새 카운트 시작).
+- `hooks/session-start.sh`가 다음 세션 시작 시 마커 검사 — 미해소(threshold_hit + 1시간 이내) 시 1줄 advisory 노출. 강제 차단 X, 신호만.
+- Reset: `scripts/release.sh` 성공 시 자동 삭제. 또는 1시간 만료. 또는 사용자가 `rm .nova/impl-tracker.json`.
+
+**(2) 릴리스 단계 — release.sh hard gate**
+
+- `scripts/release.sh` Step 2.5 위생 게이트의 (b) `/nova:review` 흔적 검증, (c) NOVA-STATE.md 1시간+ 신선도가 fail-close로 승격.
+- 위반 시 `exit 2`로 차단. 커밋·tag·push 진행 안 함.
+- 우회: `NOVA_RELEASE_ACK_ADVISORY=1 bash scripts/release.sh ...` 환경변수만 허용. `--플래그` 우회는 의도적으로 미제공(AI가 자동 우회 마찰 유지).
+- 우회 시 `evolve_decision` 이벤트(`kind:release_ack_advisory`) 기록 — 누적되면 향후 evolve가 강제 정도 재조정 후보로 검토.
+- (a) removal 리포트, (d) audit-self 통합은 advisory 유지(추가-only 릴리스 차단 부적합).
+
+### 트레이드오프
+
+| 시점 | 강도 | 우회 비용 | 영향 범위 |
+|------|------|----------|----------|
+| (1) 구현 단계 | 신호만 | rm 1회 또는 1시간 대기 | AI/사람 자기 인지 |
+| (2) 릴리스 단계 | 강제 차단 | NOVA_RELEASE_ACK_ADVISORY=1 명시 | 모든 release.sh 호출 |
+
+(2)는 **다른 사용자/머신/CI에도 즉시 영향**. 따라서 hotfix·실험적 사용에서는 ACK_ADVISORY 명시가 필요하다. 의도된 마찰이며, 사용자 결정 흐름을 강제로 바꾸는 게 본 규칙의 목적이다.

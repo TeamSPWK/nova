@@ -46,4 +46,52 @@ EXTRA=$(jq -cn \
 
 bash "${NOVA_ROOT}/hooks/record-event.sh" tool_use_post "$EXTRA" 2>/dev/null &
 
+# ── §16 impl-tracker (v5.32.0+) ─────────────────────────────────────────
+# Edit/Write/MultiEdit 성공 시 *코드 파일* 변경 누적 → .nova/impl-tracker.json.
+# 임계(3파일+) 도달하면 threshold_hit=true. 1시간 자동 만료(새 카운트 시작).
+# Reset: release.sh 성공 시. session-start가 미해소 시 advisory 노출.
+if command -v jq >/dev/null 2>&1 && [[ "$OK" = "true" ]]; then
+  case "$TOOL" in
+    Edit|Write|MultiEdit)
+      FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
+      if [[ -n "$FILE_PATH" ]]; then
+        # 코드 파일 휴리스틱: 보편 소스 확장자만, 자동/문서 영역 제외.
+        case "$FILE_PATH" in
+          *.sh|*.ts|*.tsx|*.js|*.jsx|*.py|*.go|*.rs|*.rb|*.swift|*.kt|*.java|*.c|*.cpp|*.h|*.hpp)
+            case "$FILE_PATH" in
+              */NOVA-STATE.md|*/.nova/*|*/docs/*) : ;;
+              *)
+                mkdir -p .nova 2>/dev/null
+                TRACKER=".nova/impl-tracker.json"
+                NOW=$(date +%s)
+                CUR_COUNT=0
+                CUR_FIRST=$NOW
+                if [[ -f "$TRACKER" ]]; then
+                  CUR_COUNT=$(jq -r '.count // 0' "$TRACKER" 2>/dev/null || echo 0)
+                  CUR_FIRST=$(jq -r '.first_set_epoch // 0' "$TRACKER" 2>/dev/null || echo 0)
+                  AGE=$((NOW - CUR_FIRST))
+                  if (( AGE > 3600 )); then
+                    CUR_COUNT=0
+                    CUR_FIRST=$NOW
+                  fi
+                fi
+                NEW_COUNT=$((CUR_COUNT + 1))
+                HIT="false"
+                (( NEW_COUNT >= 3 )) && HIT="true"
+                jq -cn \
+                  --argjson c "$NEW_COUNT" \
+                  --argjson f "$CUR_FIRST" \
+                  --argjson n "$NOW" \
+                  --argjson h "$HIT" \
+                  '{count:$c, first_set_epoch:$f, last_set_epoch:$n, threshold_hit:$h}' \
+                  > "$TRACKER" 2>/dev/null || true
+                ;;
+            esac
+            ;;
+        esac
+      fi
+      ;;
+  esac
+fi
+
 exit 0

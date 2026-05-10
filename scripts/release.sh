@@ -93,12 +93,18 @@ bash tests/test-scripts.sh
 echo ""
 
 
-# ── Step 2.5: 릴리스 위생 게이트 (fail-open 권고형, v5.22.3+) ──
+# ── Step 2.5: 릴리스 위생 게이트 (v5.32.0+: review/STATE는 hard gate 승격) ──
 # 4회 릴리스 전 review 0회 패턴(NOVA-STATE Known Risks Medium) 인지 강화.
-# 차단하지 않음 — 경고만 출력. 강제 차단은 v5.23.0+에서 검토.
+# (b)/(c)는 fail-close. NOVA_RELEASE_ACK_ADVISORY=1 명시 우회만 허용.
+# (a) removal, (d) audit-self는 advisory 유지(추가-only 릴리스 차단 부적합).
 echo "━━━ Step 2.5/7: 릴리스 위생 게이트 ━━━"
 
-# (a) 제거 리포트 (기존)
+# 우회 플래그: 환경변수만 허용 (--플래그 거부 — AI 자동 우회 마찰 유지)
+ACK_ADVISORY="${NOVA_RELEASE_ACK_ADVISORY:-}"
+GATE_FAIL=0
+GATE_REASONS=()
+
+# (a) 제거 리포트 (advisory 유지)
 REMOVAL_REPORT="${NOVA_REMOVAL_REPORT:-}"
 for arg in "$@"; do
   case "$arg" in
@@ -109,29 +115,34 @@ if [[ -z "$REMOVAL_REPORT" ]]; then
   echo "  ⚠️  제거 리포트가 비어 있습니다 — A/B 측정 문화: --removal=\"...\" 또는 NOVA_REMOVAL_REPORT" >&2
 fi
 
-# (b) /nova:review 흔적 검증 (Always-On 4)
-# 커밋 메시지 또는 환경변수에 review 흔적이 있으면 통과 권고.
+# (b) /nova:review 흔적 검증 (Always-On 4) — hard gate
 if echo "$COMMIT_MSG" | grep -qiE 'review (PASS|통과)|/nova:review|senior-dev|reviewer (PASS|통과)|reviewed:'; then
   echo "  ✅ /nova:review 흔적 감지 (커밋 메시지)"
 elif [[ -n "${NOVA_RELEASE_REVIEWED:-}" ]]; then
   echo "  ✅ NOVA_RELEASE_REVIEWED=$NOVA_RELEASE_REVIEWED 명시"
 else
-  echo "  ⚠️  /nova:review --fast 흔적 미감지 — Always-On 4 (커밋 전 review)" >&2
+  echo "  ❌ /nova:review --fast 흔적 미감지 — Always-On 4 (커밋 전 review)" >&2
   echo "     해소: 커밋 메시지에 'review PASS' 또는 NOVA_RELEASE_REVIEWED=1 환경변수" >&2
+  GATE_FAIL=1
+  GATE_REASONS+=("review_unrun")
 fi
 
-# (c) NOVA-STATE.md 신선도 (Last Activity 1시간 이내)
+# (c) NOVA-STATE.md 신선도 (1시간 이내) — hard gate
 if [[ -f NOVA-STATE.md ]]; then
   _STATE_EPOCH=$(date -r NOVA-STATE.md +%s 2>/dev/null || echo 0)
   _AGE=$(($(date +%s) - _STATE_EPOCH))
   if (( _AGE > 3600 )); then
-    echo "  ⚠️  NOVA-STATE.md 마지막 수정 ${_AGE}s 전 — 본 릴리스 반영 의심" >&2
+    echo "  ❌ NOVA-STATE.md 마지막 수정 ${_AGE}s 전 — 본 릴리스 반영 누락" >&2
     echo "     해소: Last Activity 1줄 추가 + 50줄 트림" >&2
+    GATE_FAIL=1
+    GATE_REASONS+=("state_stale")
   else
     echo "  ✅ NOVA-STATE.md 신선 (${_AGE}s)"
   fi
 else
-  echo "  ⚠️  NOVA-STATE.md 부재 — /nova:setup 또는 init-nova-state.sh 권장" >&2
+  echo "  ❌ NOVA-STATE.md 부재 — /nova:setup 또는 init-nova-state.sh 권장" >&2
+  GATE_FAIL=1
+  GATE_REASONS+=("state_missing")
 fi
 
 # (d) audit-self 회귀 통합 (v5.22.2+ test-scripts.sh에 위임 통합 확인)
@@ -150,6 +161,27 @@ if git diff --cached --name-only 2>/dev/null | grep -E '^\.nova/' >/dev/null; th
 fi
 if git diff --name-only 2>/dev/null | grep -E '^\.nova/' >/dev/null; then
   echo "  ⚠️  .nova/ 파일 변경 감지 (unstaged) — 절대 commit 금지" >&2
+fi
+
+# (f) hard gate enforcement — (b)/(c) 위반 시 차단, ACK 명시 우회 시 통과 + evolve_decision 기록
+if (( GATE_FAIL == 1 )); then
+  if [[ -n "$ACK_ADVISORY" ]]; then
+    _REASONS_JOIN=$(IFS=,; echo "${GATE_REASONS[*]}")
+    echo "  ⚠️  NOVA_RELEASE_ACK_ADVISORY=$ACK_ADVISORY — hard gate 우회 (사유: $_REASONS_JOIN)" >&2
+    echo "     evolve 후보로 기록 — 누적 시 강제 정도 재조정 검토" >&2
+    if [[ -x "${CLAUDE_PLUGIN_ROOT:-.}/hooks/record-event.sh" ]] || [[ -x "hooks/record-event.sh" ]]; then
+      _REC="${CLAUDE_PLUGIN_ROOT:-.}/hooks/record-event.sh"
+      [[ -x "$_REC" ]] || _REC="hooks/record-event.sh"
+      bash "$_REC" evolve_decision "{\"kind\":\"release_ack_advisory\",\"reasons\":\"$_REASONS_JOIN\"}" 2>/dev/null || true
+    fi
+  else
+    echo "" >&2
+    echo "  ❌ 릴리스 위생 게이트 차단 — Always-On 자가 규칙 위반" >&2
+    echo "     실패 항목: ${GATE_REASONS[*]}" >&2
+    echo "     해소 후 재시도, 또는 명시적으로 NOVA_RELEASE_ACK_ADVISORY=1 bash scripts/release.sh ..." >&2
+    echo "     (--플래그 우회 없음 — AI 자동 우회 마찰 유지)" >&2
+    exit 2
+  fi
 fi
 echo ""
 
@@ -237,6 +269,9 @@ gh release create "v${NEW_VERSION}" \
   --title "v${NEW_VERSION} — ${TITLE_TRIMMED}" \
   --notes "${RELEASE_NOTES}"
 echo ""
+
+# §16 impl-tracker reset — 릴리스 성공 = review/STATE 통과 = 미해소 신호 해소
+rm -f .nova/impl-tracker.json 2>/dev/null
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ✅ 릴리스 완료: v${NEW_VERSION}"
