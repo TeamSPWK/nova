@@ -75,7 +75,7 @@ fi
 
 # lean: §1~§3만, antipatterns 생략, pre-edit CPS 경고 스킵
 if [ "$NOVA_PROFILE" = "lean" ]; then
-  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림)."
+  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림).\n3. UI 변경 시 G1+G3 시각 게이트 발화 (lean도 적용 — §14)."
 
 # strict: standard + antipatterns 요약 추가
 elif [ "$NOVA_PROFILE" = "strict" ]; then
