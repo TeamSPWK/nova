@@ -14,6 +14,8 @@ NO_ROADMAP=false
 OUT=".nova/status/index.html"
 SINCE=""
 OPEN=false
+AUTO_BOOTSTRAP=false
+NO_BOOTSTRAP=false
 
 print_help() {
   cat <<'EOF'
@@ -27,6 +29,8 @@ Options:
   --since <date>            --plan/--roadmap 사용 시 git --since (Default: "7 days ago")
   --stale-threshold <days>  ROADMAP stale 임계 (default 7)
   --no-roadmap              ROADMAP 발견 시도 X — Phase 1 강제
+  --auto-bootstrap          minimal mode 감지 시 init-roadmap.sh --llm 자동 호출 + 안내 (Phase 4+)
+  --no-bootstrap            --auto-bootstrap이 켜져 있어도 명시적 OFF (bin/nova-status 우회용)
   --open                    렌더 후 브라우저로 열기 (macOS open / Linux xdg-open)
   -h, --help                Show this help
 
@@ -43,6 +47,8 @@ while [[ $# -gt 0 ]]; do
     --since) SINCE="$2"; shift 2 ;;
     --stale-threshold) STALE_THRESHOLD="$2"; shift 2 ;;
     --no-roadmap) NO_ROADMAP=true; shift ;;
+    --auto-bootstrap) AUTO_BOOTSTRAP=true; shift ;;
+    --no-bootstrap) NO_BOOTSTRAP=true; shift ;;
     --open) OPEN=true; shift ;;
     -h|--help) print_help; exit 0 ;;
     *) echo "[render-status] Unknown arg: $1" >&2; print_help >&2; exit 2 ;;
@@ -100,6 +106,44 @@ Path(out_path).write_text(new_html, encoding='utf-8')
 PY
 
 echo "[render-status] Rendered: $OUT" >&2
+
+# ─────────────────────────────────────────────────────────────
+# Phase 4 — minimal 자동 부트스트랩 (Design §22)
+# ─────────────────────────────────────────────────────────────
+if $AUTO_BOOTSTRAP && ! $NO_BOOTSTRAP; then
+  MINIMAL_CHECK=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('$DATA'))
+    mode = d.get('mode', '')
+    minimal = d.get('minimal', False)
+    print('TRIGGER' if (mode == 'phase1' and minimal) else 'OK')
+except Exception:
+    print('OK')
+")
+  if [[ "$MINIMAL_CHECK" == "TRIGGER" ]]; then
+    echo "" >&2
+    echo "════════════════════════════════════════════════════════════" >&2
+    echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4)" >&2
+    echo "════════════════════════════════════════════════════════════" >&2
+    echo "" >&2
+    echo "  [1/3] 자료 수집 (init-roadmap.sh --llm)" >&2
+    if "$DIR/init-roadmap.sh" --llm >&2 2>&1; then
+      echo "" >&2
+      echo "  [2/3] Claude(메인)에게 위임:" >&2
+      echo "     Agent(general-purpose) prompt:" >&2
+      echo "     \"docs/designs/status-dashboard.md §12 + .nova/init-input.json 기반으로" >&2
+      echo "      /tmp/ROADMAP-nova-draft.md 작성. ⚠️ unsure rule 준수. 자동 commit 금지.\"" >&2
+      echo "" >&2
+      echo "  [3/3] draft 생성 후 재실행:" >&2
+      echo "     ./scripts/render-status.sh --roadmap /tmp/ROADMAP-nova-draft.md --open" >&2
+      echo "" >&2
+      echo "  ※ 자동 commit 0건 — 사용자 검수 후 명시적 commit" >&2
+      echo "  ※ HTML은 minimal mode로 우선 생성됨 ($OUT) — 부트스트랩 후 갱신" >&2
+      echo "════════════════════════════════════════════════════════════" >&2
+    fi
+  fi
+fi
 
 if $OPEN; then
   ABS="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"

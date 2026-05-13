@@ -981,3 +981,110 @@ status: in_progress
 | 안전성 5중 가드 | 본 문서 §17.3 | 모든 sprint 공통 검증 항목 |
 
 Sprint S10~S12는 본 문서 §17~§19 계약을 글자 그대로 따른다.
+
+---
+
+# Phase 4 — Claude 우회 차단 + 자동 부트스트랩
+
+> Phase 1·2·3(§1~§20)은 그대로 유지. 본 섹션은 명령 흐름 강제·UX 회복 contract.
+> 동기: v5.33.0 출시 후 실측에서 3 케이스 모두 Claude(메인)가 우리 표준을 우회.
+>   - 케이스 #1 (frontmatter 없는 프로젝트): minimal HTML 만들고 멈춤 (가치 0)
+>   - 케이스 #2 (md-template-compiler): 프로젝트 자체 build_static.py 자동 사용
+>   - 케이스 #3 (swk-gc): 도구 실행 0, NOVA-STATE 직접 읽어 텍스트 요약 대체
+
+## 21) 강제 흐름 contract (Claude 우회 차단)
+
+### 21.1 commands/status.md 톤 전환
+
+기존 (안내문, Phase 1~3):
+> "이렇게 사용할 수 있어요" + 옵션 나열 → Claude가 자율 해석
+
+신규 (강제, Phase 4):
+> "다음 흐름을 순서대로 강제 실행한다. 자율 해석 금지."
+
+### 21.2 명시적 금지 패턴 (commands/status.md 내)
+
+```
+다음 행동은 금지:
+- NOVA-STATE.md만 읽고 텍스트 요약으로 대체 (사용자는 dashboard HTML 요청)
+- 프로젝트 자체 dashboard 도구(build_static.py / Makefile dashboard 타겟 등)로 우회
+- minimal mode HTML 만들고 멈춤 (자동 부트스트랩 §22 강제 진입)
+- 사용자가 명시적으로 --use-project-tool 옵션 사용한 경우만 예외
+```
+
+### 21.3 강제 실행 절차
+
+```
+Step 1 (필수, skip 불가): ./scripts/render-status.sh --open 실행
+Step 2: 결과 분류
+  - mode=roadmap → 완료 (사용자에게 HTML 경로 + 요약 보고)
+  - mode=phase1 minimal=true → §22 자동 부트스트랩 진입
+  - 프로젝트 자체 도구 발견 → 무시. Nova 표준 사용
+Step 3 (§22 자동 부트스트랩): init-roadmap --llm + Agent 위임 + build 재실행
+```
+
+## 22) 자동 부트스트랩 흐름 (minimal 자동 진화)
+
+### 22.1 트리거 조건
+
+`render-status.sh` 결과 JSON의 `minimal: true` AND `mode: phase1`.
+
+### 22.2 자동 진행 순서
+
+```
+1. ./scripts/init-roadmap.sh --llm     # NOVA-STATE + git log + plans 수집
+2. Agent(general-purpose) subagent 호출 → /tmp/ROADMAP-{slug}-draft.md
+3. ./scripts/render-status.sh --roadmap /tmp/ROADMAP-{slug}-draft.md --open
+4. 사용자 보고:
+   "임시 ROADMAP draft로 풍부한 dashboard 생성.
+    검수 후 채택: mv /tmp/... ROADMAP.md && git commit"
+```
+
+### 22.3 새 옵션 — `render-status.sh --auto-bootstrap`
+
+명시적 옵션으로도 호출 가능 (commands가 자동 트리거하지만 사용자도 직접):
+
+```bash
+./scripts/render-status.sh --auto-bootstrap    # minimal 감지 시 자동 진화
+./scripts/render-status.sh --no-bootstrap      # 자동 진화 비활성 (기존 동작 강제)
+```
+
+### 22.4 안전 가드
+
+- Agent 위임 단계는 외부 API 호출 0 (Claude Code 세션 모델, visual-self-verify 패턴 일관)
+- draft는 /tmp에 — swk-gc 등 사용자 레포 작업 트리 변경 0
+- 사용자 명시적 commit이 있을 때까지 ROADMAP.md 변경 0
+
+## 23) bin/ 진입점 — Claude 개입 없이 직접 호출
+
+### 23.1 신규: `bin/nova-status`
+
+```bash
+#!/bin/bash
+# bin/nova-status — 사용자 직접 호출. Claude 개입 0.
+# 무조건 표준 흐름 강제.
+exec "${CLAUDE_PLUGIN_ROOT}/scripts/render-status.sh" --auto-bootstrap --open "$@"
+```
+
+### 23.2 효과
+
+- 사용자가 `nova-status` 타이핑 → bash가 직접 실행 → Claude 자율 해석 0
+- `/nova:status` slash 커맨드는 Claude 경유 (commands/status.md 강제 톤이 가드)
+- 두 진입점 모두 결국 동일 결과
+
+### 23.3 메모리 일관성
+
+- 메모리 `feedback_nova_universal_plugin` — Nova 범용 플러그인. SWK 색채 0
+- 메모리 `feedback_api_key_optional_principle` — 외부 API 호출 0 유지
+- 메모리 `feedback_no_manual_setup` — 사용자가 직접 호출만 하면 작동
+
+## 24) Phase 4 산출물 매핑 (Sprint S13)
+
+| 설계 항목 | 산출물 | 비고 |
+|----------|--------|-----|
+| 강제 톤 contract | 본 문서 §21 | S14 commands/status.md 재작성 기준 |
+| 자동 부트스트랩 흐름 | 본 문서 §22 | S15 render-status.sh --auto-bootstrap 구현 |
+| bin entrypoint | 본 문서 §23 | S14 bin/nova-status 신규 |
+| 우회 차단 검증 | S16 R34 회귀 | 3 케이스 재검증 (nova/swk-gc/md-template) |
+
+Sprint S14~S16은 본 문서 §21~§23 계약을 글자 그대로 따른다.

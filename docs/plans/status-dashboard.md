@@ -1,17 +1,19 @@
 ---
 plan_id: status-dashboard
 title: Status Dashboard (`/nova:status` — 현황 대시보드 + drift 알람)
-sprint: S5 (Phase 2 — ROADMAP 통합)
+sprint: S13 (Phase 4 — Claude 우회 차단 + 자동 부트스트랩)
 created: 2026-05-13
-current_phase: P5
-current_sprint: S5
+current_phase: P7
+current_sprint: S13
 phases:
   - {id: P1, title: Plan, status: done, summary: "CPS 4섹션 + Sprint 분할 4"}
   - {id: P2, title: Design, status: done, summary: "frontmatter 스키마 + JSON 인터페이스 + 5분류 매트릭스"}
-  - {id: P3, title: "Phase 1 — 도구 빌드 (S1·S2·S3·S4)", status: done, summary: "build/render/template/회귀 17개 + dogfooding nova/zippit/swk-gc"}
-  - {id: P4, title: "Phase 1 통합 (S4 흡수)", status: done, summary: "commands·skills·hooks·tests·guide·nova-meta 동기화 — 743/743 PASS"}
-  - {id: P5, title: "Phase 2 — ROADMAP 통합 + init wizard", status: in_progress, summary: "S5·S6·S7·S8. ROADMAP.md 표준 SOT + LLM init wizard + stale 검증"}
-  - {id: P6, title: "Phase 2 통합 + 릴리스", status: pending, summary: "review PASS + minor 버전(v5.33 또는 v5.34)"}
+  - {id: P3, title: "Phase 1 — 도구 빌드 (S1·S2·S3·S4)", status: done, summary: "build/render/template/회귀 17개"}
+  - {id: P4, title: "Phase 1 통합 (S4 흡수)", status: done, summary: "commands·skills·hooks·tests·guide·nova-meta — 743/743"}
+  - {id: P5, title: "Phase 2 — ROADMAP 통합 + init wizard (S5~S8)", status: done, summary: "ROADMAP frontmatter v1.0 + 멀티 plan 통합 + stale + init wizard 3 모드 + R32×16"}
+  - {id: P6, title: "Phase 3 — enrich-plans + v5.33.0 릴리스 (S9~S12)", status: done, summary: "자동 frontmatter + 5중 안전 + Agent subagent + R33×14. 773/773. v5.33.0 GitHub Release"}
+  - {id: P7, title: "Phase 4 — Claude 우회 차단 + 자동 부트스트랩 (S13~S16)", status: in_progress, summary: "commands 강제 톤 + bin/nova-status + minimal 자동 부트스트랩 + 3 케이스 재검증"}
+  - {id: P8, title: "Phase 4 릴리스 (v5.34.0)", status: pending, summary: "minor — 우회 구조적 차단 + 사용자 효용 회복"}
 sprints:
   P3:
     - {id: S1, title: "frontmatter 스키마 + HTML 템플릿 모듈", status: done}
@@ -19,10 +21,20 @@ sprints:
     - {id: S3, title: "HTML 렌더 + 토스식 카드 + drift 카드", status: done}
     - {id: S4, title: "통합 + 회귀 가드 + 가이드 (릴리스 제외)", status: done}
   P5:
-    - {id: S5, title: "ROADMAP frontmatter 스키마 + Design 확장", status: in_progress}
-    - {id: S6, title: "build-status.py: ROADMAP + 멀티 plan + stale", status: pending}
-    - {id: S7, title: "init wizard (CLI + Agent subagent)", status: pending}
-    - {id: S8, title: "통합 + 회귀 + 가이드 + dogfooding", status: pending}
+    - {id: S5, title: "ROADMAP frontmatter 스키마 + Design 확장", status: done}
+    - {id: S6, title: "build-status.py: ROADMAP + 멀티 plan + stale", status: done}
+    - {id: S7, title: "init wizard (CLI + Agent subagent)", status: done}
+    - {id: S8, title: "통합 + 회귀 + 가이드 + dogfooding", status: done}
+  P6:
+    - {id: S9,  title: "enrich-plans Design (§17~§20)", status: done}
+    - {id: S10, title: "enrich-plans.sh + lib", status: done}
+    - {id: S11, title: "swk-gc + planreview dogfooding", status: done}
+    - {id: S12, title: "회귀 R33 + 가이드 + v5.33.0 릴리스", status: done}
+  P7:
+    - {id: S13, title: "Phase 4 Plan + Design §21~§23", status: in_progress}
+    - {id: S14, title: "commands 강제 톤 + bin/nova-status", status: pending}
+    - {id: S15, title: "minimal 자동 부트스트랩 흐름", status: pending}
+    - {id: S16, title: "R34 회귀 + 3 케이스 dogfooding + v5.34.0 릴리스", status: pending}
 goals:
   - {id: G-Build, title: "파서 + 데이터 빌더 (Phase 1)", paths: ['scripts/build-status.sh', 'scripts/lib/build-status.py'], status: done}
   - {id: G-Render, title: "HTML 렌더 + 카드 (Phase 1)", paths: ['scripts/render-status.sh', 'templates/status-dashboard/**'], status: done}

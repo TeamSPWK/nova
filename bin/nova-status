@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Nova bin wrapper — delegates to scripts/render-status.sh
+# 사용자 직접 호출 시 Claude 우회 불가. 무조건 표준 강제.
+# Guide: docs/guides/status-dashboard.md
+exec bash "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/scripts/render-status.sh" --auto-bootstrap --open "$@"

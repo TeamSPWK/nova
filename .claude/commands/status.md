@@ -1,99 +1,86 @@
 ---
-description: "프로젝트 현황(Phase·Sprint·그룹 진행률) + drift 알람을 stand-alone HTML로 한 눈에 본다. 노션/wiki sync 불필요 — git이 진실원. — MUST TRIGGER: AI에게 위임 후 점검, 멀티 프로젝트 상태 확인, 로드맵 drift 점검 필요 시."
-description_en: "View project status (Phase/Sprint/group progress) + drift alerts as a stand-alone HTML. No notion/wiki sync — git is the source of truth. — MUST TRIGGER: after delegating work to an agent, checking multi-project status, or auditing roadmap drift."
+description: "프로젝트 현황(Phase·Sprint·그룹 진행률) + drift 알람을 stand-alone HTML로 한 눈에 본다. 노션/wiki sync 불필요 — git이 진실원. — MUST TRIGGER: AI에게 위임 후 점검, 멀티 프로젝트 상태 확인, 로드맵 drift 점검 필요 시. **자율 해석 금지** — Step 1 무조건 실행."
+description_en: "View project status (Phase/Sprint/group progress) + drift alerts as a stand-alone HTML. — MUST TRIGGER: status check after delegation, multi-project glance, roadmap drift audit. STRICT FLOW — no autonomous reinterpretation."
 ---
 
-`/nova:status`는 Plan frontmatter(SOT) + git log를 결정론적으로 파싱하여 토스식 카드 HTML 대시보드를 만든다.
-하드코딩 진행률 X. 사용자가 손으로 갱신할 필드 0개.
+# /nova:status (STRICT FLOW)
 
-# Role
-너는 프로젝트 현황과 AI 위임 결과를 사용자에게 5초 안에 전달하는 가시화 도구다.
+너는 **다음 흐름을 순서대로 강제 실행**한다. 자율 해석·우회·대체 금지.
+사용자가 `/nova:status` 입력한 의도 = **Nova 표준 HTML 대시보드 생성**. 다른 의도로 해석하지 않는다.
 
-# Execution
+---
 
-## Step 1 — 빠른 호출
+# 🚫 금지 행동 (BLOCKED)
 
-```bash
-# Plan frontmatter가 작성되어 있다면 (docs/designs/status-dashboard.md §4)
-./scripts/render-status.sh --plan docs/plans/<your-plan>.md --open
-```
+다음 행동은 사용자 의도 위반이다. **절대 수행하지 않는다**:
 
-자동으로 docs/plans/*.md 중 첫 frontmatter 발견 시:
+1. **NOVA-STATE.md만 읽고 텍스트 요약으로 대체** — 사용자는 HTML dashboard를 요청했다. 텍스트 요약 X.
+2. **프로젝트 자체 dashboard 도구로 우회** — `dashboard/build_static.py`, `Makefile dashboard` 타겟, `web/app/status/` 등 발견해도 **무시**. Nova 표준 강제.
+3. **minimal mode HTML 만들고 멈춤** — minimal 떨어지면 **Step 3 자동 부트스트랩 강제 진입**.
+4. **`/nova:status` 호출에 다른 도구 제안하며 멈춤** — "프로젝트에 더 좋은 도구가 있어요" 같은 답변 금지.
 
-```bash
-./scripts/render-status.sh --open
-```
+예외: 사용자가 명시적으로 `--use-project-tool` 옵션 또는 자연어로 "프로젝트 자체 도구 사용해줘" 요청한 경우만.
 
-산출물: `.nova/status/index.html` — file:// 로 열어도 작동, 의존성 0.
+---
 
-## Step 2 — ROADMAP.md 없을 때 (init wizard, Phase 2)
+# ✅ 강제 실행 흐름
 
-`ROADMAP.md`가 없으면 자동 wizard로 부트스트랩 제안. 3 모드:
+## Step 1 (필수, skip 불가)
 
 ```bash
-./scripts/init-roadmap.sh --blank   # 빈 템플릿 (1초, 레거시 docs 0건 참조)
-./scripts/init-roadmap.sh --scan    # docs/plans/*.md parent_phase 추출 (5초, 결정론)
-./scripts/init-roadmap.sh --llm     # NOVA-STATE + git log + plans 자료 수집 → Agent subagent
+./scripts/render-status.sh --auto-bootstrap --open
 ```
 
-자동 commit 0건. 모든 모드는 파일만 생성 후 사용자 검수 + 명시적 commit 안내.
+- 다른 도구 검토·발견 단계 **skip**. 위 명령 그대로 실행.
+- `--auto-bootstrap`: minimal 감지 시 Step 3 자동 진입 (Phase 4+).
+- `--open`: macOS open / Linux xdg-open으로 브라우저 자동.
 
-### LLM 모드 흐름 (Agent subagent, API 키 0)
+## Step 2 — 결과 분류 + 사용자 보고
 
-1. `init-roadmap.sh --llm` → `.nova/init-input.json` 자료 수집 (NOVA-STATE + git log 30d + plans frontmatter + non-archived docs)
-2. Claude(메인)가 Agent(general-purpose) subagent 호출:
-   - prompt: "docs/designs/status-dashboard.md §12 + .nova/init-input.json 기반 ROADMAP.md.draft 작성. ⚠️ unsure rule 준수."
-3. Agent가 `ROADMAP.md.draft` 작성 → 사용자 검수 → `mv ROADMAP.md.draft ROADMAP.md && git add && git commit`
-4. visual-self-verify와 동일 패턴 — 외부 API 호출 0건 (Claude Code 세션 모델)
-
-## Step 2.5 — 기존 plans 자동 enrich (Phase 3)
-
-ROADMAP.md frontmatter v1.0 완료된 후, `docs/plans/*.md`에 `parent_phase`·`sprint_id`를 일괄 자동 추가:
-
-```bash
-./scripts/enrich-plans.sh --collect      # Stage 1: ROADMAP + plans → .nova/enrich-batches/*
-# (메인 Claude가 Agent subagent에게 batch별 위임 → output-N.json)
-./scripts/enrich-plans.sh --dry-run      # Stage 3 (default): drafts 생성, 원본 변경 0
-./scripts/enrich-plans.sh --patch         # unified diff 1개
-./scripts/enrich-plans.sh --apply --force # 원본 prepend + .bak 자동 백업
-```
-
-### 5중 안전 가드
-
-1. 본문 0 byte 변경 (frontmatter 위에 prepend만)
-2. 기존 frontmatter 있는 plan 자동 skip
-3. `--apply` 시 `.bak` 자동 백업
-4. batch 10 (LLM context 폭증 방지)
-5. 자동 git commit 0건
-
-dogfooding 결과 (Sprint S11): 2개 프로젝트 / 69 plans → high confidence 74%, low 1.4%.
-
-## Step 3 — Phase 1 vs Phase 2 모드
+build/render JSON의 `mode`·`minimal` 필드로 분기:
 
 | 조건 | 동작 |
 |------|------|
-| ROADMAP.md 없음 | Phase 1 — plan frontmatter SOT (§4) |
-| ROADMAP.md 있음 | Phase 2 — ROADMAP + docs/plans/*.md 멀티 통합 (§12~§15) |
-| `--no-roadmap` 플래그 | Phase 2 무시, Phase 1 강제 |
+| `mode: roadmap` | ✅ 완료. HTML 경로 + Phase/Sprint 한 줄 요약 보고. |
+| `mode: phase1` + `minimal: false` | ✅ Phase 1 호환 동작. plan frontmatter 기반 dashboard. |
+| `mode: phase1` + `minimal: true` | → **Step 3 자동 부트스트랩 강제 진입** |
 
-Phase 1은 100% 호환 (기존 사용자 무손상).
+## Step 3 — 자동 부트스트랩 (minimal 떨어진 경우만)
 
-## Step 4 — frontmatter 미작성 시 (minimal mode)
+`--auto-bootstrap` 옵션이 `render-status.sh` 내부에서 자동 실행. 단계:
 
-plan에 frontmatter v1.0 스키마가 없으면 graceful degradation으로 minimal mode HTML이 생성된다.
-가이드: `docs/guides/status-dashboard.md` § 부트스트랩.
+1. `./scripts/init-roadmap.sh --llm` 자동 호출 → `.nova/init-input.json` 자료 수집
+2. Agent(general-purpose) subagent 호출 → `/tmp/ROADMAP-{slug}-draft.md` 작성
+3. `./scripts/render-status.sh --roadmap /tmp/ROADMAP-{slug}-draft.md --open` 재실행
+4. 사용자 보고:
+   ```
+   ✅ 임시 ROADMAP draft로 풍부한 dashboard 생성.
+   📂 검수 후 채택: mv /tmp/ROADMAP-*-draft.md ROADMAP.md && git add ROADMAP.md && git commit
+   ```
 
-## Step 5 — 결과물 5섹션
+**자동 commit 0건**. 사용자 명시적 commit이 있을 때까지 ROADMAP.md 변경 0.
 
-1. **헤더** — Plan 제목 / 현재 Phase·Sprint / 생성 시각
-2. **Phase 시계열 progress bar** — done(녹색 체크) / in_progress(파란 점) / pending(빈 원)
-3. **그룹별 진행률** — 큰 숫자 "30/42 화면 완료" + 각 그룹 bar (count/target/%)
-4. **Sprint 리스트** — 현재 Phase의 sprint들 (체크 / 화살표 / 빈 원)
-5. **Drift 카드** — 5분류 (aligned / drifted / unspecced / unverifiable / conflict / tag_missing) + verdict 배지 (green/amber/red/unknown)
+---
 
-## Step 6 — commit convention (drift 추적 활성화)
+# 보조 — 사용자가 직접 호출
 
-drift를 추적하려면 commit 본문에 tag 명시:
+위 강제 흐름은 Claude(메인) 경유 시. 사용자가 명령 줄에서 직접:
+
+```bash
+nova-status          # bin/ wrapper — Claude 개입 0, 무조건 표준 강제
+```
+
+또는 직접 스크립트:
+
+```bash
+./scripts/render-status.sh --auto-bootstrap --open
+```
+
+---
+
+# Drift 추적 활성화 (선택)
+
+commit 본문에 tag 명시 → drift 5분류 분석:
 
 ```
 feat: <subject>
@@ -102,20 +89,30 @@ Plan: <plan_id>
 Goal: <goal_id>   # 선택
 ```
 
-tag 누락은 차단 안 됨 — `tag_missing` 버킷에 분리 카운트 (drift 오인 X).
-CLAUDE.md 룰 1줄로 AI(Claude/Codex/Cursor)도 자동 동참 가능.
+CLAUDE.md 룰 1줄로 AI(Claude/Codex/Cursor) 자동 동참 가능.
+
+---
 
 # Outputs
 
 | 산출물 | 위치 | 용도 |
 |--------|------|------|
 | HTML | `.nova/status/index.html` (default) | 사용자가 브라우저에서 본다 |
-| JSON | `--data` 옵션으로 분리 가능 | CI, 외부 도구 연동 |
+| JSON | `--data` 옵션으로 분리 가능 | CI · 외부 도구 연동 |
+
+---
 
 # 관련 자산
 
-- 데이터 계약: `docs/designs/status-dashboard.md` §4-§7
+- 데이터 계약: `docs/designs/status-dashboard.md` §1~§24
 - 사용자 가이드: `docs/guides/status-dashboard.md`
 - Skill: `skills/status-dashboard/SKILL.md`
-- Build: `scripts/build-status.sh` (frontmatter + glob + git → JSON)
-- Render: `scripts/render-status.sh` (JSON → HTML, build와 chain 가능)
+- 스크립트: `scripts/{build,render}-status.sh` + `scripts/{init-roadmap,enrich-plans}.sh`
+- bin 진입점: `bin/nova-status` (Claude 우회 불가, Phase 4+)
+
+---
+
+# Step 1 실행 → 끝.
+
+사용자에게 "어떻게 할까요?" 또는 "다른 도구도 있어요" 묻지 않는다.
+**무조건 Step 1 실행 → 결과 보고**.
