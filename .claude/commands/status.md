@@ -51,15 +51,17 @@ build/render JSON의 `mode`·`minimal` 필드로 분기:
 `--auto-bootstrap` 옵션이 `render-status.sh` 내부에서 자동 실행. 단계:
 
 1. `bash "$NOVA_PLUGIN_ROOT/scripts/init-roadmap.sh" --llm` 자동 호출 → `.nova/init-input.json` 자료 수집
-2. Agent(general-purpose) subagent 호출 → `/tmp/ROADMAP-{slug}-draft.md` 작성
+2. Agent(general-purpose) subagent 호출 → `/tmp/ROADMAP-{slug}-draft.md` 작성 (slug = git root basename, render-status.sh가 직접 안내)
 3. `bash "$NOVA_PLUGIN_ROOT/scripts/render-status.sh" --roadmap /tmp/ROADMAP-{slug}-draft.md --open` 재실행
 4. 사용자 보고:
    ```
    ✅ 임시 ROADMAP draft로 풍부한 dashboard 생성.
-   📂 검수 후 채택: mv /tmp/ROADMAP-*-draft.md ROADMAP.md && git add ROADMAP.md && git commit
+   📂 검수 후 채택: mv /tmp/ROADMAP-{slug}-draft.md ROADMAP.md && git add ROADMAP.md && git commit
    ```
 
 **자동 commit 0건**. 사용자 명시적 commit이 있을 때까지 ROADMAP.md 변경 0.
+
+> ⚠️ v5.35.4 이전: draft 경로가 `/tmp/ROADMAP-nova-draft.md`로 하드코딩되어 멀티 프로젝트 cross-pollution 발생 (다른 프로젝트의 draft를 입력으로 받는 사고). 이후 slug 기반 — `render-status.sh` 안내가 cwd git root basename으로 자동 산출.
 
 ### Phase status 의미론 (Agent에게 위임 시 필수 주입)
 

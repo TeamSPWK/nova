@@ -2894,6 +2894,26 @@ assert "R34o: hooks/session-start.sh가 NOVA_PLUGIN_ROOT를 CLAUDE_ENV_FILE로 e
 # session-start.sh JSON 유효성 (NOVA_PLUGIN_ROOT export가 JSON 출력을 깨면 안 됨)
 assert "R34p: hooks/session-start.sh — JSON 유효성 유지 (NOVA_PLUGIN_ROOT export 통합 후)" \
   "(cd /tmp && bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | python3 -m json.tool >/dev/null)"
+# v5.35.4 — draft 경로 slug 기반화 (cross-pollution 차단)
+assert "R34q: render-status.sh — /tmp draft 경로 하드코딩 'ROADMAP-nova-draft.md' 부재" \
+  "! grep -E '/tmp/ROADMAP-nova-draft\\.md' '$ROOT_DIR/scripts/render-status.sh'"
+assert "R34r: render-status.sh — SLUG 산출 + DRAFT_PATH 변수 사용" \
+  "grep -q 'SLUG=' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'DRAFT_PATH=' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -qE '/tmp/ROADMAP-\\\$\\{SLUG\\}-draft\\.md' '$ROOT_DIR/scripts/render-status.sh'"
+assert "R34s: render-status.sh — slug sanitize (path injection 방지 tr -c 'A-Za-z0-9._-')" \
+  "grep -qE \"tr -c 'A-Za-z0-9\\\\._-'\" '$ROOT_DIR/scripts/render-status.sh'"
+# title fallback 회귀 가드 (v5.35.3)
+assert "R34t: build-status.py — title fallback이 pid가 아니라 빈 문자열" \
+  "! grep -E 'ph\\.get\\(\"title\", pid\\)' '$ROOT_DIR/scripts/lib/build-status.py' && \
+   ! grep -E 'p\\.get\\(\"title\", pid\\)' '$ROOT_DIR/scripts/lib/build-status.py'"
+# 템플릿 — title 빈/id 동일 시 ID만 표시 (v5.35.3)
+assert "R34u: templates phase 렌더 — title==id 또는 빈 문자열 시 title span 미렌더" \
+  "grep -qE 'p\\.title && p\\.title !== p\\.id' '$ROOT_DIR/templates/status-dashboard/index.html'"
+# 페이지 설명 + 상태 범례 (v5.35.3)
+assert "R34v: templates header — 이 페이지가 뭔가요 설명 + 4상태 의미 범례" \
+  "grep -q '이 페이지가 뭔가요' '$ROOT_DIR/templates/status-dashboard/index.html' && \
+   grep -q '외부 trigger' '$ROOT_DIR/templates/status-dashboard/index.html'"
 
 echo ""
 

@@ -125,6 +125,15 @@ except Exception:
     print('OK')
 ")
   if [[ "$MINIMAL_CHECK" == "TRIGGER" ]]; then
+    # 프로젝트 slug 산출 — /tmp draft 경로 cross-pollution 방지
+    # 우선순위: git root basename → cwd basename → "project"
+    SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" 2>/dev/null)
+    SLUG="${SLUG:-project}"
+    # slug sanitize — 영숫자/하이픈/언더스코어만 (path injection 차단)
+    SLUG=$(printf '%s' "$SLUG" | tr -c 'A-Za-z0-9._-' '_' | tr -s '_' | sed 's/^_//;s/_$//')
+    SLUG="${SLUG:-project}"
+    DRAFT_PATH="/tmp/ROADMAP-${SLUG}-draft.md"
+
     echo "" >&2
     echo "════════════════════════════════════════════════════════════" >&2
     echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4)" >&2
@@ -136,7 +145,7 @@ except Exception:
       echo "  [2/3] Claude(메인)에게 위임:" >&2
       echo "     Agent(general-purpose) prompt:" >&2
       echo "     \"docs/designs/status-dashboard.md §12 + .nova/init-input.json 기반으로" >&2
-      echo "      /tmp/ROADMAP-nova-draft.md 작성. ⚠️ unsure rule 준수. 자동 commit 금지." >&2
+      echo "      ${DRAFT_PATH} 작성. ⚠️ unsure rule 준수. 자동 commit 금지." >&2
       echo "      Phase status 규칙(중요):" >&2
       echo "        - done/in_progress/pending/blocked 4개만 허용" >&2
       echo "        - blocked = 외부 trigger(승인·사고·사람) 필요한 phase 전용" >&2
@@ -144,10 +153,11 @@ except Exception:
       echo "        - title 필수(id와 다른 값), summary는 한 줄 요약\"" >&2
       echo "" >&2
       echo "  [3/3] draft 생성 후 재실행:" >&2
-      echo "     ./scripts/render-status.sh --roadmap /tmp/ROADMAP-nova-draft.md --open" >&2
+      echo "     bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --open" >&2
       echo "" >&2
       echo "  ※ 자동 commit 0건 — 사용자 검수 후 명시적 commit" >&2
       echo "  ※ HTML은 minimal mode로 우선 생성됨 ($OUT) — 부트스트랩 후 갱신" >&2
+      echo "  ※ draft 경로는 프로젝트 slug 기반 — 멀티 프로젝트 cross-pollution 차단 (v5.35.4)" >&2
       echo "════════════════════════════════════════════════════════════" >&2
     fi
   fi
