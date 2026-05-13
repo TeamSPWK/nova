@@ -94,6 +94,9 @@ from pathlib import Path
 tpl_path, data_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
 tpl = Path(tpl_path).read_text(encoding='utf-8')
 data = Path(data_path).read_text(encoding='utf-8').strip()
+# XSS guard: escape `</` so embedded `</script>` cannot terminate the host tag.
+# JSON.parse decodes `<\/` back to `</`, so payload roundtrips losslessly.
+data = data.replace('</', '<\\/')
 marker_open = '/*__NOVA_DATA__*/'
 marker_close = '/*__NOVA_DATA_END__*/'
 pattern = re.escape(marker_open) + r'.*?' + re.escape(marker_close)

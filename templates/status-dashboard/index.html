@@ -28,6 +28,8 @@
   :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
   body { min-width: 1024px; }
   .bar-fill { transition: width .3s ease; }
+  .cjk-keep { word-break: keep-all; overflow-wrap: anywhere; }
+  :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
 </style>
 </head>
 <body class="bg-white text-ink">
@@ -46,12 +48,22 @@
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  function formatGeneratedAt(iso) {
+    if (!iso) return '';
+    const datetime = String(iso).replace('T', ' ').slice(0, 16);
+    const tzMatch = String(iso).match(/(Z|[+-]\d{2}:?\d{2})$/);
+    if (!tzMatch) return datetime;
+    return datetime + (tzMatch[1] === 'Z' ? ' UTC' : ` UTC${tzMatch[1]}`);
+  }
+
   const STATUS_META = {
     done:        { color: 'text-ok',       dot: 'bg-ok',       icon: '✓', label: '완료' },
     in_progress: { color: 'text-progress', dot: 'bg-progress', icon: '→', label: '진행 중' },
     pending:     { color: 'text-mute',     dot: 'bg-white border-2 border-line', icon: '○', label: '대기' },
     blocked:     { color: 'text-danger',   dot: 'bg-danger',   icon: '!', label: '차단' }
   };
+
+  const PHASE_VERTICAL_THRESHOLD = 8;
 
   function renderHeader(d) {
     if (!d.plan) return '';
@@ -61,7 +73,7 @@
     const subline = [];
     if (d.cursor?.current_phase) subline.push(`현재 <span class="font-medium text-ink">${esc(d.cursor.current_phase)}</span>`);
     if (d.cursor?.current_sprint) subline.push(`· Sprint <span class="font-medium text-ink">${esc(d.cursor.current_sprint)}</span>`);
-    if (d.generated_at) subline.push(`<span class="ml-auto">${esc(d.generated_at.replace('T',' ').slice(0,16))}</span>`);
+    if (d.generated_at) subline.push(`<span class="ml-auto" title="${esc(d.generated_at)}">${esc(formatGeneratedAt(d.generated_at))}</span>`);
     // Stale 배지 (§14)
     let staleBadge = '';
     if (d.roadmap?.stale) {
@@ -81,34 +93,82 @@
       </header>`;
   }
 
-  function renderPhaseBar(d) {
-    if (!d.phases?.length) return '';
+  function phaseDot(p, sizeClass) {
+    const meta = STATUS_META[p.status] || STATUS_META.pending;
+    const dotInner = (p.status === 'done')        ? '<span class="text-white text-[10px]" aria-hidden="true">✓</span>'
+                   : (p.status === 'in_progress') ? '<span class="absolute inset-1 rounded-full bg-white" aria-hidden="true"></span>'
+                   : (p.status === 'blocked')    ? '<span class="text-white text-[10px] font-bold" aria-hidden="true">!</span>'
+                   : '';
+    const dotClass = (p.status === 'pending') ? 'bg-white border-2 border-line' : meta.dot;
+    return `<div class="relative ${sizeClass} rounded-full flex items-center justify-center shrink-0 ${dotClass}" role="img" aria-label="${esc(meta.label)}"><span class="sr-only">${esc(meta.label)}</span>${dotInner}</div>`;
+  }
+
+  function renderPhaseBarHorizontal(d) {
     const items = d.phases.map((p, i) => {
       const meta = STATUS_META[p.status] || STATUS_META.pending;
       const isLast = i === d.phases.length - 1;
       const lineColor = (p.status === 'done') ? 'bg-ok' : 'bg-line';
-      const dotInner = (p.status === 'done') ? '<span class="text-white text-[10px]">✓</span>'
-        : (p.status === 'in_progress' ? '<span class="absolute inset-1 rounded-full bg-white"></span>' : '');
-      const dotClass = (p.status === 'pending' || p.status === 'blocked')
-        ? 'bg-white border-2 border-line'
-        : meta.dot;
       return `
-        <div class="flex-1 min-w-0">
+        <li class="flex-1 min-w-0" role="listitem">
           <div class="flex items-center">
-            <div class="relative w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${dotClass}">${dotInner}</div>
-            ${isLast ? '' : `<div class="h-0.5 flex-1 ml-1 ${lineColor}"></div>`}
+            ${phaseDot(p, 'w-5 h-5')}
+            ${isLast ? '' : `<div class="h-0.5 flex-1 ml-1 ${lineColor}" aria-hidden="true"></div>`}
           </div>
-          <div class="mt-3 pr-4">
+          <div class="mt-3 pr-4 cjk-keep">
             <div class="text-sm font-semibold ${meta.color}">${esc(p.title)}</div>
             ${p.summary ? `<div class="mt-1 text-xs text-mute leading-relaxed line-clamp-2">${esc(p.summary)}</div>` : ''}
           </div>
-        </div>`;
+        </li>`;
     }).join('');
     return `
-      <section class="mb-12">
-        <div class="text-xs font-medium text-mute uppercase tracking-wide mb-4">Phase</div>
-        <div class="flex items-start">${items}</div>
+      <section class="mb-12" aria-labelledby="phase-heading">
+        <div id="phase-heading" class="text-xs font-medium text-mute uppercase tracking-wide mb-4">Phase</div>
+        <ol class="flex items-start" role="list">${items}</ol>
       </section>`;
+  }
+
+  function renderPhaseBarVertical(d) {
+    const total = d.phases.length;
+    const doneCount = d.phases.filter(p => p.status === 'done').length;
+    const items = d.phases.map((p, i) => {
+      const meta = STATUS_META[p.status] || STATUS_META.pending;
+      const isLast = i === total - 1;
+      const lineColor = (p.status === 'done') ? 'bg-ok' : 'bg-line';
+      const badgeClass = p.status === 'done'        ? 'bg-ok/10 text-ok'
+                       : p.status === 'in_progress' ? 'bg-progress/10 text-progress'
+                       : p.status === 'blocked'    ? 'bg-danger/10 text-danger'
+                       : 'bg-line text-mute';
+      return `
+        <li class="flex gap-4" role="listitem">
+          <div class="flex flex-col items-center shrink-0 w-5">
+            ${phaseDot(p, 'w-5 h-5')}
+            ${isLast ? '' : `<div class="w-0.5 flex-1 mt-1 ${lineColor}" aria-hidden="true"></div>`}
+          </div>
+          <div class="flex-1 min-w-0 pb-6 cjk-keep">
+            <div class="flex items-baseline gap-3">
+              <span class="text-xs font-mono font-bold text-mute shrink-0">${esc(p.id || '')}</span>
+              <span class="text-sm font-semibold ${meta.color}">${esc(p.title)}</span>
+              <span class="ml-auto shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${badgeClass}">${esc(meta.label)}</span>
+            </div>
+            ${p.summary ? `<div class="mt-1 text-xs text-mute leading-relaxed">${esc(p.summary)}</div>` : ''}
+          </div>
+        </li>`;
+    }).join('');
+    return `
+      <section class="mb-12" aria-labelledby="phase-heading">
+        <div class="flex items-baseline justify-between mb-4">
+          <h2 id="phase-heading" class="text-xs font-medium text-mute uppercase tracking-wide">Phase</h2>
+          <span class="text-xs text-mute">${doneCount}/${total} 완료</span>
+        </div>
+        <ol class="flex flex-col" role="list">${items}</ol>
+      </section>`;
+  }
+
+  function renderPhaseBar(d) {
+    if (!d.phases?.length) return '';
+    return d.phases.length >= PHASE_VERTICAL_THRESHOLD
+      ? renderPhaseBarVertical(d)
+      : renderPhaseBarHorizontal(d);
   }
 
   function renderScreensTotal(d) {
@@ -155,26 +215,26 @@
     const rows = list.map(s => {
       const meta = STATUS_META[s.status] || STATUS_META.pending;
       const right = s.status === 'in_progress' ? '<span class="text-progress text-sm">진행 중</span>'
-        : s.status === 'done' ? '<span class="text-mute text-sm">—</span>'
-        : '<span class="text-mute text-sm">—</span>';
+        : s.status === 'done' ? '<span class="text-ok text-sm">완료</span>'
+        : '<span class="text-mute text-sm">대기</span>';
       const iconBg = s.status === 'done' ? 'bg-ok text-white'
         : s.status === 'in_progress' ? 'bg-progress text-white'
         : 'bg-white border-2 border-line text-mute';
       return `
-        <div class="flex items-center gap-4 py-4 border-b border-line last:border-b-0">
-          <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${iconBg}">${meta.icon}</div>
+        <li class="flex items-center gap-4 py-4 border-b border-line last:border-b-0" role="listitem">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${iconBg}" role="img" aria-label="${esc(meta.label)}"><span class="sr-only">${esc(meta.label)}</span><span aria-hidden="true">${meta.icon}</span></div>
           <div class="w-12 text-sm font-bold text-ink shrink-0">${esc(s.id)}</div>
-          <div class="flex-1 text-sm ${s.status === 'done' ? 'text-mute' : 'text-ink'}">${esc(s.title)}</div>
+          <div class="flex-1 text-sm cjk-keep ${s.status === 'done' ? 'text-mute' : 'text-ink'}">${esc(s.title)}</div>
           <div class="shrink-0">${right}</div>
-        </div>`;
+        </li>`;
     }).join('');
     return `
-      <section class="mb-12">
+      <section class="mb-12" aria-labelledby="sprint-heading">
         <div class="flex items-baseline justify-between mb-2">
-          <h2 class="text-base font-semibold text-ink">Phase ${esc(cur)} — ${esc(phaseTitle)} — Sprint</h2>
+          <h2 id="sprint-heading" class="text-base font-semibold text-ink">Phase ${esc(cur)} — ${esc(phaseTitle)} — Sprint</h2>
           <div class="text-sm text-mute">${headerRight}</div>
         </div>
-        <div>${rows}</div>
+        <ul role="list">${rows}</ul>
       </section>`;
   }
 

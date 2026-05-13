@@ -1,0 +1,49 @@
+{
+  "$schema": "https://nova/status-data/v1.0",
+  "version": "1.0",
+  "generated_at": "2026-05-13T20:19:00+09:00",
+  "plan": {
+    "plan_id": "md-template-compiler",
+    "title": "md-template-compiler — Markdown→DOCX/HWPX/PDF 공용 컴파일러",
+    "plan_path": "docs/plans/md-template-compiler.md"
+  },
+  "cursor": {
+    "current_phase": "M2",
+    "current_sprint": ""
+  },
+  "phases": [
+    {"id": "P1", "title": "부트스트랩", "status": "done", "summary": "uv init · typer CLI · doctor · CI 셋업"},
+    {"id": "P2", "title": "스타일 시트 DOCX 제작", "status": "done", "summary": "scr-style-v1.docx 자동 생성 + 검증"},
+    {"id": "P3", "title": "DOCX/PDF/HWPX PoC + Pandoc 오케스트레이터", "status": "done", "summary": "67 PASS · V-DETERM cmp 1.0"},
+    {"id": "P4", "title": "PDF 합류 + V-DETERM 본격 + V-PDF-VISUAL 시각 회귀", "status": "pending", "summary": "pdf2image PNG 비교 / 페이지 카운트 / 메타데이터"},
+    {"id": "P5", "title": "HWPX 텍스트·표", "status": "pending", "summary": "python-hwpx 텍스트·문단·표 1단계"},
+    {"id": "P6", "title": "HWPX 이미지", "status": "pending", "summary": "hp:pic 자동 생성 또는 빈 박스+안내 텍스트"},
+    {"id": "P7", "title": "MD 규격 확정 + 파서 강화", "status": "pending", "summary": "캡션 자동 인식 · 표 footnote/주석"},
+    {"id": "P8", "title": "템플릿 분석기 + 레지스트리", "status": "pending", "summary": "docx/hwpx/pdf inspect · diff"},
+    {"id": "P9", "title": "시각 회귀 인프라 + 보안 게이트", "status": "pending", "summary": "XML C14N diff · PDF 픽셀 diff · SBOM"},
+    {"id": "P10", "title": "MVP 통합", "status": "pending", "summary": "1차 응용 MD 30페이지 → 3포맷 무인 빌드"},
+    {"id": "P11", "title": "매주 금요일 데모 안정화", "status": "pending", "summary": "--dry-run · --pdf-only · 에러 메시지"},
+    {"id": "P12", "title": "공용 모듈화 (도메인 무지)", "status": "pending", "summary": "공개 API · plugin entry-point"},
+    {"id": "P13", "title": "릴리스 v0.1", "status": "pending", "summary": "PyPI publish · 사용자 가이드"},
+    {"id": "P14", "title": "사용자 피드백 + v0.2", "status": "pending", "summary": "실사용자 N=3 dogfooding"}
+  ],
+  "groups": [],
+  "screens_total": {"done": 0, "total": 0},
+  "goals": [],
+  "drift": {
+    "since": "2026-05-06",
+    "commits_total": 8,
+    "buckets": {
+      "aligned": 0,
+      "drifted": 0,
+      "unspecced": 0,
+      "unverifiable": 0,
+      "conflict": 0,
+      "tag_missing": 8
+    },
+    "drift_percent": 0,
+    "verdict": "unknown",
+    "drifted_commits": []
+  },
+  "warnings": []
+}
