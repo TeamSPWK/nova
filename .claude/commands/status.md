@@ -28,10 +28,11 @@ description_en: "View project status (Phase/Sprint/group progress) + drift alert
 ## Step 1 (필수, skip 불가)
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/bin/nova-status"
+nova-status
 ```
 
-- 사용자 프로젝트 cwd에서 호출. `$CLAUDE_PLUGIN_ROOT`는 Claude Code가 자동 주입하는 플러그인 절대경로.
+- Claude Code가 플러그인 `bin/`을 Bash tool PATH에 자동 등록. cwd 무관 작동.
+- PATH 미반영(오래된 세션) 시 폴백: `bash "$NOVA_PLUGIN_ROOT/bin/nova-status"` — SessionStart hook이 export.
 - 다른 도구 검토·발견 단계 **skip**. 위 명령 그대로 실행.
 - `nova-status` wrapper가 내부적으로 `--auto-bootstrap --open` 강제 — minimal 감지 시 Step 3 자동 진입.
 
@@ -49,9 +50,9 @@ build/render JSON의 `mode`·`minimal` 필드로 분기:
 
 `--auto-bootstrap` 옵션이 `render-status.sh` 내부에서 자동 실행. 단계:
 
-1. `bash "$CLAUDE_PLUGIN_ROOT/scripts/init-roadmap.sh" --llm` 자동 호출 → `.nova/init-input.json` 자료 수집
+1. `bash "$NOVA_PLUGIN_ROOT/scripts/init-roadmap.sh" --llm` 자동 호출 → `.nova/init-input.json` 자료 수집
 2. Agent(general-purpose) subagent 호출 → `/tmp/ROADMAP-{slug}-draft.md` 작성
-3. `bash "$CLAUDE_PLUGIN_ROOT/scripts/render-status.sh" --roadmap /tmp/ROADMAP-{slug}-draft.md --open` 재실행
+3. `bash "$NOVA_PLUGIN_ROOT/scripts/render-status.sh" --roadmap /tmp/ROADMAP-{slug}-draft.md --open` 재실행
 4. 사용자 보고:
    ```
    ✅ 임시 ROADMAP draft로 풍부한 dashboard 생성.
@@ -67,11 +68,11 @@ build/render JSON의 `mode`·`minimal` 필드로 분기:
 위 강제 흐름은 Claude(메인) 경유 시. 사용자가 명령 줄에서 직접:
 
 ```bash
-# PATH에 등록된 경우 (alias 또는 symlink)
+# 일반 셸: 사용자 PATH에 plugin bin이 등록되어 있으면
 nova-status
 
-# 그렇지 않으면 절대경로
-bash "$CLAUDE_PLUGIN_ROOT/bin/nova-status"
+# 절대경로 (어디서든 동작)
+bash ~/.claude/plugins/marketplaces/*/bin/nova-status
 ```
 
 `bin/nova-status` wrapper가 내부적으로 `scripts/render-status.sh --auto-bootstrap --open`을 강제 실행. Claude 개입 0, 표준 우회 불가.

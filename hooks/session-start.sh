@@ -30,6 +30,15 @@ done
 
 NOVA_PROFILE="${NOVA_PROFILE:-standard}"
 
+# v5.35.2 — $NOVA_PLUGIN_ROOT 자동 export (CLAUDE_PLUGIN_ROOT 미주입 환경 폴백)
+# 후속 Bash 도구 호출에서 "$NOVA_PLUGIN_ROOT/bin/nova-status" 같은 절대경로 참조 가능.
+if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -w "$(dirname "$CLAUDE_ENV_FILE")" 2>/dev/null ]; then
+  _NOVA_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd 2>/dev/null)"
+  if [ -n "$_NOVA_ROOT" ] && [ -d "$_NOVA_ROOT/bin" ]; then
+    echo "export NOVA_PLUGIN_ROOT=\"$_NOVA_ROOT\"" >> "$CLAUDE_ENV_FILE"
+  fi
+fi
+
 # NOVA-STATE.md에서 Goal을 읽어 세션 타이틀 생성
 SESSION_TITLE="Nova"
 if [ -f "NOVA-STATE.md" ]; then

@@ -26,10 +26,12 @@ user-invocable: false
 ### Step 1: 무조건 실행
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/bin/nova-status"
+nova-status
 ```
 
-`$CLAUDE_PLUGIN_ROOT`는 Claude Code가 자동 주입하는 플러그인 절대경로. 사용자 프로젝트 cwd 어디서든 작동. `bin/nova-status` wrapper가 내부적으로 `--auto-bootstrap --open` 강제.
+Claude Code가 플러그인 `bin/`을 Bash tool PATH에 자동 등록하므로 cwd 무관 작동. `bin/nova-status` wrapper가 내부적으로 `--auto-bootstrap --open` 강제.
+
+PATH 미반영(오래된 세션) 폴백: `bash "$NOVA_PLUGIN_ROOT/bin/nova-status"` — SessionStart hook이 `$CLAUDE_ENV_FILE`을 통해 export.
 
 ### Step 2: 결과 분기
 
