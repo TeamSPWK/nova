@@ -131,13 +131,33 @@ except Exception:
     SLUG="${SLUG:-project}"
     # slug sanitize — 영숫자/하이픈/언더스코어만 (path injection 차단)
     SLUG=$(printf '%s' "$SLUG" | tr -c 'A-Za-z0-9._-' '_' | tr -s '_' | sed 's/^_//;s/_$//')
-    SLUG="${SLUG:-project}"
+    # 한글/CJK 등 비-ASCII만 있는 basename은 sanitize 후 빈 문자열·구분자 잔재만 남음 — fallback 강제
+    if ! [[ "$SLUG" =~ [A-Za-z0-9] ]]; then
+      SLUG="project"
+    fi
     DRAFT_PATH="/tmp/ROADMAP-${SLUG}-draft.md"
+
+    # SOT 충돌 사전 검사 — 기존 docs/plans/*.md가 있으면 ROADMAP 채택은 N+1번째 SOT 추가 (drift 위험)
+    PLAN_COUNT=0
+    if [[ -d "docs/plans" ]]; then
+      PLAN_COUNT=$(find docs/plans -maxdepth 1 -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+    fi
 
     echo "" >&2
     echo "════════════════════════════════════════════════════════════" >&2
     echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4)" >&2
     echo "════════════════════════════════════════════════════════════" >&2
+    if [[ "$PLAN_COUNT" -gt 0 ]]; then
+      echo "" >&2
+      echo "  ⚠️  기존 docs/plans/*.md 발견 (${PLAN_COUNT}개) — SOT 충돌 가능" >&2
+      echo "     ROADMAP 채택 시 Plan 외 N+1번째 SOT가 추가됨. drift 위험." >&2
+      echo "     대안:" >&2
+      echo "       (A) Plan frontmatter에 v1.0 phases 스키마 추가 → enrich-plans.sh --apply" >&2
+      echo "       (B) ROADMAP 채택 후 Plan의 마일스톤 표 흡수 (Plan은 아키텍처·Risk만 유지)" >&2
+      echo "       (C) draft 검수만 하고 채택은 보류 (현 dashboard는 임시 모드 유지)" >&2
+      echo "     ※ 자동 부트스트랩은 계속 진행 — 채택은 사용자 결정사항 (자동 commit 0건)" >&2
+      echo "" >&2
+    fi
     echo "" >&2
     echo "  [1/3] 자료 수집 (init-roadmap.sh --llm)" >&2
     if "$DIR/init-roadmap.sh" --llm >&2 2>&1; then
@@ -150,7 +170,16 @@ except Exception:
       echo "        - done/in_progress/pending/blocked 4개만 허용" >&2
       echo "        - blocked = 외부 trigger(승인·사고·사람) 필요한 phase 전용" >&2
       echo "        - 선행 phase 미완료로 인한 대기는 반드시 pending (blocked 금지)" >&2
-      echo "        - title 필수(id와 다른 값), summary는 한 줄 요약\"" >&2
+      echo "        - title 필수(id와 다른 값), summary는 한 줄 요약" >&2
+      if [[ "$PLAN_COUNT" -gt 0 ]]; then
+        echo "      SOT 충돌 경고(중요):" >&2
+        echo "        - 이 프로젝트는 docs/plans/*.md ${PLAN_COUNT}개를 이미 보유" >&2
+        echo "        - draft 작성은 가능하나, 채택 권유 시 'Plan의 마일스톤과 겹치는 영역' 명시" >&2
+        echo "        - draft 본문 첫 단락에 '⚠️ SOT 결정 필요' 섹션 추가 — Plan 흡수 vs ROADMAP 신규" >&2
+        echo "        - 사용자가 채택을 결정한 후에만 mv 안내\"" >&2
+      else
+        echo "        - draft 채택 후 ROADMAP.md가 단일 SOT가 됨\"" >&2
+      fi
       echo "" >&2
       echo "  [3/3] draft 생성 후 재실행:" >&2
       echo "     bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --open" >&2

@@ -2914,6 +2914,33 @@ assert "R34u: templates phase 렌더 — title==id 또는 빈 문자열 시 titl
 assert "R34v: templates header — 이 페이지가 뭔가요 설명 + 4상태 의미 범례" \
   "grep -q '이 페이지가 뭔가요' '$ROOT_DIR/templates/status-dashboard/index.html' && \
    grep -q '외부 trigger' '$ROOT_DIR/templates/status-dashboard/index.html'"
+# v5.35.5 — title 타입 가드 (int/list YAML 사고 방지)
+assert "R34w: build-status.py — title/summary str() 가드 (비-string 입력 AttributeError 방지)" \
+  "grep -qE 'str\\(ph\\.get\\(\"title\"\\) or \"\"\\)\\.strip' '$ROOT_DIR/scripts/lib/build-status.py' && \
+   grep -qE 'str\\(p\\.get\\(\"title\"\\) or \"\"\\)\\.strip' '$ROOT_DIR/scripts/lib/build-status.py'"
+# v5.35.5 — 한글-only basename SLUG fallback
+assert "R34x: render-status.sh — 비-ASCII만 있는 basename은 SLUG='project' fallback" \
+  "grep -qE 'SLUG=\"project\"' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -qE 'SLUG\" =~ \\[A-Za-z0-9\\]' '$ROOT_DIR/scripts/render-status.sh'"
+# v5.35.5 — auto-bootstrap이 기존 plan SOT 인식 + 사용자 경고
+assert "R34y: render-status.sh — docs/plans/*.md 존재 시 SOT 충돌 경고 + Agent prompt 분기" \
+  "grep -q 'PLAN_COUNT' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'SOT 충돌' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q '단일 SOT' '$ROOT_DIR/scripts/render-status.sh'"
+# v5.35.5 — fixture로 SOT 분기 실측 (plan 있음/없음 둘 다)
+# 별도 함수로 분리 — set -u + eval + nested subshell 조합에서 변수 스코프 안정화
+_test_R34z() {
+  local work_dir
+  work_dir=$(mktemp -d)
+  mkdir -p "$work_dir/docs/plans"
+  echo '#x' > "$work_dir/docs/plans/a.md"
+  local out
+  out=$(cd "$work_dir" && git init -q && bash "$ROOT_DIR/scripts/render-status.sh" --auto-bootstrap 2>&1)
+  rm -rf "$work_dir"
+  printf '%s' "$out" | grep -q 'SOT 충돌'
+}
+assert "R34z: --auto-bootstrap 분기 동작 — plan 있는 디렉토리에서 'SOT 충돌' 경고 출력" \
+  "_test_R34z"
 
 echo ""
 
