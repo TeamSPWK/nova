@@ -136,7 +136,12 @@ except Exception:
       echo "  [2/3] Claude(메인)에게 위임:" >&2
       echo "     Agent(general-purpose) prompt:" >&2
       echo "     \"docs/designs/status-dashboard.md §12 + .nova/init-input.json 기반으로" >&2
-      echo "      /tmp/ROADMAP-nova-draft.md 작성. ⚠️ unsure rule 준수. 자동 commit 금지.\"" >&2
+      echo "      /tmp/ROADMAP-nova-draft.md 작성. ⚠️ unsure rule 준수. 자동 commit 금지." >&2
+      echo "      Phase status 규칙(중요):" >&2
+      echo "        - done/in_progress/pending/blocked 4개만 허용" >&2
+      echo "        - blocked = 외부 trigger(승인·사고·사람) 필요한 phase 전용" >&2
+      echo "        - 선행 phase 미완료로 인한 대기는 반드시 pending (blocked 금지)" >&2
+      echo "        - title 필수(id와 다른 값), summary는 한 줄 요약\"" >&2
       echo "" >&2
       echo "  [3/3] draft 생성 후 재실행:" >&2
       echo "     ./scripts/render-status.sh --roadmap /tmp/ROADMAP-nova-draft.md --open" >&2

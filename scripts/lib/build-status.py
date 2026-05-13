@@ -109,7 +109,7 @@ def validate(fm):
             status = "pending"
         d["phases"].append({
             "id": pid,
-            "title": ph.get("title", pid),
+            "title": (ph.get("title") or "").strip(),
             "status": status,
             "summary": ph.get("summary", "") or "",
         })
@@ -410,7 +410,7 @@ def validate_roadmap(fm, path):
         if status not in ALLOWED_STATUS:
             w.append(f"ROADMAP phases[{pid}].status 비정상 ({status}) → pending"); status = "pending"
         rm["phases"].append({
-            "id": pid, "title": p.get("title", pid), "status": status,
+            "id": pid, "title": (p.get("title") or "").strip(), "status": status,
             "summary": p.get("summary", "") or "",
             "range_months": p.get("range_months"),
         })

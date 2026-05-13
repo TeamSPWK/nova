@@ -61,6 +61,19 @@ build/render JSON의 `mode`·`minimal` 필드로 분기:
 
 **자동 commit 0건**. 사용자 명시적 commit이 있을 때까지 ROADMAP.md 변경 0.
 
+### Phase status 의미론 (Agent에게 위임 시 필수 주입)
+
+draft 작성 Agent에게 status 4값의 의미를 반드시 명시한다 — 그렇지 않으면 dependency-pending phase까지 `blocked`로 표기돼 시각적으로 과도하게 빨갛게 나옴(v5.35.2 이전 사례):
+
+| status | 의미 | 사용 시점 |
+|--------|------|----------|
+| `done` | Exit criteria 통과 + 사용자 검수 완료 | 완료된 phase |
+| `in_progress` | 현재 작업 phase | 동시 1개 권장 (frontmatter `current_phase`와 일치) |
+| `pending` | **선행 phase 미완료**로 인한 단순 순서 대기 | dependency-blocked는 전부 여기 |
+| `blocked` | **외부 trigger**(승인·사고·사람·외부 시스템) 필요 | 진짜 위험 신호 — 빨간 점 표시 |
+
+> ⚠️ "blocked by Phase X" 같은 의존성은 `blocked`가 아닌 `pending`이다. `blocked`는 외부 trigger 한정.
+
 ---
 
 # 보조 — 사용자가 직접 호출

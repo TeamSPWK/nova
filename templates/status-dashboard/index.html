@@ -88,6 +88,27 @@
         <h1 class="text-2xl font-bold">${meta.join(' ')}</h1>
         <div class="mt-2 flex items-center gap-2 text-sm text-mute">${subline.join(' ')}</div>
         ${staleBadge}
+        <details class="mt-4 text-xs text-mute">
+          <summary class="cursor-pointer hover:text-ink select-none">ℹ️ 이 페이지가 뭔가요?</summary>
+          <div class="mt-3 px-4 py-3 rounded-md bg-surface border border-line space-y-3 max-w-3xl">
+            <p class="text-ink leading-relaxed">
+              <code class="bg-line/60 px-1.5 py-0.5 rounded text-[11px]">ROADMAP.md</code> ·
+              <code class="bg-line/60 px-1.5 py-0.5 rounded text-[11px]">docs/projects/plans/*.md</code>
+              frontmatter를 SOT로 자동 생성된 프로젝트 진행 dashboard입니다.
+              <span class="text-mute">노션·wiki sync 불필요 — git이 진실원.</span>
+            </p>
+            <div>
+              <div class="text-ink font-semibold mb-1.5">Phase 상태 의미</div>
+              <ul class="space-y-1">
+                <li><span class="inline-block w-2 h-2 rounded-full bg-ok align-middle mr-1.5"></span><b class="text-ok">완료</b> — Exit criteria 통과 + 사용자 검수 완료</li>
+                <li><span class="inline-block w-2 h-2 rounded-full bg-progress align-middle mr-1.5"></span><b class="text-progress">진행 중</b> — 현재 작업 phase (frontmatter <code>current_phase</code>)</li>
+                <li><span class="inline-block w-2 h-2 rounded-full bg-white border border-line align-middle mr-1.5"></span><b>대기</b> — 선행 phase 미완료. <span class="text-mute">의존성 대기는 모두 여기.</span></li>
+                <li><span class="inline-block w-2 h-2 rounded-full bg-danger align-middle mr-1.5"></span><b class="text-danger">차단</b> — 외부 trigger(승인·사고·사람) 필요. <span class="text-mute">다른 phase 대기는 '차단'이 아니라 '대기'로 표기하세요.</span></li>
+              </ul>
+            </div>
+            <p class="text-mute">업데이트: ROADMAP / Plan frontmatter 수정 → <code>/nova:status</code> 재실행.</p>
+          </div>
+        </details>
       </header>`;
   }
 
@@ -122,7 +143,7 @@
           <div class="flex-1 min-w-0 pb-6 cjk-keep">
             <div class="flex items-baseline gap-3">
               <span class="text-xs font-mono font-bold text-mute shrink-0">${esc(p.id || '')}</span>
-              <span class="text-sm font-semibold ${meta.color}">${esc(p.title)}</span>
+              ${(p.title && p.title !== p.id) ? `<span class="text-sm font-semibold ${meta.color}">${esc(p.title)}</span>` : ''}
               <span class="ml-auto shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${badgeClass}">${esc(meta.label)}</span>
             </div>
             ${p.summary ? `<div class="mt-1 text-xs text-mute leading-relaxed">${esc(p.summary)}</div>` : ''}

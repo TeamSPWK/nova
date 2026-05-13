@@ -85,6 +85,11 @@ roadmap_id: # ⚠️ unsure — URL-safe slug 입력
 title: # ⚠️ unsure — 프로젝트 한 줄 설명
 created: {today}
 current_phase: # ⚠️ unsure — phases[].id 중 하나
+# status 4값 의미:
+#   done        — Exit criteria 통과 완료
+#   in_progress — 현재 작업 phase
+#   pending     — 선행 phase 미완료 대기 (dependency-blocked는 전부 여기)
+#   blocked     — 외부 trigger(승인·사고·사람) 필요 — 진짜 위험만 표기
 phases:
   - {{id: P1, title: # ⚠️ unsure, status: in_progress, summary: ""}}
 external_pending: []
