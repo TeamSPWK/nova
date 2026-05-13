@@ -26,8 +26,10 @@ user-invocable: false
 ### Step 1: 무조건 실행
 
 ```bash
-./scripts/render-status.sh --auto-bootstrap --open
+bash "$CLAUDE_PLUGIN_ROOT/bin/nova-status"
 ```
+
+`$CLAUDE_PLUGIN_ROOT`는 Claude Code가 자동 주입하는 플러그인 절대경로. 사용자 프로젝트 cwd 어디서든 작동. `bin/nova-status` wrapper가 내부적으로 `--auto-bootstrap --open` 강제.
 
 ### Step 2: 결과 분기
 

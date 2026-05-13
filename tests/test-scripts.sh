@@ -2877,6 +2877,17 @@ assert "R34j: Design 문서 §21~§24 (우회 차단 + 자동 부트스트랩 + 
    grep -q '## 22) 자동 부트스트랩' '$ROOT_DIR/docs/designs/status-dashboard.md' && \
    grep -q '## 23) bin/ 진입점' '$ROOT_DIR/docs/designs/status-dashboard.md'"
 
+# v5.35.1 핫픽스 — 사용자 프로젝트 cwd에서 호출 시 exit 127 회귀 방지
+assert "R34k: commands/status.md Step 1이 \$CLAUDE_PLUGIN_ROOT 사용 (상대경로 회귀 금지)" \
+  "grep -qE 'bash \"\\\$CLAUDE_PLUGIN_ROOT/(bin/nova-status|scripts/render-status\\.sh)' '$ROOT_DIR/commands/status.md'"
+assert "R34l: commands/status.md Step 1에 './scripts/render-status.sh' 상대경로 없음" \
+  "! grep -E '^\./scripts/render-status\\.sh --auto-bootstrap' '$ROOT_DIR/commands/status.md'"
+assert "R34m: skills/status-dashboard/SKILL.md가 \$CLAUDE_PLUGIN_ROOT 사용" \
+  "grep -qE 'bash \"\\\$CLAUDE_PLUGIN_ROOT/(bin/nova-status|scripts/render-status\\.sh)' '$ROOT_DIR/skills/status-dashboard/SKILL.md'"
+# vertical-only 정책 (사용자 피드백: 7개에서도 가독성 부족)
+assert "R34n: templates phase bar — vertical-only (horizontal 코드 부재)" \
+  "! grep -qE 'renderPhaseBarHorizontal|PHASE_VERTICAL_THRESHOLD' '$ROOT_DIR/templates/status-dashboard/index.html'"
+
 echo ""
 
 # ═══════════════════════════════════════════
