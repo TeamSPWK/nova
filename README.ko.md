@@ -287,6 +287,7 @@ Nova 자동 판단:
 | `/nova:run` | 구현→검증을 한 사이클로 실행한다 (Full Cycle). --verify-only로 검증만 수행 가능. |
 | `/nova:scan` | 새 프로젝트에 처음 투입됐을 때 코드베이스를 자동 분석하고 '어디부터 볼지' 브리핑한다. |
 | `/nova:setup` | 새 프로젝트에 Nova Quality Gate를 초기 설정하거나, 기존 프로젝트의 갭을 자동 보완한다 (--upgrade). |
+| `/nova:status` | 프로젝트 현황(Phase·Sprint·그룹 진행률) + drift 알람을 stand-alone HTML로 한 눈에 본다. 노션/wiki sync 불필요 — git이 진실원. |
 | `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
 | `/nova:worktree-setup` | 현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전. |
 <!-- /AUTO-GEN:commands -->
@@ -368,6 +369,7 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 | **jury** | 단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. |
 | **orchestrator** | 자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. |
 | **repo-preflight** | 레포 작업을 시작하기 전에 프로젝트 지침을 확인해야 할 때. |
+| **status-dashboard** | 프로젝트 현황(Phase·Sprint·그룹 진행률) + 로드맵 drift 알람을 stand-alone HTML로 본다. |
 | **strategic-compact** | 세션 컨텍스트 압축(/clear · /compact) 시점을 판단해야 할 때. |
 | **ux-audit** | UI/UX 품질을 다관점·적대적으로 검증할 때. |
 | **worktree-setup** | git worktree에서 메인 레포의 환경 설정이 필요할 때. |

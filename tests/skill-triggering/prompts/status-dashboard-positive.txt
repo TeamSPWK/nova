@@ -1,0 +1,8 @@
+어제 위임한 작업 결과 좀 점검하고 싶어. drift 확인해줘.
+프로젝트 현황 보여줘. Phase·Sprint·그룹 진행률.
+지금까지 어디까지 됐어?
+ZipPit이랑 CCM Hub 진행률 한 눈에 보고 싶어.
+/nova:status 호출.
+roadmap drift 점검해줘.
+AI에게 일 시켜놨는데 의도대로 가고 있는지 확인하고 싶어.
+status dashboard 만들어줘.

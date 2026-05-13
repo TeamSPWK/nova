@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="nova-status v1.0">
+<title>Nova Status</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ok: '#16a34a',
+          progress: '#2563eb',
+          pending: '#9ca3af',
+          warn: '#f59e0b',
+          danger: '#dc2626',
+          mute: '#6b7280',
+          ink: '#111827',
+          line: '#e5e7eb',
+          surface: '#f9fafb'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+  body { min-width: 1024px; }
+  .bar-fill { transition: width .3s ease; }
+</style>
+</head>
+<body class="bg-white text-ink">
+
+<script id="nova-data" type="application/json">/*__NOVA_DATA__*/{
+  "$schema": "https://nova/status-data/v1.0",
+  "version": "1.0",
+  "generated_at": "2026-05-13T15:24:43+09:00",
+  "plan": {
+    "plan_id": "status-dashboard",
+    "title": "Status Dashboard (`/nova:status` — 현황 대시보드 + drift 알람)",
+    "plan_path": "docs/plans/status-dashboard.md"
+  },
+  "cursor": {
+    "current_phase": "P3",
+    "current_sprint": "S2"
+  },
+  "phases": [
+    {
+      "id": "P1",
+      "title": "Plan",
+      "status": "done",
+      "summary": "CPS 4섹션 + Sprint 분할 4",
+      "progress": 100
+    },
+    {
+      "id": "P2",
+      "title": "Design",
+      "status": "done",
+      "summary": "frontmatter 스키마 + JSON 인터페이스 + 5분류 매트릭스",
+      "progress": 100
+    },
+    {
+      "id": "P3",
+      "title": "Sprint 구현",
+      "status": "in_progress",
+      "summary": "S1·S2·S3·S4",
+      "progress": 25
+    },
+    {
+      "id": "P4",
+      "title": "통합 + 릴리스",
+      "status": "pending",
+      "summary": "review PASS + minor 버전",
+      "progress": 0
+    }
+  ],
+  "sprints": {
+    "P3": [
+      {
+        "id": "S1",
+        "title": "frontmatter 스키마 + HTML 템플릿 모듈",
+        "status": "done"
+      },
+      {
+        "id": "S2",
+        "title": "파서 + 데이터 빌더",
+        "status": "in_progress"
+      },
+      {
+        "id": "S3",
+        "title": "HTML 렌더 + 토스식 카드 + drift 카드",
+        "status": "pending"
+      },
+      {
+        "id": "S4",
+        "title": "통합 + 회귀 가드 + 가이드 + 릴리스",
+        "status": "pending"
+      }
+    ]
+  },
+  "groups": [],
+  "screens_total": {
+    "done": 0,
+    "total": 0
+  },
+  "goals": [
+    {
+      "id": "G-Build",
+      "title": "파서 + 데이터 빌더",
+      "paths": [
+        "scripts/build-status.sh",
+        "scripts/lib/build-status.py"
+      ],
+      "status": "in_progress",
+      "needs_approval": false
+    },
+    {
+      "id": "G-Render",
+      "title": "HTML 렌더 + 카드",
+      "paths": [
+        "scripts/render-status.sh",
+        "templates/status-dashboard/**"
+      ],
+      "status": "pending",
+      "needs_approval": false
+    },
+    {
+      "id": "G-Integration",
+      "title": "커맨드/스킬/훅 통합",
+      "paths": [
+        "commands/status.md",
+        "skills/status-dashboard/**",
+        "hooks/session-start.sh",
+        "commands/next.md"
+      ],
+      "status": "pending",
+      "needs_approval": false
+    },
+    {
+      "id": "G-Tests",
+      "title": "회귀 + 가이드",
+      "paths": [
+        "tests/test-scripts.sh",
+        "tests/fixtures/status-dashboard/**",
+        "docs/guides/status-dashboard.md"
+      ],
+      "status": "pending",
+      "needs_approval": false
+    }
+  ],
+  "warnings": [],
+  "drift": {
+    "since": "2026-04-13",
+    "commits_total": 152,
+    "buckets": {
+      "aligned": 0,
+      "drifted": 0,
+      "unspecced": 0,
+      "unverifiable": 0,
+      "conflict": 0,
+      "tag_missing": 152
+    },
+    "drift_percent": 0,
+    "verdict": "unknown",
+    "drifted_commits": []
+  }
+}/*__NOVA_DATA_END__*/</script>
+
+<main class="max-w-7xl mx-auto px-10 py-10">
+  <div id="root"></div>
+</main>
+
+<script>
+  const RAW = document.getElementById('nova-data').textContent
+    .replace(/^\/\*__NOVA_DATA__\*\//, '').replace(/\/\*__NOVA_DATA_END__\*\/$/, '').trim();
+  let DATA;
+  try { DATA = JSON.parse(RAW); } catch { DATA = null; }
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const STATUS_META = {
+    done:        { color: 'text-ok',       dot: 'bg-ok',       icon: '✓', label: '완료' },
+    in_progress: { color: 'text-progress', dot: 'bg-progress', icon: '→', label: '진행 중' },
+    pending:     { color: 'text-mute',     dot: 'bg-white border-2 border-line', icon: '○', label: '대기' },
+    blocked:     { color: 'text-danger',   dot: 'bg-danger',   icon: '!', label: '차단' }
+  };
+
+  function renderHeader(d) {
+    if (!d.plan) return '';
+    const meta = [];
+    if (d.plan.title) meta.push(esc(d.plan.title));
+    if (d.plan.plan_id) meta.push(`<span class="text-mute">· ${esc(d.plan.plan_id)}</span>`);
+    const subline = [];
+    if (d.cursor?.current_phase) subline.push(`현재 <span class="font-medium text-ink">${esc(d.cursor.current_phase)}</span>`);
+    if (d.cursor?.current_sprint) subline.push(`· Sprint <span class="font-medium text-ink">${esc(d.cursor.current_sprint)}</span>`);
+    if (d.generated_at) subline.push(`<span class="ml-auto">${esc(d.generated_at.replace('T',' ').slice(0,16))}</span>`);
+    return `
+      <header class="mb-10">
+        <h1 class="text-2xl font-bold">${meta.join(' ')}</h1>
+        <div class="mt-2 flex items-center gap-2 text-sm text-mute">${subline.join(' ')}</div>
+      </header>`;
+  }
+
+  function renderPhaseBar(d) {
+    if (!d.phases?.length) return '';
+    const items = d.phases.map((p, i) => {
+      const meta = STATUS_META[p.status] || STATUS_META.pending;
+      const isLast = i === d.phases.length - 1;
+      const lineColor = (p.status === 'done') ? 'bg-ok' : 'bg-line';
+      const dotInner = (p.status === 'done') ? '<span class="text-white text-[10px]">✓</span>'
+        : (p.status === 'in_progress' ? '<span class="absolute inset-1 rounded-full bg-white"></span>' : '');
+      const dotClass = (p.status === 'pending' || p.status === 'blocked')
+        ? 'bg-white border-2 border-line'
+        : meta.dot;
+      return `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center">
+            <div class="relative w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${dotClass}">${dotInner}</div>
+            ${isLast ? '' : `<div class="h-0.5 flex-1 ml-1 ${lineColor}"></div>`}
+          </div>
+          <div class="mt-3 pr-4">
+            <div class="text-sm font-semibold ${meta.color}">${esc(p.title)}</div>
+            ${p.summary ? `<div class="mt-1 text-xs text-mute leading-relaxed line-clamp-2">${esc(p.summary)}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <section class="mb-12">
+        <div class="text-xs font-medium text-mute uppercase tracking-wide mb-4">Phase</div>
+        <div class="flex items-start">${items}</div>
+      </section>`;
+  }
+
+  function renderScreensTotal(d) {
+    if (!d.groups?.length) return '';
+    const total = d.screens_total || { done: 0, total: 0 };
+    const subtitle = d.cursor?.current_sprint ? `${esc(d.cursor.current_phase || '')} ${esc(d.cursor.current_sprint)}` : (d.cursor?.current_phase || '');
+    const rows = d.groups.map(g => {
+      const pct = Math.max(0, Math.min(100, g.percent ?? 0));
+      const pctClass = pct >= 100 ? 'text-ok' : 'text-progress';
+      const barColor = pct >= 100 ? 'bg-ok' : 'bg-progress';
+      const widthStyle = pct === 0 ? 'width:0%' : `width:${pct}%`;
+      return `
+        <div class="flex items-center gap-4 py-2">
+          <div class="w-24 text-sm font-medium text-ink shrink-0">${esc(g.title || g.id)}</div>
+          <div class="w-20 text-sm shrink-0 ${pctClass}">${g.count ?? 0}/${g.target ?? 0} · ${pct}%</div>
+          <div class="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
+            <div class="bar-fill h-full ${barColor} rounded-full" style="${widthStyle}"></div>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <section class="mb-12 grid grid-cols-[280px_1fr] gap-12 items-center">
+        <div>
+          <div class="leading-none">
+            <span class="text-6xl font-bold text-ink">${total.done}</span>
+            <span class="text-4xl font-semibold text-pending"> / ${total.total}</span>
+          </div>
+          <div class="mt-3 text-sm text-mute">화면 완료${subtitle ? ` · ${subtitle}` : ''}</div>
+        </div>
+        <div>${rows}</div>
+      </section>`;
+  }
+
+  function renderSprintList(d) {
+    const cur = d.cursor?.current_phase;
+    if (!cur) return '';
+    const list = d.sprints?.[cur];
+    if (!list?.length) return '';
+    const phase = d.phases?.find(p => p.id === cur);
+    const phaseTitle = phase?.title || cur;
+    const total = list.length;
+    const currentIdx = list.findIndex(s => s.status === 'in_progress');
+    const headerRight = currentIdx >= 0 ? `현재 ${esc(list[currentIdx].id)} · 총 ${total}` : `총 ${total}`;
+    const rows = list.map(s => {
+      const meta = STATUS_META[s.status] || STATUS_META.pending;
+      const right = s.status === 'in_progress' ? '<span class="text-progress text-sm">진행 중</span>'
+        : s.status === 'done' ? '<span class="text-mute text-sm">—</span>'
+        : '<span class="text-mute text-sm">—</span>';
+      const iconBg = s.status === 'done' ? 'bg-ok text-white'
+        : s.status === 'in_progress' ? 'bg-progress text-white'
+        : 'bg-white border-2 border-line text-mute';
+      return `
+        <div class="flex items-center gap-4 py-4 border-b border-line last:border-b-0">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${iconBg}">${meta.icon}</div>
+          <div class="w-12 text-sm font-bold text-ink shrink-0">${esc(s.id)}</div>
+          <div class="flex-1 text-sm ${s.status === 'done' ? 'text-mute' : 'text-ink'}">${esc(s.title)}</div>
+          <div class="shrink-0">${right}</div>
+        </div>`;
+    }).join('');
+    return `
+      <section class="mb-12">
+        <div class="flex items-baseline justify-between mb-2">
+          <h2 class="text-base font-semibold text-ink">Phase ${esc(cur)} — ${esc(phaseTitle)} — Sprint</h2>
+          <div class="text-sm text-mute">${headerRight}</div>
+        </div>
+        <div>${rows}</div>
+      </section>`;
+  }
+
+  function renderDriftCard(d) {
+    if (!d.drift || (d.drift.commits_total ?? 0) === 0) return '';
+    const v = d.drift.verdict || 'green';
+    const badge = {
+      green:   { bg: 'bg-ok',     label: 'GREEN — 정렬 양호' },
+      amber:   { bg: 'bg-warn',   label: 'AMBER — 검토 필요' },
+      red:     { bg: 'bg-danger', label: 'RED — 즉시 개입' },
+      unknown: { bg: 'bg-mute',   label: 'UNKNOWN — tag 누락' }
+    }[v] || { bg: 'bg-mute', label: v };
+    const b = d.drift.buckets || {};
+    const bucketRow = (label, n, color) => `
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full ${color}"></div>
+        <div class="flex-1 text-sm text-ink">${label}</div>
+        <div class="text-sm font-semibold text-ink">${n ?? 0}</div>
+      </div>`;
+    const drifted = (d.drift.drifted_commits || []).slice(0, 5).map(c => `
+      <div class="py-2 border-b border-line last:border-b-0">
+        <div class="text-xs text-mute font-mono">${esc(c.sha)}</div>
+        <div class="text-sm text-ink mt-1">${esc(c.subject)}</div>
+        <div class="text-xs text-mute mt-1">선언 ${esc(c.goal_declared || '—')} · 실제 ${(c.paths_actual || []).slice(0,3).map(esc).join(', ')}${(c.paths_actual?.length || 0) > 3 ? ' ...' : ''}</div>
+      </div>`).join('');
+    return `
+      <section class="mb-12">
+        <div class="flex items-center gap-3 mb-4">
+          <h2 class="text-base font-semibold text-ink">Drift</h2>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white ${badge.bg}">${badge.label}</span>
+          <span class="text-sm text-mute ml-auto">since ${esc(d.drift.since || '—')} · ${d.drift.commits_total} commits · drift ${d.drift.drift_percent ?? 0}%</span>
+        </div>
+        <div class="grid grid-cols-[280px_1fr] gap-8">
+          <div class="space-y-3">
+            ${bucketRow('aligned',     b.aligned,     'bg-ok')}
+            ${bucketRow('drifted',     b.drifted,     'bg-warn')}
+            ${bucketRow('unspecced',   b.unspecced,   'bg-mute')}
+            ${bucketRow('unverifiable',b.unverifiable,'bg-pending')}
+            ${bucketRow('conflict',    b.conflict,    'bg-danger')}
+            ${bucketRow('tag_missing', b.tag_missing, 'bg-line')}
+          </div>
+          <div class="border border-line rounded-lg px-4 py-2">
+            ${drifted || '<div class="text-sm text-mute py-3">drifted commit 없음</div>'}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderWarnings(d) {
+    if (!d.warnings?.length) return '';
+    const items = d.warnings.map(w => `<li class="text-sm text-ink">${esc(w)}</li>`).join('');
+    return `
+      <section class="mb-12 rounded-lg border border-warn/40 bg-warn/5 px-5 py-4">
+        <div class="text-sm font-semibold text-warn mb-2">검증 경고 (${d.warnings.length})</div>
+        <ul class="list-disc pl-5 space-y-1">${items}</ul>
+      </section>`;
+  }
+
+  function renderMinimal(d) {
+    return `
+      <section class="border border-line rounded-lg px-6 py-8 text-center">
+        <div class="text-sm text-mute">minimal mode</div>
+        <div class="mt-2 text-base text-ink">plan frontmatter가 없거나 부족합니다.</div>
+        <div class="mt-1 text-sm text-mute">docs/guides/status-dashboard.md 참조</div>
+      </section>`;
+  }
+
+  function renderEmpty() {
+    return `
+      <section class="border border-line rounded-lg px-6 py-8 text-center">
+        <div class="text-sm text-mute">데이터 없음</div>
+        <div class="mt-2 text-base text-ink">${'<'}script id="nova-data"${'>'}에 JSON이 주입되지 않았습니다.</div>
+        <div class="mt-1 text-sm text-mute">scripts/render-status.sh를 통해 생성하세요.</div>
+      </section>`;
+  }
+
+  function render() {
+    const root = document.getElementById('root');
+    if (!DATA) { root.innerHTML = renderEmpty(); return; }
+    if (DATA.minimal === true) { root.innerHTML = renderHeader(DATA) + renderMinimal(DATA); return; }
+    const sections = [
+      renderHeader(DATA),
+      renderPhaseBar(DATA),
+      renderScreensTotal(DATA),
+      renderSprintList(DATA),
+      renderDriftCard(DATA),
+      renderWarnings(DATA)
+    ];
+    root.innerHTML = sections.join('');
+  }
+  render();
+</script>
+
+</body>
+</html>

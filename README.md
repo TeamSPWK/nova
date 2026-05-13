@@ -292,6 +292,7 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:run` | Run the implement → verify full cycle. Use --verify-only to run verification alone. |
 | `/nova:scan` | Auto-analyze a codebase on first entry and brief you on 'where to start looking'. |
 | `/nova:setup` | Initial Nova Quality Gate setup for a new project, or auto-fill gaps in an existing project (--upgrade). |
+| `/nova:status` | View project status (Phase/Sprint/group progress) + drift alerts as a stand-alone HTML. No notion/wiki sync — git is the source of truth. |
 | `/nova:ux-audit` | Deep UI/UX evaluation via 5 adversarial reviewers — accessibility (WCAG 2.2), cognitive load, performance (Core Web Vitals), and dark patterns (EU DSA) analyzed from code. |
 | `/nova:worktree-setup` | Instantly symlink the main repo's .env, secrets, and config files into the current worktree. Manual retry of the SessionStart auto-hook. |
 <!-- /AUTO-GEN:commands -->
@@ -373,6 +374,7 @@ Skills are multi-step operations that commands invoke internally. They can also 
 | **jury** | Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. |
 | **orchestrator** | Use when a natural-language request needs the entire development cycle auto-handled. |
 | **repo-preflight** | Use when project instructions must be checked before repository work. |
+| **status-dashboard** | Render project status (Phase/Sprint/group progress) + roadmap drift alerts as a stand-alone HTML dashboard. |
 | **strategic-compact** | Use when you must decide whether to /clear or /compact the session context. |
 | **ux-audit** | Use when UI/UX quality must be validated adversarially from multiple perspectives. |
 | **worktree-setup** | Use when the main repo's environment setup is needed inside a git worktree. |

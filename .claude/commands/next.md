@@ -122,6 +122,10 @@ description_en: "Diagnose current project state and recommend the next Nova comm
       "UI 작업이 감지되었습니다. `/nova:plan`을 호출하면 시각 의도를 캡처합니다 (어휘/스코프/디자인 시스템/reference). 의도 없이 코딩 시 G3 시각 자가 검증이 작동하지 않습니다. 가이드: docs/guides/ui-quality-gate.md"
       이 추천은 e-1과 별개 (e-1은 검증, e-2는 캡처 시점).
 
+   e-3. **Plan frontmatter v1.0 작성됨** (`docs/plans/<active>.md`에 `plan_id:` + `phases:` 키) → `/nova:status` 병행 추천
+      "현재 Phase·Sprint 진행률과 drift 알람을 stand-alone HTML로 확인하려면 `/nova:status`. file:// 작동, 의존성 0. AI 위임 후 점검·멀티 프로젝트 한 눈 파악·노션/wiki sync 부담 0."
+      이 추천은 e 계열과 병행 표시한다 (대체하지 않음). 가이드: docs/guides/status-dashboard.md
+
    f. Review까지 완료된 흔적이 있다 (최근 커밋에 review/refactor 관련 메시지) → 완료 안내
       "리뷰가 완료되었습니다. 반복 패턴이 있으면 CLAUDE.md에 기록하세요."
 
@@ -159,6 +163,7 @@ NOVA-STATE.md에 `## Quality Metrics` 섹션이 있으면 추세를 분석하여
   - 수동 (고위험): `/nova:deepplan` → `/ask` (필요시) → `/design` → 구현 → `/check` → `/review`
   - 자동: `/nova:auto [--deep]` → (Plan→Design→구현→검증→완료)
   - 하네스: CLAUDE.md 자동 적용 규칙에 따라 복잡도별 자동 워크플로우 진입
+  - 점검 도구: 언제든 `/nova:status` (frontmatter v1.0 작성된 plan 기준) — Phase·Sprint·그룹 진행률 + drift 알람 HTML
 - "이후 흐름"에는 추천 커맨드 이후 남은 단계를 보여준다
 - 디렉토리가 존재하지 않으면 0개로 처리한다
 - 판단이 애매할 때는 여러 선택지를 제시하고 사용자가 결정하게 한다

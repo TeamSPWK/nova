@@ -1,0 +1,14 @@
+{
+  "$schema": "https://nova/status-data/v1.0",
+  "version": "1.0",
+  "generated_at": "2026-05-13T14:30:00+09:00",
+  "minimal": true,
+  "plan": {
+    "plan_id": "(missing)",
+    "title": "Plan frontmatter 미작성 — minimal mode",
+    "plan_path": "(none)"
+  },
+  "warnings": [
+    "frontmatter에 plan_id가 없습니다. docs/guides/status-dashboard.md §부트스트랩 참조."
+  ]
+}

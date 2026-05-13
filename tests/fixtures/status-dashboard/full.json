@@ -1,0 +1,68 @@
+{
+  "$schema": "https://nova/status-data/v1.0",
+  "version": "1.0",
+  "generated_at": "2026-05-13T14:30:00+09:00",
+  "plan": {
+    "plan_id": "ai-audit-trail",
+    "title": "AI Audit Trail SaaS",
+    "plan_path": "docs/plans/ai-audit-trail.md"
+  },
+  "cursor": {
+    "current_phase": "P3",
+    "current_sprint": "C2"
+  },
+  "phases": [
+    {"id": "P1", "title": "시안→코드", "status": "done", "summary": "m2 inside-app 28 + m2.5 외부 14 + UX Audit S1~S3", "progress": 100},
+    {"id": "P2", "title": "M0 부분 PASS", "status": "done", "summary": "S1 회수·S1.5 hash·S1.6 baseline·S1.7·H2-b", "progress": 100},
+    {"id": "P3", "title": "Local Dogfooding Ready", "status": "in_progress", "summary": "실사용 수준 도달", "progress": 12},
+    {"id": "P4", "title": "M0/S2 자기 캡처 1주 측정 (재개)", "status": "pending", "progress": 0},
+    {"id": "P5", "title": "M0/S3 잔여 가설", "status": "pending", "summary": "H1 1분 회상·H2-a 매칭·H3 RCA", "progress": 0},
+    {"id": "P6", "title": "M0/S4 PRD §1.1 정정 + M1 진입 결정", "status": "pending", "progress": 0},
+    {"id": "P7", "title": "M1 Foundation", "status": "pending", "summary": "Stack 결정·multi-tenant", "progress": 0}
+  ],
+  "sprints": {
+    "P3": [
+      {"id": "C1", "title": "측정 환경 자동 기동 + dev/status 메뉴", "status": "done"},
+      {"id": "C2", "title": "Intent 가공 — 단편 → 의도 한 줄", "status": "in_progress"},
+      {"id": "C3", "title": "Audit summary + WorkPacket 의도 변환", "status": "pending"},
+      {"id": "C4", "title": "Risk 세션 fan-out", "status": "pending"},
+      {"id": "C5", "title": "SessionDetail 실 데이터 어댑터 (25→15+ fields)", "status": "pending"},
+      {"id": "C6", "title": "Repo 파서 정합 100%", "status": "pending"},
+      {"id": "C7", "title": "Incident·Reviewer 깊은 화면 jargon 평이화", "status": "pending"},
+      {"id": "C8", "title": "1주 dogfooding 검증", "status": "pending"}
+    ]
+  },
+  "groups": [
+    {"id": "H1", "title": "H1", "target": 6, "count": 6, "percent": 100},
+    {"id": "H2", "title": "H2", "target": 5, "count": 5, "percent": 100},
+    {"id": "H3", "title": "H3", "target": 5, "count": 5, "percent": 100},
+    {"id": "H4", "title": "H4", "target": 5, "count": 5, "percent": 100},
+    {"id": "ws", "title": "ws", "target": 3, "count": 3, "percent": 100},
+    {"id": "settings", "title": "settings", "target": 4, "count": 4, "percent": 100},
+    {"id": "public", "title": "public", "target": 14, "count": 2, "percent": 14}
+  ],
+  "screens_total": {"done": 30, "total": 42},
+  "goals": [
+    {"id": "G-Intent", "title": "Intent 가공", "paths": ["app/audit/intent/**"], "status": "in_progress"},
+    {"id": "G-Summary", "title": "Audit summary", "paths": ["app/audit/summary/**"], "status": "pending"}
+  ],
+  "drift": {
+    "since": "2026-05-06",
+    "commits_total": 23,
+    "buckets": {
+      "aligned": 14,
+      "drifted": 2,
+      "unspecced": 0,
+      "unverifiable": 1,
+      "conflict": 0,
+      "tag_missing": 6
+    },
+    "drift_percent": 13,
+    "verdict": "green",
+    "drifted_commits": [
+      {"sha": "abc1234", "subject": "fix: 결제 검증 경로 수정", "goal_declared": "G-Intent", "paths_actual": ["src/payment/checkout.ts", "src/payment/verify.ts"]},
+      {"sha": "def5678", "subject": "feat: 헤더 메뉴 추가", "goal_declared": "G-Intent", "paths_actual": ["src/ui/header.tsx"]}
+    ]
+  },
+  "warnings": []
+}

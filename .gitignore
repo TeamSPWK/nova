@@ -50,3 +50,14 @@ nova-orbit/
 
 # Test cache (fixture 실행 산출물)
 tests/.cache/
+
+# Playwright MCP 임시 산출물 (스크린샷·snapshot·console log)
+.playwright-mcp/
+
+# status-dashboard Phase 3 — enrich-plans 임시 산출물 (사용자 검수 후 --apply or 삭제)
+*.frontmatter.draft
+*.md.bak
+
+# Python bytecode cache
+__pycache__/
+*.pyc
