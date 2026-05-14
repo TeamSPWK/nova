@@ -281,6 +281,7 @@ Nova 자동 판단:
 | `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |
 | `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
 | `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
+| `/nova:migrate-state` | NOVA-STATE.md를 v1 schema에서 v2로 변환한다. dry-run preview → 사용자 검수 → apply 흐름. |
 | `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
 | `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
 | `/nova:review` | 코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. |

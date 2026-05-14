@@ -1,8 +1,8 @@
 {
   "version": "5.40.2",
-  "generatedAt": "2026-05-14T13:05:57Z",
+  "generatedAt": "2026-05-14T13:18:30Z",
   "stats": {
-    "commands": 17,
+    "commands": 18,
     "skills": 14,
     "agents": 6,
     "rules": 10,
@@ -17,6 +17,7 @@
     {"cmd": "/nova:deepplan", "description": "Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다.", "description_en": "Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline."},
     {"cmd": "/nova:design", "description": "CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다.", "description_en": "Write a Design document using the CPS (Context-Problem-Solution) framework."},
     {"cmd": "/nova:evolve", "description": "기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다.", "description_en": "Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf."},
+    {"cmd": "/nova:migrate-state", "description": "NOVA-STATE.md를 v1 schema에서 v2로 변환한다. dry-run preview → 사용자 검수 → apply 흐름. — MUST TRIGGER: 사용자가 v1 STATE 변환을 명시 요청한 직후, 또는 session-start hint를 본 직후.", "description_en": "Migrate NOVA-STATE.md from v1 schema to v2. Flow: dry-run preview → user review → apply. — MUST TRIGGER: when user explicitly asks to convert v1 STATE, or right after seeing the session-start hint."},
     {"cmd": "/nova:next", "description": "현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다.", "description_en": "Diagnose current project state and recommend the next Nova command to run."},
     {"cmd": "/nova:plan", "description": "CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다.", "description_en": "Write a Plan document using the CPS (Context-Problem-Solution) framework."},
     {"cmd": "/nova:review", "description": "코드를 적대적 관점에서 리뷰하고, 숨겨진 문제를 찾아낸다. — MUST TRIGGER: 커밋 전(로직 변경 시), PR 생성 전, 버그 수정 후 회귀 확인 시.", "description_en": "Review code adversarially and surface hidden issues. — MUST TRIGGER: before commit (on logic changes), before PR, after a bug fix for regression check."},

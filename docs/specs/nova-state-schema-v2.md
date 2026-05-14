@@ -197,18 +197,27 @@ v1의 "50줄 soft limit"을 다음과 같이 재정의:
 
 ---
 
-## 9. 마이그레이션 (v1 → v2) — 자동
+## 9. 마이그레이션 (v1 → v2) — 사용자 명시 커맨드
 
-**핵심 원칙**: v1/v2 공존은 부채. 사용자 수동 호출 의무화 시 영구 잔존 위험. **session-start hook이 v1 STATE 감지 시 자동 변환**한다.
+**핵심 원칙 (v5.41.0+ 정책 전환)**: 자동 변환 실험(v5.38.0~v5.40.x)은 사용성 최악으로 검증됨 — 사용자 보고: *"자동화가 오히려 노이즈 더 만들었음"*. 변환은 **사용자 명시 호출**로만.
 
-**자동 트리거 (1차)**: `hooks/session-start.sh`가 매 세션 시작 시:
-1. NOVA-STATE.md frontmatter `schema_version` 확인
-2. `== 2` → v2, 정상 진행
-3. `!= 2` 또는 frontmatter 없음 + v1 `- **Goal**:` 패턴 매칭 → 자동 마이그레이션 실행
-4. 백업 자동 생성 (`NOVA-STATE.md.v1.bak`), 사용자에게 ADDITIONAL_CONTEXT로 알림
+**진입점 — `/nova:migrate-state` 커맨드**:
+1. `Step 1` schema_version 점검 (`--check` 옵션)
+2. `Step 2` dry-run 실행 (변환 결과 미리보기, STATE.md 안 건드림)
+3. `Step 3` 사용자 검수 (4지선다: A apply / B 유지 / C disable / D 의견)
+4. `Step 4` apply (사용자 A 선택 시만)
+5. `Step 5` 사후 안내 (백업 위치, 복원 방법)
 
-**수동 트리거 (2차, 디버깅용)**: `bash scripts/migrate-nova-state.sh [--dry-run|--apply]`
-- 자동화 검증, 신뢰성 사전 확인, 또는 특정 파일 변환에 사용
+상세: `.claude/commands/migrate-state.md`
+
+**session-start hint**: v1 감지 시 `ADDITIONAL_CONTEXT`에 1줄 hint만:
+```
+💡 NOVA-STATE.md v1 schema 감지 — /nova:migrate-state 커맨드로 v2 변환 가능 (선택). 자동 변환 안 함 (정보 손실 보호).
+```
+
+자동 dry-run, preview 파일 생성, sessionTitle prefix, `NOVA-MIGRATE-PENDING.md` 자동 생성 **모두 제거**.
+
+**직접 호출 (CLI)**: `bash $NOVA_PLUGIN_ROOT/scripts/migrate-nova-state.sh [--dry-run|--apply]`
 
 **변환 절차**:
 

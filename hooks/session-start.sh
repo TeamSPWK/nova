@@ -91,99 +91,22 @@ PYEOF
   _STATE_VER="${_STATE_INFO%%|*}"
   GOAL="${_STATE_INFO#*|}"
 
-  # v2 STATE 정상 — 이전 v1 알림 잔재 정리 (수동 변환했을 수 있음)
+  # v2 STATE 정상 — 이전 자동화 잔재 정리 (v5.40.x에서 생성된 파일들 cleanup)
   if [ "$_STATE_VER" = "V2" ]; then
     [ -f "NOVA-MIGRATE-PENDING.md" ] && rm -f NOVA-MIGRATE-PENDING.md 2>/dev/null || true
     [ -f ".nova/migrate-preview.md" ] && rm -f .nova/migrate-preview.md 2>/dev/null || true
   fi
 
-  # v1 STATE 감지 → 자동 dry-run preview (apply는 사용자 명시 호출 시만)
-  # v5.40.0+: 자동 apply는 정보 손실 위험. 사용자 검수 후 명시 apply.
-  # NOVA_DISABLE_AUTO_MIGRATE=1 이면 스킵 (테스트/CI 환경)
+  # v1 STATE 감지 → 1줄 hint만 (자동 액션 X)
+  # v5.41.0+: 자동 dry-run/preview 파일/sessionTitle prefix 모두 제거 — 사용자 보고 "자동화가 오히려 사용성 최악".
+  # 변환은 사용자 명시 호출(/nova:migrate-state 커맨드 또는 직접 bash)로만.
+  # NOVA_DISABLE_AUTO_MIGRATE=1 이면 hint도 스킵.
   if [ "$_STATE_VER" = "V1" ] && [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ]; then
-    _MIGRATE_SCRIPT="${NOVA_ROOT}/scripts/migrate-nova-state.sh"
-    if [ -f "$_MIGRATE_SCRIPT" ]; then
-      mkdir -p .nova 2>/dev/null || true
-      _PREVIEW=".nova/migrate-preview.md"
-      # preview 갱신 필요? STATE.md가 preview보다 새것이거나 preview 없으면 dry-run
-      _PV_MTIME=0
-      [ -f "$_PREVIEW" ] && _PV_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('$_PREVIEW')))" 2>/dev/null || echo 0)
-      _ST_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('NOVA-STATE.md')))" 2>/dev/null || echo 0)
-      if [ "$_ST_MTIME" -gt "$_PV_MTIME" ]; then
-        # dry-run: 안내 헤더 + stdout 결과 → preview 파일
-        # 안내 헤더는 사용자가 마크다운 뷰어로 열 때 즉시 보이도록 markdown 형식.
-        {
-          printf -- '<!-- Nova v1→v2 Migration Preview (%s) -->\n' "$(date '+%Y-%m-%d %H:%M')"
-          printf -- '<!-- 검수 OK → 적용:  bash scripts/migrate-nova-state.sh --apply -->\n'
-          printf -- '<!-- 손실 우려 → 끄기: NOVA_DISABLE_AUTO_MIGRATE=1 -->\n'
-          printf -- '<!-- 백업: --apply 시 NOVA-STATE.md.v1.bak 자동 생성 -->\n\n'
-          printf -- '> [!IMPORTANT]\n'
-          printf -- '> 📋 **v1→v2 Migration Preview** — 이 파일은 자동 생성된 dry-run 미리보기.\n'
-          printf -- '> NOVA-STATE.md 자체는 **건드리지 않음**. 검수 후 명시 apply 필요.\n'
-          printf -- '>\n'
-          printf -- '> - ✅ OK: `bash scripts/migrate-nova-state.sh --apply`\n'
-          printf -- '> - ⚠️ 손실 우려 (변형 v1): `NOVA_DISABLE_AUTO_MIGRATE=1` 환경변수로 자동 dry-run 끄기\n\n'
-          printf -- '---\n'
-          printf -- '*이하 변환 결과 미리보기 (적용 시 NOVA-STATE.md 내용)*\n\n'
-          bash "$_MIGRATE_SCRIPT" 2>".nova/migrate-state.log"
-        } >"$_PREVIEW" 2>>".nova/migrate-state.log" || true
-      fi
-      if [ -s "$_PREVIEW" ]; then
-        MIGRATE_NOTICE="\n\n📋 NOVA-STATE.md v1 감지 — v2 dry-run preview 준비됨: \`.nova/migrate-preview.md\`. 검수 후 \`bash scripts/migrate-nova-state.sh --apply\` 로 명시 적용. (자동 apply 안 함 — 사용자별 STATE 변형으로 정보 손실 가능성 보호)"
-        # sessionTitle에 prefix — 탭/스테이터스라인에서 즉시 인지
-        MIGRATE_PREFIX="⚠️ v1→v2 검수 대기 · "
-
-        # 프로젝트 루트에 명시 알림 파일 — `ls`에서 즉시 보임 (tmux/sessionTitle 안 보이는 환경 대비)
-        # NOVA-STATE.md mtime > NOVA-MIGRATE-PENDING.md mtime이면 갱신
-        _MP_FILE="NOVA-MIGRATE-PENDING.md"
-        _MP_MTIME=0
-        [ -f "$_MP_FILE" ] && _MP_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('$_MP_FILE')))" 2>/dev/null || echo 0)
-        if [ "$_ST_MTIME" -gt "$_MP_MTIME" ]; then
-          cat > "$_MP_FILE" <<'MPEOF'
-# ⚠️ NOVA-STATE.md v1→v2 Migration Pending
-
-이 프로젝트의 `NOVA-STATE.md`는 v1 schema입니다. Nova v5.38.0+에서 v2로 진화했지만,
-**자동 변환 안 함** (사용자별 STATE 변형으로 정보 손실 가능성 보호). 사용자 검수 후 명시 apply 필요.
-
-## 다음 액션 (택1)
-
-### A. Preview 검수 후 변환 적용 (권장)
-
-```bash
-# 1. 변환 결과 미리보기 (NOVA-STATE.md는 안 건드림)
-open .nova/migrate-preview.md
-
-# 2. OK이면 실제 변환 (백업 자동 생성: NOVA-STATE.md.v1.bak)
-bash scripts/migrate-nova-state.sh --apply
-```
-
-### B. v1 그대로 유지 (자동 알림 끄기)
-
-```bash
-# 환경변수 set (영구하려면 ~/.zshrc 또는 ~/.bashrc에 추가)
-export NOVA_DISABLE_AUTO_MIGRATE=1
-```
-
-이 파일과 `.nova/migrate-preview.md` 모두 다음 세션부터 안 생김.
-
-### C. 임시 무시
-
-이 파일을 그냥 `rm NOVA-MIGRATE-PENDING.md`. 다음 세션 시작 시 STATE.md가 갱신됐으면 재생성.
-
----
-
-> 이 파일은 Nova SessionStart hook이 자동 생성합니다. apply 또는 NOVA-STATE.md가 v2로 바뀌면 자동 삭제.
-> Spec: <https://github.com/TeamSPWK/nova/blob/main/docs/specs/nova-state-schema-v2.md>
-MPEOF
-        fi
-      fi
-    fi
+    MIGRATE_NOTICE="\n\n💡 NOVA-STATE.md v1 schema 감지 — \`/nova:migrate-state\` 커맨드로 v2 변환 가능 (선택). 자동 변환 안 함 (정보 손실 보호)."
   fi
 
   if [ -n "$GOAL" ]; then
-    SESSION_TITLE="Nova: ${MIGRATE_PREFIX:-}$GOAL"
-  elif [ -n "${MIGRATE_PREFIX:-}" ]; then
-    SESSION_TITLE="Nova: ${MIGRATE_PREFIX}(v1 STATE)"
+    SESSION_TITLE="Nova: $GOAL"
   fi
 elif [ -f "NOVA-STATE.md" ]; then
   # python3 미설치 환경 fallback (v1 패턴만)
@@ -226,15 +149,15 @@ fi
 
 # lean: §1~§3만, antipatterns 생략, pre-edit CPS 경고 스킵
 if [ "$NOVA_PROFILE" = "lean" ]; then
-  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림).\n3. UI 변경 시 G1+G3 시각 게이트 발화 (lean도 적용 — §14)."
+  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md · /nova:migrate-state\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림).\n3. UI 변경 시 G1+G3 시각 게이트 발화 (lean도 적용 — §14)."
 
 # strict: standard + antipatterns 요약 추가
 elif [ "$NOVA_PROFILE" = "strict" ]; then
-  ADDITIONAL_CONTEXT="# Nova Engineering (strict)\n\nNova 자동 적용 규칙 — 품질 실행 계약. 상세는 docs/nova-rules.md 및 관련 커맨드가 on-demand 로드.\n\n## 규칙 (핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지. 파일 수 초과 시 즉시 Plan 승격. duration heuristic(옵션): 1~2파일도 30분+ 예상이면 Plan 권고.\n2. **검증 + 하드 게이트**: 검증은 **독립 서브에이전트**. 커밋 전 Evaluator PASS 필수. exit 2 차단(--emergency 예외).\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl. 환경 변경 3단계.\n4. **블로커**: Auto/Soft/Hard. 불확실=Hard.\n5. **환경 안전**: 설정 파일 직접 수정 금지.\n\n## Antipatterns — docs/nova-antipatterns.md\n\n§A1 복잡도 자가 완화 · §A3 Evaluator 후순위 · §B1 Evaluator 건너뛰고 커밋 · §B2 CPS 없이 구현 · §B3 세션 상태 갱신 생략 (전체 12개)\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md\n\n## Always-On\n\n1. 3파일+ 변경 시 Plan. 2. Evaluator 독립 서브에이전트. 3. 커밋 전 /nova:review --fast. 4. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림). 5. UI 변경 시 G1+G3 시각 게이트 발화. 6. §15 Memory 라우팅: 프로젝트 규칙은 개인 memory 금지 → CLAUDE.md/AGENTS.md/\`.claude/rules/\`."
+  ADDITIONAL_CONTEXT="# Nova Engineering (strict)\n\nNova 자동 적용 규칙 — 품질 실행 계약. 상세는 docs/nova-rules.md 및 관련 커맨드가 on-demand 로드.\n\n## 규칙 (핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지. 파일 수 초과 시 즉시 Plan 승격. duration heuristic(옵션): 1~2파일도 30분+ 예상이면 Plan 권고.\n2. **검증 + 하드 게이트**: 검증은 **독립 서브에이전트**. 커밋 전 Evaluator PASS 필수. exit 2 차단(--emergency 예외).\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl. 환경 변경 3단계.\n4. **블로커**: Auto/Soft/Hard. 불확실=Hard.\n5. **환경 안전**: 설정 파일 직접 수정 금지.\n\n## Antipatterns — docs/nova-antipatterns.md\n\n§A1 복잡도 자가 완화 · §A3 Evaluator 후순위 · §B1 Evaluator 건너뛰고 커밋 · §B2 CPS 없이 구현 · §B3 세션 상태 갱신 생략 (전체 12개)\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md · /nova:migrate-state\n\n## Always-On\n\n1. 3파일+ 변경 시 Plan. 2. Evaluator 독립 서브에이전트. 3. 커밋 전 /nova:review --fast. 4. NOVA-STATE.md 읽기/정리(50줄, Recently Done 3개, Last Activity 1줄. 초과 시 트림). 5. UI 변경 시 G1+G3 시각 게이트 발화. 6. §15 Memory 라우팅: 프로젝트 규칙은 개인 memory 금지 → CLAUDE.md/AGENTS.md/\`.claude/rules/\`."
 
 # standard (기본): 현재와 동일
 else
-  ADDITIONAL_CONTEXT="# Nova Engineering\n\nNova 자동 적용 규칙 — 품질 실행 계약. 상세는 docs/nova-rules.md 및 관련 커맨드가 on-demand 로드. 프로젝트 \`.claude/rules/\`가 있으면 Nova보다 우선.\n\n## 규칙 (핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 인증/DB/결제 +1. 자가 완화 금지. 파일 수 초과 시 즉시 Plan 승격. duration heuristic(옵션): 1~2파일도 30분+ 예상이면 Plan 권고.\n2. **검증 + 하드 게이트**: 검증은 **독립 서브에이전트**(별도 spawn=창 분리). 메인 재확인은 독립 아님. 커밋 전 tsc/lint→Evaluator→PASS→커밋. PASS 없이 커밋 시 exit 2 차단(--emergency 예외). tmux pane: TeamCreate→Agent(name+team_name+run_in_background:true).\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl. 환경 변경 3단계(현재→변경→반영).\n4. **블로커**: Auto/Soft/Hard. 불확실=Hard. 2회 실패 시 강제 분류.\n5. **환경 안전**: 설정 파일 직접 수정 금지. 환경변수/CLI 플래그.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md\n\n## Always-On (MUST)\n\n1. 모든 코드 변경에 자동 규칙. 2. 3파일+ 변경 시 Plan. 3. 구현 완료 시 Evaluator 독립 서브에이전트. 4. 커밋 전 /nova:review --fast. 5. NOVA-STATE.md 읽기/정리(50줄, 초과 시 트림). 6. 블로커 즉시 알림. 7. UI 변경 시 G1+G3 시각 게이트. 8. §15 Memory 라우팅: 프로젝트 규칙은 개인 memory 금지 → CLAUDE.md/AGENTS.md/\`.claude/rules/\`."
+  ADDITIONAL_CONTEXT="# Nova Engineering\n\nNova 자동 적용 규칙 — 품질 실행 계약. 상세는 docs/nova-rules.md 및 관련 커맨드가 on-demand 로드. 프로젝트 \`.claude/rules/\`가 있으면 Nova보다 우선.\n\n## 규칙 (핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 인증/DB/결제 +1. 자가 완화 금지. 파일 수 초과 시 즉시 Plan 승격. duration heuristic(옵션): 1~2파일도 30분+ 예상이면 Plan 권고.\n2. **검증 + 하드 게이트**: 검증은 **독립 서브에이전트**(별도 spawn=창 분리). 메인 재확인은 독립 아님. 커밋 전 tsc/lint→Evaluator→PASS→커밋. PASS 없이 커밋 시 exit 2 차단(--emergency 예외). tmux pane: TeamCreate→Agent(name+team_name+run_in_background:true).\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl. 환경 변경 3단계(현재→변경→반영).\n4. **블로커**: Auto/Soft/Hard. 불확실=Hard. 2회 실패 시 강제 분류.\n5. **환경 안전**: 설정 파일 직접 수정 금지. 환경변수/CLI 플래그.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md · /nova:migrate-state\n\n## Always-On (MUST)\n\n1. 모든 코드 변경에 자동 규칙. 2. 3파일+ 변경 시 Plan. 3. 구현 완료 시 Evaluator 독립 서브에이전트. 4. 커밋 전 /nova:review --fast. 5. NOVA-STATE.md 읽기/정리(50줄, 초과 시 트림). 6. 블로커 즉시 알림. 7. UI 변경 시 G1+G3 시각 게이트. 8. §15 Memory 라우팅: 프로젝트 규칙은 개인 memory 금지 → CLAUDE.md/AGENTS.md/\`.claude/rules/\`."
 fi
 
 # ── §10 MCP 부하 카운트 (P1-2, v5.22.1+) ──
