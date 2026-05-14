@@ -2,26 +2,48 @@
 
 # Nova Engineering — PreCompact Hook
 # 컴팩션 직전에 NOVA-STATE.md를 보호한다.
-# - NOVA-STATE.md가 존재하면 Last Activity에 컴팩션 시점을 기록
-# - 기존 컴팩션 마커는 교체하여 누적 방지
+# v2 (schema_version: 2): ## 📊 Recent Activity 표에 row 삽입
+# v1 legacy:              ## Last Activity 라인 추가 (deprecated, session-start가 자동 마이그레이션)
+# Spec: docs/specs/nova-state-schema-v2.md §4 (본문 섹션)
 
-# stdin에서 hook payload 읽기 (trigger, session_id 등)
 read -r PAYLOAD 2>/dev/null || PAYLOAD="{}"
 
 STATE_FILE="NOVA-STATE.md"
 
 if [ -f "$STATE_FILE" ]; then
   TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  MARKER="- context compacted | $TIMESTAMP"
+  DATE_SHORT=$(date -u +"%Y-%m-%d")
 
-  if grep -q "## Last Activity" "$STATE_FILE"; then
-    # 기존 컴팩션 마커 제거 후 새 마커 삽입 (최대 1개 유지)
-    TMP=$(mktemp)
-    awk -v marker="$MARKER" '
-      /^## Last Activity/ { print; print marker; skip=1; next }
-      skip && /^- context compacted/ { next }
-      { skip=0; print }
-    ' "$STATE_FILE" > "$TMP" && mv "$TMP" "$STATE_FILE"
+  # v2 감지: schema_version: 2 (frontmatter 첫 10줄 내)
+  if head -10 "$STATE_FILE" | grep -q "^schema_version: *2"; then
+    # v2: ## 📊 Recent Activity 표 헤더 다음에 row 삽입, 기존 context compacted row는 제거
+    if grep -q "^## 📊 Recent Activity" "$STATE_FILE"; then
+      TMP=$(mktemp)
+      awk -v date="$DATE_SHORT" '
+        /^## 📊 Recent Activity/ { print; in_section=1; next }
+        in_section && /^\|[ \-:]+\|[ \-:]+\|[ \-:]+\|/ {
+          print
+          print "| " date " | context compacted | ✅ |"
+          inserted=1
+          in_section=0
+          next
+        }
+        # 기존 context compacted row 1건 제거 (중복 방지)
+        inserted && /^\| *[0-9\-]+ *\| *context compacted/ { inserted=0; next }
+        { print }
+      ' "$STATE_FILE" > "$TMP" && mv "$TMP" "$STATE_FILE"
+    fi
+  else
+    # v1 legacy fallback (deprecated — session-start가 다음 세션에 자동 마이그레이션)
+    MARKER="- context compacted | $TIMESTAMP"
+    if grep -q "^## Last Activity" "$STATE_FILE"; then
+      TMP=$(mktemp)
+      awk -v marker="$MARKER" '
+        /^## Last Activity/ { print; print marker; skip=1; next }
+        skip && /^- context compacted/ { next }
+        { skip=0; print }
+      ' "$STATE_FILE" > "$TMP" && mv "$TMP" "$STATE_FILE"
+    fi
   fi
 fi
 

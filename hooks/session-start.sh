@@ -39,20 +39,69 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -w "$(dirname "$CLAUDE_ENV_FILE")" 2>/dev/
   fi
 fi
 
-# NOVA-STATE.md에서 Goal을 읽어 세션 타이틀 생성
+# NOVA_ROOT 조기 정의 (Goal 추출 및 자동 마이그레이션에서 사용)
+NOVA_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+
+# NOVA-STATE.md에서 Goal 읽기 (v2 frontmatter 우선, v1 감지 시 자동 마이그레이션)
+# Spec: docs/specs/nova-state-schema-v2.md §9 (자동 트리거)
 SESSION_TITLE="Nova"
-if [ -f "NOVA-STATE.md" ]; then
-  GOAL=$(grep -m1 '^\- \*\*Goal\*\*:' NOVA-STATE.md 2>/dev/null | sed 's/.*\*\*Goal\*\*: *//')
+MIGRATE_NOTICE=""
+if [ -f "NOVA-STATE.md" ] && command -v python3 >/dev/null 2>&1; then
+  _STATE_INFO=$(python3 - <<'PYEOF' 2>/dev/null
+import re, sys
+try:
+    import yaml
+except ImportError:
+    yaml = None
+try:
+    text = open('NOVA-STATE.md', encoding='utf-8').read()
+    # v2: YAML frontmatter
+    m = re.match(r'^---\n(.*?)\n---', text, re.DOTALL)
+    if m and yaml:
+        fm = yaml.safe_load(m.group(1)) or {}
+        if isinstance(fm, dict) and fm.get('schema_version') == 2:
+            print(f"V2|{fm.get('goal', '') or ''}")
+            sys.exit(0)
+    # v1 fallback: - **Goal**: xxx
+    m2 = re.search(r'^- \*\*Goal\*\*:\s*(.+)$', text, re.MULTILINE)
+    if m2:
+        print(f"V1|{m2.group(1).strip()}")
+        sys.exit(0)
+except Exception:
+    pass
+print("NONE|")
+PYEOF
+)
+  _STATE_VER="${_STATE_INFO%%|*}"
+  GOAL="${_STATE_INFO#*|}"
+
+  # v1 STATE 감지 → 자동 마이그레이션 (백업 자동, graceful fallback)
+  # NOVA_DISABLE_AUTO_MIGRATE=1 이면 스킵 (테스트/CI 환경)
+  if [ "$_STATE_VER" = "V1" ] && [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ]; then
+    _MIGRATE_SCRIPT="${NOVA_ROOT}/scripts/migrate-nova-state.sh"
+    if [ -f "$_MIGRATE_SCRIPT" ]; then
+      mkdir -p .nova 2>/dev/null || true
+      if bash "$_MIGRATE_SCRIPT" --apply >".nova/migrate-state.log" 2>&1; then
+        MIGRATE_NOTICE="\n\n🔄 NOVA-STATE.md v1→v2 자동 마이그레이션 완료. 백업: NOVA-STATE.md.v1.bak"
+      else
+        MIGRATE_NOTICE="\n\n⚠️ NOVA-STATE.md v1→v2 자동 마이그레이션 실패. 로그: .nova/migrate-state.log"
+      fi
+    fi
+  fi
+
   if [ -n "$GOAL" ]; then
     SESSION_TITLE="Nova: $GOAL"
   fi
+elif [ -f "NOVA-STATE.md" ]; then
+  # python3 미설치 환경 fallback (v1 패턴만)
+  GOAL=$(grep -m1 '^\- \*\*Goal\*\*:' NOVA-STATE.md 2>/dev/null | sed 's/.*\*\*Goal\*\*: *//')
+  [ -n "$GOAL" ] && SESSION_TITLE="Nova: $GOAL"
 fi
 
 # JSON 특수문자 이스케이프
 SESSION_TITLE=$(echo "$SESSION_TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g')
 
 # Sprint 1: session_id 동기 선발급 + session_start 이벤트 기록 + start_epoch 저장 (safe-default)
-NOVA_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 if [[ -f "${NOVA_ROOT}/hooks/record-event.sh" ]] && [[ -z "${NOVA_DISABLE_EVENTS:-}" ]]; then
   mkdir -p .nova 2>/dev/null || true
   # Race-safe session.id 선발급 (이후 child spawn들이 이 id를 공유)
@@ -145,6 +194,11 @@ if [ "$NOVA_PROFILE" != "lean" ]; then
       ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ impl-tracker: 코드 ${_IMPL_COUNT}파일 변경 후 review/evaluator 미실행 (§16). /nova:review --fast 또는 Agent(evaluator) 권장."
     fi
   fi
+fi
+
+# v1→v2 자동 마이그레이션 알림 append (있을 때만)
+if [ -n "$MIGRATE_NOTICE" ]; then
+  ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}${MIGRATE_NOTICE}"
 fi
 
 cat << NOVA_EOF

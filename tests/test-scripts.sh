@@ -545,17 +545,17 @@ echo '{"cwd":"'"$INIT_DIR"'"}' | bash "$ROOT_DIR/scripts/init-nova-state.sh" 2>/
 assert "init-nova-state: NOVA-STATE.md 생성" \
   "[ -f '$INIT_DIR/NOVA-STATE.md' ]"
 
-assert "init-nova-state: Known Gaps 섹션" \
-  "grep -q 'Known Gaps' '$INIT_DIR/NOVA-STATE.md'"
+assert "init-nova-state: schema_version v2 frontmatter" \
+  "head -10 '$INIT_DIR/NOVA-STATE.md' | grep -q '^schema_version: *2'"
 
-assert "init-nova-state: Known Risks 섹션" \
-  "grep -q 'Known Risks' '$INIT_DIR/NOVA-STATE.md'"
+assert "init-nova-state: Risks & Gaps 섹션 (통합)" \
+  "grep -q 'Risks & Gaps' '$INIT_DIR/NOVA-STATE.md'"
 
-assert "init-nova-state: Tasks 섹션" \
-  "grep -q '## Tasks' '$INIT_DIR/NOVA-STATE.md'"
+assert "init-nova-state: Active Tree 섹션 (v2 트리 영역)" \
+  "grep -q '## 🌳 Active Tree' '$INIT_DIR/NOVA-STATE.md'"
 
-assert "init-nova-state: Last Activity 섹션" \
-  "grep -q 'Last Activity' '$INIT_DIR/NOVA-STATE.md'"
+assert "init-nova-state: Recent Activity 섹션 (v2 표)" \
+  "grep -q '## 📊 Recent Activity' '$INIT_DIR/NOVA-STATE.md'"
 
 rm -rf "$INIT_DIR"
 echo ""
@@ -2099,7 +2099,7 @@ assert "S8.5: audit-orchestration.sh stderr 경고 출력" \
 
 # S8.6: 엔드투엔드 스모크 — pre-tool-use-record.sh 실행 후 이벤트 기록 확인
 assert "S8.6: pre-tool-use-record.sh 실행 → tool_call 이벤트 기록" \
-  "TMPD=\$(mktemp -d); NOVA_EVENTS_PATH=\"\$TMPD/events.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh && \
+  "TMPD=\$(mktemp -d); NOVA_EVENTS_PATH=\"\$TMPD/events.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh < /dev/null && \
    sleep 0.3 && grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && \
    ! grep -q 'tool_input' \"\$TMPD/events.jsonl\"; S=\$?; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
 

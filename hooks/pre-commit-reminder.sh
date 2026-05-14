@@ -58,7 +58,40 @@ check_evaluator_pass() {
     return
   fi
 
-  # ## Last Activity 섹션 첫 "- " 라인 추출
+  # v2 STATE (schema_version: 2) 분기 — ## 📊 Recent Activity 표 첫 row 검사
+  # Spec: docs/specs/nova-state-schema-v2.md §4
+  if head -10 NOVA-STATE.md | grep -q "^schema_version: *2"; then
+    FIRST_ROW=$(awk '
+      /^## 📊 Recent Activity/{flag=1; next}
+      flag && /^\| *[0-9]/{print; exit}
+    ' NOVA-STATE.md)
+    if [ -z "$FIRST_ROW" ]; then
+      echo "EMPTY"; return
+    fi
+    # 결과 컬럼 ✅ / PASS / CONDITIONAL 인정
+    if ! echo "$FIRST_ROW" | grep -qE '✅|PASS|CONDITIONAL'; then
+      echo "NO_PASS"; return
+    fi
+    # 시각 컬럼: YYYY-MM-DD 또는 MM-DD (CJK 친화 표기 허용)
+    TS=$(echo "$FIRST_ROW" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{2}-[0-9]{2}' | head -1)
+    if [ -z "$TS" ]; then
+      echo "TIMESTAMP_BROKEN"; return
+    fi
+    # MM-DD면 올해 추가
+    case "$TS" in
+      [0-9][0-9][0-9][0-9]-*) ;;
+      *) TS="$(date +%Y)-$TS" ;;
+    esac
+    TODAY=$(date +%Y-%m-%d)
+    if [ "$TS" = "$TODAY" ]; then
+      echo "PASS"
+    else
+      echo "STALE"
+    fi
+    return
+  fi
+
+  # v1 legacy fallback — ## Last Activity 섹션 첫 "- " 라인 추출
   LAST_LINE=$(awk '/^## Last Activity/{flag=1; next} flag && /^- /{print; exit}' NOVA-STATE.md)
 
   if [ -z "$LAST_LINE" ]; then
