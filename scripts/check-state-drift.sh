@@ -61,7 +61,9 @@ fi
 # 검증 1: 코드 변경 vs STATE mtime
 # ─────────────────────────────────────────────
 HEAD_EPOCH=$(git log -1 --format=%ct 2>/dev/null || echo 0)
-STATE_MTIME=$(stat -f %m NOVA-STATE.md 2>/dev/null || stat -c %Y NOVA-STATE.md 2>/dev/null || echo 0)
+# mtime 추출: macOS `stat -f %m` vs Linux `stat -c %Y` — Linux `stat -f`는 filesystem 모드로 %m이 mount point 출력하는 함정.
+# python3로 통일 (nova 다른 스크립트와 동일 패턴, pre-edit-check.sh:86 참조).
+STATE_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('NOVA-STATE.md')))" 2>/dev/null || echo 0)
 
 # working tree 코드 변경 (NOVA-STATE.md 자체 제외, 빈 파일 무시)
 # set -o pipefail 환경에서 grep 매칭 0건 시 exit 1 방지: { ... || true; }
@@ -72,9 +74,12 @@ CODE_CHANGES=$(git diff --name-only HEAD 2>/dev/null \
 DRIFT=0
 
 if [ "$CODE_CHANGES" -gt 0 ] && [ "$STATE_MTIME" -le "$HEAD_EPOCH" ]; then
+  # epoch → 사람 가독 (cross-platform: macOS `date -r EPOCH` vs Linux `date -d @EPOCH` 차이 회피 — python3 통일)
+  _HEAD_TIME=$(python3 -c "import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1])).strftime('%Y-%m-%d %H:%M:%S'))" "$HEAD_EPOCH" 2>/dev/null || echo "$HEAD_EPOCH")
+  _STATE_TIME=$(python3 -c "import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1])).strftime('%Y-%m-%d %H:%M:%S'))" "$STATE_MTIME" 2>/dev/null || echo "$STATE_MTIME")
   echo "❌ State Drift 의심: 코드 ${CODE_CHANGES}개 변경되었으나 NOVA-STATE.md가 HEAD commit 이전 시점" >&2
-  echo "   - HEAD commit time: $(date -r "$HEAD_EPOCH" +%Y-%m-%d\ %H:%M:%S 2>/dev/null || echo "$HEAD_EPOCH")" >&2
-  echo "   - STATE.md mtime:   $(date -r "$STATE_MTIME" +%Y-%m-%d\ %H:%M:%S 2>/dev/null || echo "$STATE_MTIME")" >&2
+  echo "   - HEAD commit time: $_HEAD_TIME" >&2
+  echo "   - STATE.md mtime:   $_STATE_TIME" >&2
   echo "   해소: NOVA-STATE.md Recent Activity에 이번 작업 1줄 추가 + Goal/Active Tree 갱신" >&2
   DRIFT=1
 fi
