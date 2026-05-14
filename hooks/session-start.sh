@@ -53,6 +53,22 @@ try:
     import yaml
 except ImportError:
     yaml = None
+
+def _truncate_goal(g):
+    """sessionTitle 시각 품질 — 강조 제거 + 자연 자르기 + 80자 cap (CJK 친화)"""
+    if not g:
+        return ''
+    g = re.sub(r'\*\*(.+?)\*\*', r'\1', g)
+    g = re.sub(r'__(.+?)__', r'\1', g)
+    for sep in ('. ', ' — ', ' (', ', '):
+        idx = g.find(sep)
+        if 10 < idx < 80:
+            g = g[:idx].rstrip().rstrip('.,—(')
+            break
+    if len(g) > 80:
+        g = g[:80].rstrip() + '…'
+    return g
+
 try:
     text = open('NOVA-STATE.md', encoding='utf-8').read()
     # v2: YAML frontmatter
@@ -60,12 +76,12 @@ try:
     if m and yaml:
         fm = yaml.safe_load(m.group(1)) or {}
         if isinstance(fm, dict) and fm.get('schema_version') == 2:
-            print(f"V2|{fm.get('goal', '') or ''}")
+            print(f"V2|{_truncate_goal(fm.get('goal', '') or '')}")
             sys.exit(0)
-    # v1 fallback: - **Goal**: xxx
+    # v1 fallback: - **Goal**: xxx (강조 제거 + truncate 적용)
     m2 = re.search(r'^- \*\*Goal\*\*:\s*(.+)$', text, re.MULTILINE)
     if m2:
-        print(f"V1|{m2.group(1).strip()}")
+        print(f"V1|{_truncate_goal(m2.group(1).strip())}")
         sys.exit(0)
 except Exception:
     pass
@@ -75,16 +91,24 @@ PYEOF
   _STATE_VER="${_STATE_INFO%%|*}"
   GOAL="${_STATE_INFO#*|}"
 
-  # v1 STATE 감지 → 자동 마이그레이션 (백업 자동, graceful fallback)
+  # v1 STATE 감지 → 자동 dry-run preview (apply는 사용자 명시 호출 시만)
+  # v5.40.0+: 자동 apply는 정보 손실 위험. 사용자 검수 후 명시 apply.
   # NOVA_DISABLE_AUTO_MIGRATE=1 이면 스킵 (테스트/CI 환경)
   if [ "$_STATE_VER" = "V1" ] && [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ]; then
     _MIGRATE_SCRIPT="${NOVA_ROOT}/scripts/migrate-nova-state.sh"
     if [ -f "$_MIGRATE_SCRIPT" ]; then
       mkdir -p .nova 2>/dev/null || true
-      if bash "$_MIGRATE_SCRIPT" --apply >".nova/migrate-state.log" 2>&1; then
-        MIGRATE_NOTICE="\n\n🔄 NOVA-STATE.md v1→v2 자동 마이그레이션 완료. 백업: NOVA-STATE.md.v1.bak"
-      else
-        MIGRATE_NOTICE="\n\n⚠️ NOVA-STATE.md v1→v2 자동 마이그레이션 실패. 로그: .nova/migrate-state.log"
+      _PREVIEW=".nova/migrate-preview.md"
+      # preview 갱신 필요? STATE.md가 preview보다 새것이거나 preview 없으면 dry-run
+      _PV_MTIME=0
+      [ -f "$_PREVIEW" ] && _PV_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('$_PREVIEW')))" 2>/dev/null || echo 0)
+      _ST_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('NOVA-STATE.md')))" 2>/dev/null || echo 0)
+      if [ "$_ST_MTIME" -gt "$_PV_MTIME" ]; then
+        # dry-run: stdout만 preview 파일로, stderr는 log로
+        bash "$_MIGRATE_SCRIPT" >"$_PREVIEW" 2>".nova/migrate-state.log" || true
+      fi
+      if [ -s "$_PREVIEW" ]; then
+        MIGRATE_NOTICE="\n\n📋 NOVA-STATE.md v1 감지 — v2 dry-run preview 준비됨: \`.nova/migrate-preview.md\`. 검수 후 \`bash scripts/migrate-nova-state.sh --apply\` 로 명시 적용. (자동 apply 안 함 — 사용자별 STATE 변형으로 정보 손실 가능성 보호)"
       fi
     fi
   fi

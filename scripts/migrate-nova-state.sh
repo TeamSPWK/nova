@@ -86,6 +86,21 @@ from pathlib import Path
 
 src = Path(sys.argv[1]).read_text(encoding='utf-8')
 
+# ─── 헬퍼: 마크다운 강조 제거 ─────────────
+def strip_emphasis(text):
+    """**bold**, __bold__, *italic*, _italic_ 마커 제거"""
+    if not text:
+        return text
+    # **bold** → bold
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    # __bold__ → bold
+    text = re.sub(r'__(.+?)__', r'\1', text)
+    # *italic* → italic (단, ** 와 충돌 X — 위에서 처리됨)
+    text = re.sub(r'(?<!\*)\*([^*\s][^*]*?)\*(?!\*)', r'\1', text)
+    # _italic_ → italic (한글 사이는 보존)
+    text = re.sub(r'(?<![\w_])_([^_\s][^_]*?)_(?![\w_])', r'\1', text)
+    return text
+
 # ─── 헬퍼: CJK 친화 자연 자르기 ────────────
 def truncate_smart(text, max_chars=80, seps=('. ', ' — ', ' (', ', ')):
     """문장 경계에서 자연스럽게 자름. 경계 없으면 max_chars + …"""
@@ -113,7 +128,7 @@ def first_line_value(text, label):
 
 # Goal/Phase/Blocker — v1은 최상단 또는 ## Current 안에 있음
 goal_raw = first_line_value(src, 'Goal') or '(legacy migration — goal 추론 실패, 수동 갱신 필요)'
-goal     = truncate_smart(goal_raw, max_chars=80)
+goal     = truncate_smart(strip_emphasis(goal_raw), max_chars=80)
 phase    = first_line_value(src, 'Phase')    or None
 blocker  = first_line_value(src, 'Blocker')  or None
 next_pt  = first_line_value(src, '다음 세션 진입점') or None
@@ -127,29 +142,59 @@ for line in tasks_section.splitlines():
         task, status, verdict, note = (s.strip() for s in m.groups())
         task_rows.append({'task': task, 'status': status, 'verdict': verdict, 'note': note})
 
-# ─── Recently Done 파싱 ─────────────────────
+# ─── Recently Done 파싱 (3열/4열 표 모두 지원) ──
 recent_section = extract_section(src, r'## Recently Done')
 recent_rows = []
 for line in recent_section.splitlines():
-    m = re.match(r'^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|$', line)
-    if m and '---' not in m.group(2) and m.group(1).strip() != 'Task':
+    # 4열: | task | completed | verdict | ref |
+    m4 = re.match(r'^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|$', line)
+    # 3열: | task | completed | verdict |
+    m3 = re.match(r'^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|$', line)
+    if m4 and '---' not in m4.group(2) and m4.group(1).strip() not in ('Task', '작업'):
         recent_rows.append({
-            'task': m.group(1).strip(),
-            'completed': m.group(2).strip(),
-            'verdict': m.group(3).strip(),
-            'ref': m.group(4).strip()
+            'task': m4.group(1).strip(),
+            'completed': m4.group(2).strip(),
+            'verdict': m4.group(3).strip(),
+            'ref': m4.group(4).strip()
+        })
+    elif m3 and '---' not in m3.group(2) and m3.group(1).strip() not in ('Task', '작업'):
+        recent_rows.append({
+            'task': m3.group(1).strip(),
+            'completed': m3.group(2).strip(),
+            'verdict': m3.group(3).strip(),
+            'ref': ''
         })
 
-# ─── Last Activity 파싱 (최근 5개, CJK 친화 컷) ─────────
+# ─── Last Activity 파싱 (최근 5개, CJK 친화 컷, 다양한 형식 지원) ─────────
 activity_section = extract_section(src, r'## Last Activity')
 activity_rows = []
+all_activity_lines = []  # 전체 보존 (passthrough)
 for line in activity_section.splitlines():
+    if not line.strip().startswith('- '):
+        continue
+    all_activity_lines.append(line)
+    # 형식 1: - msg | YYYY-MM-DDTHH:MM:SSZ (표준 v1)
     m = re.match(r'^-\s+(.+?)\s*\|\s*([0-9T:+\-Z\. ]+)\s*$', line)
     if m:
         msg, ts = m.group(1).strip(), m.group(2).strip()
         date = ts[:10] if len(ts) >= 10 else ts
-        msg_short = truncate_smart(msg, max_chars=60, seps=('. ', '→ ', ' — ', ' ('))
-        activity_rows.append({'date': date, 'msg': msg_short})
+    else:
+        # 형식 2: - YYYY-MM-DD — msg (swk-gc 등 변형)
+        m2 = re.match(r'^-\s+([0-9]{4}-[0-9]{2}-[0-9]{2})\s*[—–-]\s*(.+)$', line)
+        # 형식 4: - YYYY-MM-DDTHH:MM:SS... text (zippit 등 ISO timestamp prefix)
+        m4 = re.match(r'^-\s+([0-9]{4}-[0-9]{2}-[0-9]{2})T[0-9:+\-Z\.]+\s+(.+)$', line)
+        if m2:
+            date, msg = m2.group(1).strip(), m2.group(2).strip()
+        elif m4:
+            date, msg = m4.group(1).strip(), m4.group(2).strip()
+        else:
+            # 형식 5: - msg (날짜 없음, 오늘로 추정)
+            from datetime import date as _date
+            date = _date.today().strftime('%Y-%m-%d')
+            msg = re.sub(r'^-\s+', '', line).strip()
+    msg_clean = strip_emphasis(msg)
+    msg_short = truncate_smart(msg_clean, max_chars=60, seps=('. ', '→ ', ' — ', ' ('))
+    activity_rows.append({'date': date, 'msg': msg_short})
 activity_rows = activity_rows[:5]
 
 # ─── Known Risks / Gaps (분리 파싱 — 컬럼 의미 다름) ──
@@ -181,6 +226,66 @@ for cols in parse_table_rows(gaps_section, skip_headers=('영역',)):
 
 # ─── Refs ──────────────────────────────────
 refs_section = extract_section(src, r'## Refs')
+
+# ─── Graceful Passthrough: 알려진 섹션 외 보존 + 추출 실패 fallback ──
+KNOWN_PREFIXES = [
+    'Current', 'Tasks', 'Recently Done', 'Last Activity',
+    'Known Risks', 'Known Gaps', 'Refs', '규칙 우회 이력',
+    'Recent Activity', 'Active Tree', 'Handoff', 'Archive',
+    'Risks & Gaps',
+]
+def is_known_section(title):
+    """이모지 제거 + prefix 매칭 ('Known Risks (PRD §11 압축)' 같은 변형도 인식)"""
+    t = re.sub(r'^[\W\s]+', '', title).strip()
+    return any(t.startswith(p) or title.startswith(p) for p in KNOWN_PREFIXES)
+
+legacy_sections = []
+section_pat = re.compile(r'^(## )([^\n]+)$', re.MULTILINE)
+matches_iter = list(section_pat.finditer(src))
+for i, m in enumerate(matches_iter):
+    title = m.group(2).strip()
+    if is_known_section(title):
+        continue
+    start = m.start()
+    end = matches_iter[i+1].start() if i+1 < len(matches_iter) else len(src)
+    legacy_sections.append(src[start:end].rstrip())
+
+# Fallback: 알려진 섹션이지만 정형 추출 0건이면 원본 보존
+def section_body(src, heading_pat):
+    """## Heading 부터 다음 ## 까지 본문 반환"""
+    pat = re.compile(rf'^{heading_pat}.*?(?=^##\s|\Z)', re.MULTILINE | re.DOTALL)
+    m = pat.search(src)
+    return m.group(0).strip() if m else ''
+
+# Recently Done 추출 0건이지만 섹션 본문 있으면 보존
+if not recent_rows:
+    rd_body = section_body(src, r'## Recently Done')
+    if rd_body and len(rd_body) > 30:  # 빈 섹션 무시
+        legacy_sections.append(rd_body)
+
+# Known Risks 추출 0건이지만 섹션 본문 있으면 보존
+if not risk_rows:
+    kr_body = section_body(src, r'## Known Risks')
+    if kr_body and len(kr_body) > 30:
+        legacy_sections.append(kr_body)
+
+# Tasks 추출 0건이지만 섹션 본문 있으면 보존
+if not task_rows:
+    t_body = section_body(src, r'## Tasks')
+    if t_body and len(t_body) > 30:
+        legacy_sections.append(t_body)
+
+# Last Activity 추출 0건이지만 섹션 본문 있으면 보존
+if not activity_rows:
+    la_body = section_body(src, r'## Last Activity')
+    if la_body and len(la_body) > 30:
+        legacy_sections.append(la_body)
+
+# Known Gaps 추출 0건이지만 섹션 본문 있으면 보존
+if not any(r.get('state') == 'Known Gap' for r in risk_rows):
+    kg_body = section_body(src, r'## Known Gaps')
+    if kg_body and len(kg_body) > 30:
+        legacy_sections.append(kg_body)
 
 # ─── 활성 작업 분류 ─────────────────────────
 done_tasks   = [t for t in task_rows if t['status'].lower() in ('done', 'completed')]
@@ -300,6 +405,29 @@ if refs_section:
             out.append(line)
     out.append('')
 
+# Legacy Sections (graceful passthrough — 알려진 섹션 외 v1 본문 보존)
+if legacy_sections:
+    out.append('## 📝 Legacy Sections (v1 원본 보존)')
+    out.append('')
+    out.append('> [!NOTE]')
+    out.append('> 표준 v1 섹션 외 — migrate가 자동 정형화 못 한 사용자 정의 섹션. 정보 보존 우선으로 원본 markdown 그대로 inline.')
+    out.append('> 시간 날 때 v2 Active Tree / Archive로 수동 이관 권장.')
+    out.append('')
+    for sec in legacy_sections:
+        out.append(sec)
+        out.append('')
+
+# Last Activity 전체 보존 (5개 초과분 → details 안에)
+if len(all_activity_lines) > 5:
+    out.append('<details>')
+    out.append(f'<summary>📜 <b>Last Activity 전체 ({len(all_activity_lines)}건, 최근 5건은 Recent Activity 표 참조)</b></summary>')
+    out.append('')
+    for line in all_activity_lines[5:]:
+        out.append(line)
+    out.append('')
+    out.append('</details>')
+    out.append('')
+
 # 푸터
 out.append('---')
 out.append('')
@@ -332,6 +460,8 @@ if [ "$APPLY" -eq 1 ]; then
   BACKUP="${INPUT}.v1.bak"
   cp "$INPUT" "$BACKUP"
   printf '%s\n' "$OUTPUT" > "$INPUT"
+  # session-start dry-run preview 자동 정리 (이미 v2이므로 불필요)
+  [ -f ".nova/migrate-preview.md" ] && rm -f .nova/migrate-preview.md
   echo "✅ 변환 완료" >&2
   echo "   원본 백업: $BACKUP" >&2
   echo "   변환 결과: $INPUT" >&2

@@ -3287,6 +3287,76 @@ assert "R35g: spec §10 — L3 검증 도구로 check-state-drift.sh 명시" \
   "grep -q 'check-state-drift.sh' '$ROOT_DIR/docs/specs/nova-state-schema-v2.md'"
 
 echo ""
+echo -e "${YELLOW}[36. v1→v2 Migration — dry-run preview 정책 (v5.40.0+)]${NC}"
+
+# R37a: session-start.sh가 v1 감지 시 자동 apply 안 함 (STATE 안 건드림)
+assert "R37a: session-start.sh v1 감지 시 자동 apply X (NOVA-STATE.md 안 건드림)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n\n- **Goal**: test goal — desc\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   _BEFORE=\$(python3 -c \"import os; print(int(os.path.getmtime('NOVA-STATE.md')))\"); \
+   sleep 1; \
+   echo '{}' | bash $ROOT_DIR/hooks/session-start.sh >/dev/null 2>&1; \
+   _AFTER=\$(python3 -c \"import os; print(int(os.path.getmtime('NOVA-STATE.md')))\"); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \"\$_BEFORE\" = \"\$_AFTER\" ]"
+
+# R37b: session-start.sh v1 감지 시 .nova/migrate-preview.md 생성
+assert "R37b: session-start.sh v1 감지 시 .nova/migrate-preview.md 생성" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n\n- **Goal**: test goal — desc\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   echo '{}' | bash $ROOT_DIR/hooks/session-start.sh >/dev/null 2>&1; \
+   S=0; [ -s .nova/migrate-preview.md ] || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37c: session-start.sh — additionalContext에 dry-run preview 알림 포함
+assert "R37c: session-start.sh — dry-run preview 알림 (📋 + .nova/migrate-preview.md 언급)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n\n- **Goal**: test goal — desc\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   _OUT=\$(echo '{}' | bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; \
+   echo \"\$_OUT\" | grep -q 'migrate-preview.md'"
+
+# R37d: migrate-nova-state.sh --apply 시 .nova/migrate-preview.md 자동 정리
+assert "R37d: migrate-nova-state.sh --apply → .nova/migrate-preview.md 자동 정리" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; mkdir -p .nova; \
+   printf -- '# Nova State\n\n- **Goal**: test goal — desc\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   echo dummy > .nova/migrate-preview.md; \
+   bash $ROOT_DIR/scripts/migrate-nova-state.sh --apply >/dev/null 2>&1; \
+   S=0; [ -f .nova/migrate-preview.md ] && S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37e: migrate에 strip_emphasis 함수 존재 (마크다운 강조 제거)
+assert "R37e: migrate-nova-state.sh — strip_emphasis 함수 (마크다운 강조 제거)" \
+  "grep -q 'def strip_emphasis' '$ROOT_DIR/scripts/migrate-nova-state.sh'"
+
+# R37f: migrate에 graceful passthrough 로직 (legacy_sections)
+assert "R37f: migrate-nova-state.sh — legacy_sections (graceful passthrough)" \
+  "grep -q 'legacy_sections' '$ROOT_DIR/scripts/migrate-nova-state.sh'"
+
+# R37g: v2 STATE에서 session-start migrate trigger 안 함
+assert "R37g: session-start.sh v2 STATE → migrate trigger X (이미 v2)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: test v2\nactive_ao: null\nhandoff: null\n---\n# Nova State\n\n## 🎯 Current\ntest\n' > NOVA-STATE.md; \
+   _OUT=\$(echo '{}' | bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null); \
+   S=0; echo \"\$_OUT\" | grep -q 'migrate-preview' && S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37h: migrate-nova-state.sh v2 입력 시 no-op (이미 v2 메시지)
+assert "R37h: migrate-nova-state.sh v2 입력 → no-op + 이미 v2 메시지" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: test\nactive_ao: null\nhandoff: null\n---\n# Body\n' > NOVA-STATE.md; \
+   _OUT=\$(bash $ROOT_DIR/scripts/migrate-nova-state.sh 2>&1); \
+   S=0; echo \"\$_OUT\" | grep -q '이미 v2' && S=0 || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37i: v1 fallback sessionTitle 길이 ≤120자 (시각 품질 — swk-gc 867자 버그 회귀 방지)
+assert "R37i: session-start.sh — v1 fallback sessionTitle 길이 ≤120자 (CJK 친화 truncate)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n- **Goal**: **Very Long Goal — with markdown emphasis + multiple separators + ${RANDOM} 등 매우 긴 한국어 텍스트가 sessionTitle에 그대로 들어가면 tab title이 깨짐**\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   T=\$(echo '{}' | bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   _LEN=\$(echo -n \"\$T\" | wc -c | tr -d ' '); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \"\$_LEN\" -le 120 ]"
+
+echo ""
 
 # ═══════════════════════════════════════════
 # 결과
