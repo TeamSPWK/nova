@@ -188,6 +188,18 @@ except Exception:
       echo "  ※ HTML은 minimal mode로 우선 생성됨 ($OUT) — 부트스트랩 후 갱신" >&2
       echo "  ※ draft 경로는 프로젝트 slug 기반 — 멀티 프로젝트 cross-pollution 차단 (v5.35.4)" >&2
       echo "════════════════════════════════════════════════════════════" >&2
+      # ───────────────────────────────────────────────────────────
+      # 메인 Claude 강제 신호 — commands/status.md §Step 3 자율 우회 차단
+      # 이 마커가 stderr에 출력되면 메인 Claude는 무조건 Agent spawn → render 재실행까지 진행
+      # ───────────────────────────────────────────────────────────
+      echo "" >&2
+      echo "[CLAUDE_AUTO_CONTINUE]" >&2
+      echo "DRAFT_PATH=${DRAFT_PATH}" >&2
+      echo "PLAN_COUNT=${PLAN_COUNT}" >&2
+      echo "NEXT_ACTION=spawn_agent_then_rerender" >&2
+      echo "AGENT_TYPE=general-purpose" >&2
+      echo "RERENDER_CMD=bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --open --no-bootstrap" >&2
+      echo "[/CLAUDE_AUTO_CONTINUE]" >&2
     fi
   fi
 fi

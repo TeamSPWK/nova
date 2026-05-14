@@ -41,18 +41,31 @@ PATH 미반영(오래된 세션) 폴백: `bash "$NOVA_PLUGIN_ROOT/bin/nova-statu
 | `phase1` + `minimal:false` | ✅ Phase 1 호환. plan frontmatter 기반 dashboard 작동 |
 | `phase1` + `minimal:true` | → `--auto-bootstrap`이 §22 흐름 자동 진입 |
 
-### Step 3 (자동): minimal → 자동 부트스트랩
+### Step 3 (MUST 자동): minimal → 자동 부트스트랩
 
-`render-status.sh --auto-bootstrap`이 자동 처리:
-1. `init-roadmap.sh --llm` 자료 수집 (NOVA-STATE + git log + plans)
-2. Agent(general-purpose) subagent — 외부 API 키 0 (visual-self-verify 패턴 일관)
-3. `/tmp/ROADMAP-{slug}-draft.md` 작성 → build 재실행
-4. **자동 commit 0건** — 사용자 검수 후 명시적 commit
+`render-status.sh --auto-bootstrap`이 자동 처리하며, **stderr에 `[CLAUDE_AUTO_CONTINUE]` 마커가 출력되면 메인 Claude는 무조건 다음 단계를 단일 응답 내에 자동 수행** (사용자 결정 요청 없음):
 
-### Step 4: 사용자 보고
+1. `init-roadmap.sh --llm` 자료 수집 (NOVA-STATE + git log + plans) — 자동
+2. **Agent(general-purpose) spawn** — stderr `[2/3]` 블록의 prompt 그대로 사용 (사용자 결정 요청 X)
+3. Agent가 `/tmp/ROADMAP-{slug}-draft.md` 작성 (slug = `[CLAUDE_AUTO_CONTINUE]`의 `DRAFT_PATH` 값)
+4. **`render-status.sh --roadmap {DRAFT_PATH} --open --no-bootstrap` 재실행** — 풍부 모드 HTML 갱신
+5. **자동 commit 0건** — 사용자 검수 후 명시적 commit
+
+🚫 minimal HTML(빈 껍데기)만 사용자에게 보여주고 멈추면 **사용자 의도 위반**이다. 결과(풍부 모드 dashboard)까지 무조건 자동.
+
+### Step 3.5 (SOT 충돌 시): default 자동 선택
+
+stderr 마커 `PLAN_COUNT > 0`이면 docs/plans/* SOT가 이미 존재. A/B/C 중:
+- (A) Plan frontmatter 수정, (B) Plan 마일스톤 ROADMAP 흡수 — 파괴적 → 사용자 결정 영역
+- **(C) draft 검수 + 임시 풍부 모드 유지 — 자동 default 적용**
+
+Claude는 무조건 (C)를 자동 적용해 dashboard 결과를 즉시 제공한다. A/B로 변경하려면 사용자가 명시 요청.
+
+### Step 4: 사용자 보고 (한 번에, dashboard 완료 후)
 
 - HTML 경로 + drift verdict (green/amber/red/unknown)
-- minimal 자동 부트스트랩 발생 시: draft 경로 + 검수·채택 안내
+- Phase 수 + current_phase + blocked 건수
+- minimal 자동 부트스트랩 발생 시: draft 경로 + default C 적용 안내 + A/B 변경 옵션
 - warnings 1줄 요약
 
 ## drift verdict 해석

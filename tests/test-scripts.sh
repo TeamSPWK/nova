@@ -2941,6 +2941,33 @@ _test_R34z() {
 }
 assert "R34z: --auto-bootstrap 분기 동작 — plan 있는 디렉토리에서 'SOT 충돌' 경고 출력" \
   "_test_R34z"
+# v5.35.6 — 메인 Claude 강제 신호 마커
+assert "R34aa: render-status.sh — [CLAUDE_AUTO_CONTINUE] 마커 + DRAFT_PATH·NEXT_ACTION 필드 출력" \
+  "grep -q 'CLAUDE_AUTO_CONTINUE' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'NEXT_ACTION=spawn_agent_then_rerender' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'RERENDER_CMD=' '$ROOT_DIR/scripts/render-status.sh'"
+assert "R34ab: commands/status.md — Step 3 MUST 자동 진행 + 마커 인식 + 금지 패턴 명시" \
+  "grep -q 'CLAUDE_AUTO_CONTINUE' '$ROOT_DIR/commands/status.md' && \
+   grep -q 'MUST 자동 진행' '$ROOT_DIR/commands/status.md' && \
+   grep -q '금지 패턴' '$ROOT_DIR/commands/status.md'"
+assert "R34ac: commands/status.md — SOT 충돌 시 default C 자동 적용 명시" \
+  "grep -q 'default C 자동 적용' '$ROOT_DIR/commands/status.md' || \
+   grep -qE 'default C.*자동|자동.*default C' '$ROOT_DIR/commands/status.md'"
+assert "R34ad: SKILL.md — [CLAUDE_AUTO_CONTINUE] 마커 인식 + Agent spawn 명시" \
+  "grep -q 'CLAUDE_AUTO_CONTINUE' '$ROOT_DIR/skills/status-dashboard/SKILL.md' && \
+   grep -q 'Agent(general-purpose) spawn' '$ROOT_DIR/skills/status-dashboard/SKILL.md'"
+# 실측: 마커가 실제 stderr 출력에 포함되는지
+_test_R34ae() {
+  local work_dir
+  work_dir=$(mktemp -d)
+  local out
+  out=$(cd "$work_dir" && git init -q && bash "$ROOT_DIR/scripts/render-status.sh" --auto-bootstrap 2>&1)
+  rm -rf "$work_dir"
+  printf '%s' "$out" | grep -q '\[CLAUDE_AUTO_CONTINUE\]' && \
+  printf '%s' "$out" | grep -q '\[/CLAUDE_AUTO_CONTINUE\]'
+}
+assert "R34ae: 마커 실측 — minimal 부트스트랩 실행 시 [CLAUDE_AUTO_CONTINUE] 블록 stderr 출력" \
+  "_test_R34ae"
 
 echo ""
 
