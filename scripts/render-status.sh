@@ -86,6 +86,8 @@ fi
 [[ -f "$DATA" ]] || { echo "[render-status] JSON not found: $DATA" >&2; exit 4; }
 
 mkdir -p "$(dirname "$OUT")"
+# OUT을 절대경로화 — auto-bootstrap rerender 시 cwd 변경되어도 안전 (v5.35.7)
+OUT_ABS="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
 
 # Inject (Python — 마커 결정론 치환)
 python3 - "$TEMPLATE" "$DATA" "$OUT" <<'PY'
@@ -191,24 +193,31 @@ except Exception:
       # ───────────────────────────────────────────────────────────
       # 메인 Claude 강제 신호 — commands/status.md §Step 3 자율 우회 차단
       # 이 마커가 stderr에 출력되면 메인 Claude는 무조건 Agent spawn → render 재실행까지 진행
+      # OUT_PATH는 절대경로 — Agent Bash cwd가 다르더라도 정확한 위치에 갱신 보장 (v5.35.7)
       # ───────────────────────────────────────────────────────────
       echo "" >&2
       echo "[CLAUDE_AUTO_CONTINUE]" >&2
       echo "DRAFT_PATH=${DRAFT_PATH}" >&2
+      echo "OUT_PATH=${OUT_ABS}" >&2
       echo "PLAN_COUNT=${PLAN_COUNT}" >&2
       echo "NEXT_ACTION=spawn_agent_then_rerender" >&2
       echo "AGENT_TYPE=general-purpose" >&2
-      echo "RERENDER_CMD=bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --open --no-bootstrap" >&2
+      echo "RERENDER_CMD=bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --out ${OUT_ABS} --open --no-bootstrap" >&2
       echo "[/CLAUDE_AUTO_CONTINUE]" >&2
     fi
   fi
 fi
 
 if $OPEN; then
-  ABS="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
-  case "$(uname -s)" in
-    Darwin) open "file://$ABS" ;;
-    Linux)  xdg-open "file://$ABS" >/dev/null 2>&1 || true ;;
-    *)      echo "[render-status] --open: 알 수 없는 OS, 수동으로 열어주세요: file://$ABS" >&2 ;;
-  esac
+  # minimal HTML(빈 껍데기)는 브라우저로 열지 않음 — auto-bootstrap이 풍부 모드로 갱신 후 한 번만 열림 (v5.35.7)
+  # MINIMAL_CHECK=TRIGGER이면 minimal+auto-bootstrap 케이스 → open skip
+  if [[ "${MINIMAL_CHECK:-}" == "TRIGGER" ]]; then
+    echo "[render-status] minimal HTML — 브라우저 open skip (풍부 모드 갱신 후 열림)" >&2
+  else
+    case "$(uname -s)" in
+      Darwin) open "file://$OUT_ABS" ;;
+      Linux)  xdg-open "file://$OUT_ABS" >/dev/null 2>&1 || true ;;
+      *)      echo "[render-status] --open: 알 수 없는 OS, 수동으로 열어주세요: file://$OUT_ABS" >&2 ;;
+    esac
+  fi
 fi

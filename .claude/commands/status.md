@@ -56,13 +56,16 @@ build/render JSON의 `mode`·`minimal` 필드로 분기:
 
 ```
 [CLAUDE_AUTO_CONTINUE]
-DRAFT_PATH=...
-PLAN_COUNT=...
+DRAFT_PATH=/tmp/ROADMAP-{slug}-draft.md         # Agent가 작성할 draft 경로
+OUT_PATH=/abs/path/to/.nova/status/index.html   # 최종 HTML 절대경로 (v5.35.7)
+PLAN_COUNT=N                                    # SOT 충돌 검사 (PLAN_COUNT>0이면 default C 자동)
 NEXT_ACTION=spawn_agent_then_rerender
 AGENT_TYPE=general-purpose
-RERENDER_CMD=...
+RERENDER_CMD=bash "$NOVA_PLUGIN_ROOT/scripts/render-status.sh" --roadmap {DRAFT_PATH} --out {OUT_PATH} --open --no-bootstrap
 [/CLAUDE_AUTO_CONTINUE]
 ```
+
+⚠️ **OUT_PATH는 절대경로** — Agent의 Bash tool cwd가 사용자 프로젝트와 다를 수 있으므로 `RERENDER_CMD`의 `--out` 인자를 그대로 사용해야 dashboard가 정확한 위치에 갱신됨 (v5.35.7 이전: `.nova/status/index.html` 상대경로 → Agent cwd가 main project이면 엉뚱한 곳에 갱신).
 
 stderr에 `[CLAUDE_AUTO_CONTINUE]`가 보이면 메인 Claude는 **다음을 단일 응답 내에 자동 수행** (사용자 결정 요청 없음, 사이드 보고 없음):
 

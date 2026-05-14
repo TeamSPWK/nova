@@ -2968,6 +2968,50 @@ _test_R34ae() {
 }
 assert "R34ae: 마커 실측 — minimal 부트스트랩 실행 시 [CLAUDE_AUTO_CONTINUE] 블록 stderr 출력" \
   "_test_R34ae"
+# v5.35.7 — OUT 절대경로화 (cwd 무관 rerender) + minimal open skip
+assert "R34af: render-status.sh — OUT_ABS 절대경로 산출 + OUT_PATH 마커 출력" \
+  "grep -q 'OUT_ABS=' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'OUT_PATH=\\\${OUT_ABS}' '$ROOT_DIR/scripts/render-status.sh'"
+assert "R34ag: render-status.sh — RERENDER_CMD에 --out 절대경로 포함" \
+  "grep -qE 'RERENDER_CMD=.+--out \\\${OUT_ABS}' '$ROOT_DIR/scripts/render-status.sh'"
+assert "R34ah: render-status.sh — minimal+auto-bootstrap 시 첫 HTML open skip" \
+  "grep -q 'minimal HTML — 브라우저 open skip' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'MINIMAL_CHECK.*TRIGGER' '$ROOT_DIR/scripts/render-status.sh'"
+# 실측: cwd 무관 rerender — fixture 외부 cwd에서 --out 절대경로로 호출 시 정확한 위치 갱신
+_test_R34ai() {
+  local work_dir
+  work_dir=$(mktemp -d)
+  local draft="$work_dir/draft.md"
+  local out="$work_dir/sub/dashboard.html"
+  cat > "$draft" <<EOF
+---
+roadmap_id: cwd-test
+title: cwd-invariant test
+current_phase: P1
+phases:
+  - {id: P1, title: First, status: in_progress, summary: ""}
+---
+# x
+EOF
+  # /tmp(fixture와 무관한 cwd)에서 호출, 절대 --out 지정
+  (cd /tmp && bash "$ROOT_DIR/scripts/render-status.sh" --roadmap "$draft" --out "$out" --no-bootstrap >/dev/null 2>&1)
+  local rc=1
+  if [[ -f "$out" ]] && grep -q '"mode":' "$out" 2>/dev/null; then
+    if python3 -c "
+import re, json, sys
+html = open('$out').read()
+m = re.search(r'__NOVA_DATA__\*/(.+?)/\*__NOVA_DATA_END__', html, re.DOTALL)
+d = json.loads(m.group(1).strip())
+sys.exit(0 if d.get('mode') == 'roadmap' and len(d.get('phases', [])) == 1 else 1)
+" 2>/dev/null; then
+      rc=0
+    fi
+  fi
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34ai: cwd 무관 rerender — 외부 cwd에서 --out 절대경로로 호출 시 정확한 위치에 풍부 모드 갱신" \
+  "_test_R34ai"
 
 echo ""
 
