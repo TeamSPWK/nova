@@ -13,12 +13,19 @@ fi
 
 TOOL="unknown"
 if [[ ! -t 0 ]]; then
-  # stdin 존재 — Claude Code hooks 표준 경로 또는 파이프 테스트
-  INPUT=$(cat 2>/dev/null || true)
-  if [[ -n "$INPUT" ]]; then
+  # stdin 비-tty — Claude Code hooks 표준 또는 inherited fd
+  # v5.38.1 hotfix: cat blocking → read -t (nonblocking) 으로 변경.
+  # 이유: inherited 빈 stdin은 EOF가 안 오므로 cat이 무한 대기 (1시간+ hang 사고 발생, v5.38.0 release).
+  # read -t 1: 1초 내에 첫 라인 없으면 fallback.
+  INPUT=""
+  if IFS= read -r -t 1 INPUT 2>/dev/null; then
+    # 추가 라인 nonblocking 흡수 (multi-line JSON 대비)
+    while IFS= read -r -t 0.1 _next 2>/dev/null; do
+      INPUT="${INPUT}${_next}"
+    done
     TOOL=$(echo "$INPUT" | jq -r '.tool_name // "unknown"' 2>/dev/null || echo "unknown")
   else
-    # stdin empty — 환경변수 fallback (CI/테스트 호환)
+    # stdin 비어있음 또는 timeout — 환경변수 fallback (CI/테스트 호환)
     TOOL="${TOOL_NAME:-unknown}"
   fi
 else

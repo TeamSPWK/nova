@@ -2103,6 +2103,13 @@ assert "S8.6: pre-tool-use-record.sh 실행 → tool_call 이벤트 기록" \
    sleep 0.3 && grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && \
    ! grep -q 'tool_input' \"\$TMPD/events.jsonl\"; S=\$?; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
 
+# S8.6b: 회귀 가드 — 빈 inherited stdin 시 hook이 2초 내 종료 (v5.38.0 cat hang 사고 재발 방지)
+# /dev/zero: EOF 없이 0바이트 무한 → 기존 cat은 무한 대기. nonblocking read -t 1로 1.x초 후 종료.
+assert "S8.6b: pre-tool-use-record.sh — 빈 inherited stdin 시 2초 내 종료 (cat hang 방지)" \
+  "TMPD=\$(mktemp -d); START=\$(date +%s); \
+   NOVA_EVENTS_PATH=\"\$TMPD/e.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh < /dev/zero 2>/dev/null; \
+   END=\$(date +%s); rm -rf \"\$TMPD\"; [ \$((END - START)) -le 2 ]"
+
 # S8.7: debounce 동작 — 5초 내 2회 호출 → 1회만 기록
 assert "S8.7: session-start.sh debounce — 2회 연속 호출 시 1회 기록" \
   "TMPD=\$(mktemp -d); cd \"\$TMPD\" && mkdir -p .nova && \
