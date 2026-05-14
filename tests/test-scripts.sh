@@ -3242,6 +3242,51 @@ assert "R34ay: 셸 단독 자동 풍부 모드 도달 (heuristic dual fallback)"
   "_test_R34ay"
 
 echo ""
+echo -e "${YELLOW}[35. State Drift Check — L3 검증 (v5.39.0+)]${NC}"
+
+# R35a: check-state-drift.sh 존재 + 실행 권한
+assert "R35a: scripts/check-state-drift.sh 존재 + 실행 권한" \
+  "test -x $ROOT_DIR/scripts/check-state-drift.sh"
+
+# R35b: --help 정상 출력
+assert "R35b: check-state-drift.sh -h → USAGE 출력" \
+  "bash $ROOT_DIR/scripts/check-state-drift.sh -h 2>&1 | grep -q 'State Drift Check'"
+
+# R35c: clean 환경 (git 저장소 + STATE 없음) → skip + exit 0
+assert "R35c: NOVA-STATE.md 없으면 skip exit 0" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q && git config user.email t@t && git config user.name t && \
+   echo x > a && git add -A && git commit -q -m init; \
+   bash $ROOT_DIR/scripts/check-state-drift.sh 2>/dev/null; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R35d: drift 시뮬레이션 (코드 변경 + STATE mtime 1970) → --strict 시 exit 1
+assert "R35d: drift 시뮬레이션 --strict → exit 1" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q && git config user.email t@t && git config user.name t && \
+   echo x > code.sh && git add -A && git commit -q -m init; \
+   sleep 1; echo modified > code.sh; \
+   printf -- '---\nschema_version: 2\ngoal: test\nactive_ao: null\nhandoff: null\n---\n' > NOVA-STATE.md; \
+   touch -t 197001020000 NOVA-STATE.md; \
+   bash $ROOT_DIR/scripts/check-state-drift.sh --strict 2>/dev/null; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 1 ]"
+
+# R35e: drift 시뮬레이션 (코드 변경 + STATE 갱신됨) → exit 0
+assert "R35e: STATE 갱신됨 → exit 0 (drift 없음)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q && git config user.email t@t && git config user.name t && \
+   echo x > code.sh && git add -A && git commit -q -m init; \
+   sleep 1; echo modified > code.sh; \
+   printf -- '---\nschema_version: 2\ngoal: test\nactive_ao: null\nhandoff: null\n---\n' > NOVA-STATE.md; \
+   bash $ROOT_DIR/scripts/check-state-drift.sh --strict 2>/dev/null; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R35f: review.md에 L3 State Drift 검증 단계 명시
+assert "R35f: commands/review.md — L3 State Drift 검증 단계 명시" \
+  "grep -q 'check-state-drift.sh' '$ROOT_DIR/.claude/commands/review.md'"
+
+# R35g: spec §10 L3 검증 도구 명시
+assert "R35g: spec §10 — L3 검증 도구로 check-state-drift.sh 명시" \
+  "grep -q 'check-state-drift.sh' '$ROOT_DIR/docs/specs/nova-state-schema-v2.md'"
+
+echo ""
 
 # ═══════════════════════════════════════════
 # 결과

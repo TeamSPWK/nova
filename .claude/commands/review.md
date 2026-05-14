@@ -365,6 +365,12 @@ Critical 이슈가 발견되면 수정 후 재검증을 권고한다:
 
 **리뷰 결과를 출력한 직후, 다음 도구 호출로 NOVA-STATE.md를 업데이트한다. 출력만 하고 종료하면 안 된다.**
 
+## L3 State Drift 검증 (v5.39.0+)
+
+NOVA-STATE.md 갱신 후 `bash scripts/check-state-drift.sh --strict`로 코드 변경과 STATE 일관성을 검증한다 (spec §10).
+- exit 0 → 통과
+- exit 1 → drift 발견 (코드 변경 vs STATE 미갱신 또는 handoff.outputs 불일치) → STATE 보강 후 재실행
+
 - 프로젝트 루트에 `NOVA-STATE.md`가 없으면 `docs/templates/nova-state.md` 기반으로 생성
 - Refs → Last Verification 갱신
 - Last Activity 갱신:
