@@ -3383,6 +3383,35 @@ assert "R37l: session-start.sh v2 STATE → sessionTitle prefix X (정상시 깨
    cd - >/dev/null; rm -rf \"\$TMPD\"; \
    ! echo \"\$T\" | grep -q '검수 대기'"
 
+# R37m: v1 감지 시 프로젝트 루트에 NOVA-MIGRATE-PENDING.md 생성 (ls/시각 즉시 인지)
+assert "R37m: session-start.sh v1 감지 → NOVA-MIGRATE-PENDING.md 생성 (ls 시각 가시화)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n- **Goal**: test\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   echo '{}' | bash $ROOT_DIR/hooks/session-start.sh >/dev/null 2>&1; \
+   S=0; [ -f NOVA-MIGRATE-PENDING.md ] || S=1; \
+   grep -q 'v1→v2 Migration Pending' NOVA-MIGRATE-PENDING.md || S=1; \
+   grep -q 'migrate-nova-state.sh --apply' NOVA-MIGRATE-PENDING.md || S=1; \
+   grep -q 'NOVA_DISABLE_AUTO_MIGRATE' NOVA-MIGRATE-PENDING.md || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37n: v2 STATE 발견 시 NOVA-MIGRATE-PENDING.md + preview 자동 정리
+assert "R37n: session-start.sh v2 STATE → NOVA-MIGRATE-PENDING.md/preview 자동 정리" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; mkdir -p .nova; \
+   echo dummy > NOVA-MIGRATE-PENDING.md; echo dummy > .nova/migrate-preview.md; \
+   printf -- '---\nschema_version: 2\ngoal: clean\nactive_ao: null\nhandoff: null\n---\n# v2\n' > NOVA-STATE.md; \
+   echo '{}' | bash $ROOT_DIR/hooks/session-start.sh >/dev/null 2>&1; \
+   S=0; [ -f NOVA-MIGRATE-PENDING.md ] && S=1; [ -f .nova/migrate-preview.md ] && S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37o: migrate --apply 시 NOVA-MIGRATE-PENDING.md 자동 삭제
+assert "R37o: migrate-nova-state.sh --apply → NOVA-MIGRATE-PENDING.md 자동 삭제" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n- **Goal**: test\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   echo dummy > NOVA-MIGRATE-PENDING.md; \
+   bash $ROOT_DIR/scripts/migrate-nova-state.sh --apply >/dev/null 2>&1; \
+   S=0; [ -f NOVA-MIGRATE-PENDING.md ] && S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

@@ -91,6 +91,12 @@ PYEOF
   _STATE_VER="${_STATE_INFO%%|*}"
   GOAL="${_STATE_INFO#*|}"
 
+  # v2 STATE 정상 — 이전 v1 알림 잔재 정리 (수동 변환했을 수 있음)
+  if [ "$_STATE_VER" = "V2" ]; then
+    [ -f "NOVA-MIGRATE-PENDING.md" ] && rm -f NOVA-MIGRATE-PENDING.md 2>/dev/null || true
+    [ -f ".nova/migrate-preview.md" ] && rm -f .nova/migrate-preview.md 2>/dev/null || true
+  fi
+
   # v1 STATE 감지 → 자동 dry-run preview (apply는 사용자 명시 호출 시만)
   # v5.40.0+: 자동 apply는 정보 손실 위험. 사용자 검수 후 명시 apply.
   # NOVA_DISABLE_AUTO_MIGRATE=1 이면 스킵 (테스트/CI 환경)
@@ -126,6 +132,50 @@ PYEOF
         MIGRATE_NOTICE="\n\n📋 NOVA-STATE.md v1 감지 — v2 dry-run preview 준비됨: \`.nova/migrate-preview.md\`. 검수 후 \`bash scripts/migrate-nova-state.sh --apply\` 로 명시 적용. (자동 apply 안 함 — 사용자별 STATE 변형으로 정보 손실 가능성 보호)"
         # sessionTitle에 prefix — 탭/스테이터스라인에서 즉시 인지
         MIGRATE_PREFIX="⚠️ v1→v2 검수 대기 · "
+
+        # 프로젝트 루트에 명시 알림 파일 — `ls`에서 즉시 보임 (tmux/sessionTitle 안 보이는 환경 대비)
+        # NOVA-STATE.md mtime > NOVA-MIGRATE-PENDING.md mtime이면 갱신
+        _MP_FILE="NOVA-MIGRATE-PENDING.md"
+        _MP_MTIME=0
+        [ -f "$_MP_FILE" ] && _MP_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('$_MP_FILE')))" 2>/dev/null || echo 0)
+        if [ "$_ST_MTIME" -gt "$_MP_MTIME" ]; then
+          cat > "$_MP_FILE" <<'MPEOF'
+# ⚠️ NOVA-STATE.md v1→v2 Migration Pending
+
+이 프로젝트의 `NOVA-STATE.md`는 v1 schema입니다. Nova v5.38.0+에서 v2로 진화했지만,
+**자동 변환 안 함** (사용자별 STATE 변형으로 정보 손실 가능성 보호). 사용자 검수 후 명시 apply 필요.
+
+## 다음 액션 (택1)
+
+### A. Preview 검수 후 변환 적용 (권장)
+
+```bash
+# 1. 변환 결과 미리보기 (NOVA-STATE.md는 안 건드림)
+open .nova/migrate-preview.md
+
+# 2. OK이면 실제 변환 (백업 자동 생성: NOVA-STATE.md.v1.bak)
+bash scripts/migrate-nova-state.sh --apply
+```
+
+### B. v1 그대로 유지 (자동 알림 끄기)
+
+```bash
+# 환경변수 set (영구하려면 ~/.zshrc 또는 ~/.bashrc에 추가)
+export NOVA_DISABLE_AUTO_MIGRATE=1
+```
+
+이 파일과 `.nova/migrate-preview.md` 모두 다음 세션부터 안 생김.
+
+### C. 임시 무시
+
+이 파일을 그냥 `rm NOVA-MIGRATE-PENDING.md`. 다음 세션 시작 시 STATE.md가 갱신됐으면 재생성.
+
+---
+
+> 이 파일은 Nova SessionStart hook이 자동 생성합니다. apply 또는 NOVA-STATE.md가 v2로 바뀌면 자동 삭제.
+> Spec: <https://github.com/TeamSPWK/nova/blob/main/docs/specs/nova-state-schema-v2.md>
+MPEOF
+        fi
       fi
     fi
   fi

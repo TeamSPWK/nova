@@ -460,8 +460,9 @@ if [ "$APPLY" -eq 1 ]; then
   BACKUP="${INPUT}.v1.bak"
   cp "$INPUT" "$BACKUP"
   printf '%s\n' "$OUTPUT" > "$INPUT"
-  # session-start dry-run preview 자동 정리 (이미 v2이므로 불필요)
+  # session-start dry-run preview + 알림 파일 자동 정리 (이미 v2이므로 불필요)
   [ -f ".nova/migrate-preview.md" ] && rm -f .nova/migrate-preview.md
+  [ -f "NOVA-MIGRATE-PENDING.md" ] && rm -f NOVA-MIGRATE-PENDING.md
   echo "✅ 변환 완료" >&2
   echo "   원본 백업: $BACKUP" >&2
   echo "   변환 결과: $INPUT" >&2
