@@ -92,27 +92,37 @@ def validate(fm):
         w.append("plan_id 누락 — minimal mode 진행.")
 
     # phases
-    seen = set()
+    # v5.36.0: duplicate id 시 status 우선순위 머지 (W5)
+    # in_progress(작업 중) > blocked(외부 차단) > pending(대기) > done(완료)
+    # 이유: 진행 중/차단 중인 항목이 가시화돼야 cursor·dashboard 정확
+    STATUS_PRIORITY = {"in_progress": 3, "blocked": 2, "pending": 1, "done": 0}
+    phase_by_id = {}
     for ph in (fm.get("phases") or []):
         if not isinstance(ph, dict): continue
         pid = ph.get("id")
         if not pid:
             w.append("phases[]에 id 없는 항목 — skip.")
             continue
-        if pid in seen:
-            w.append(f"phases id 중복 ({pid}) — 첫 항목만 사용.")
-            continue
-        seen.add(pid)
         status = ph.get("status", "pending")
         if status not in ALLOWED_STATUS:
             w.append(f"phases[{pid}].status 비정상 ({status}) → pending.")
             status = "pending"
-        d["phases"].append({
+        entry = {
             "id": pid,
             "title": str(ph.get("title") or "").strip(),
             "status": status,
             "summary": str(ph.get("summary") or ""),
-        })
+        }
+        if pid in phase_by_id:
+            prev = phase_by_id[pid]
+            if STATUS_PRIORITY.get(status, 0) > STATUS_PRIORITY.get(prev["status"], 0):
+                w.append(f"phases id 중복 ({pid}) — 우선순위 높은 status({status}) 채택 (이전: {prev['status']}).")
+                phase_by_id[pid] = entry
+            else:
+                w.append(f"phases id 중복 ({pid}) — 첫 항목 유지 (status: {prev['status']}).")
+            continue
+        phase_by_id[pid] = entry
+    d["phases"] = list(phase_by_id.values())
 
     # sprints (map of phase_id → array)
     sprints = fm.get("sprints") or {}
@@ -397,23 +407,32 @@ def validate_roadmap(fm, path):
         "path": path,
     }
 
-    seen = set()
+    # v5.36.0: duplicate id 시 status 우선순위 머지 (W5)
+    STATUS_PRIORITY_RM = {"in_progress": 3, "blocked": 2, "pending": 1, "done": 0}
+    rm_phase_by_id = {}
     for p in (fm.get("phases") or []):
         if not isinstance(p, dict): continue
         pid = p.get("id")
         if not pid:
             w.append("ROADMAP phases[]에 id 없는 항목 — skip"); continue
-        if pid in seen:
-            w.append(f"ROADMAP phases id 중복 ({pid}) — 첫 항목만 사용"); continue
-        seen.add(pid)
         status = p.get("status", "pending")
         if status not in ALLOWED_STATUS:
             w.append(f"ROADMAP phases[{pid}].status 비정상 ({status}) → pending"); status = "pending"
-        rm["phases"].append({
+        entry = {
             "id": pid, "title": str(p.get("title") or "").strip(), "status": status,
             "summary": str(p.get("summary") or ""),
             "range_months": p.get("range_months"),
-        })
+        }
+        if pid in rm_phase_by_id:
+            prev = rm_phase_by_id[pid]
+            if STATUS_PRIORITY_RM.get(status, 0) > STATUS_PRIORITY_RM.get(prev["status"], 0):
+                w.append(f"ROADMAP phases id 중복 ({pid}) — 우선순위 높은 status({status}) 채택 (이전: {prev['status']})")
+                rm_phase_by_id[pid] = entry
+            else:
+                w.append(f"ROADMAP phases id 중복 ({pid}) — 첫 항목 유지 (status: {prev['status']})")
+            continue
+        rm_phase_by_id[pid] = entry
+    rm["phases"] = list(rm_phase_by_id.values())
 
     if not rm["current_phase"]:
         for p in rm["phases"]:
@@ -610,11 +629,16 @@ def main():
         result = dict(base)
         result["mode"] = "roadmap"
         result["plan"] = plan_meta
+        # v5.36.0 (W4): path 키를 명시 머지 — stale_info도 path를 가지므로 silent override 함정 차단
+        roadmap_path_rel = (stale_info["path"] if stale_info and stale_info.get("path")
+                            else os.path.relpath(roadmap["path"], repo_root))
+        stale_fields = {k: v for k, v in (stale_info or {"stale": False, "stale_reason": None}).items()
+                        if k != "path"}
         result["roadmap"] = {
             "roadmap_id": roadmap["roadmap_id"],
             "title": roadmap["title"],
-            "path": stale_info["path"] if stale_info else os.path.relpath(roadmap["path"], repo_root),
-            **(stale_info or {"stale": False, "stale_reason": None}),
+            "path": roadmap_path_rel,
+            **stale_fields,
         }
         result["cursor"] = {
             "current_phase": cur_phase,

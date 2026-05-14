@@ -200,13 +200,38 @@ def mode_scan(out_path, force):
     commit_guidance(out_path)
 
 # ---------------------------------------------------------------- mode: llm (자료 수집)
+# v5.36.0 (W2): 시크릿 패턴 — init-input.json에 NOVA-STATE 본문이 통째로 들어가므로
+# 사용자가 부주의하게 .nova/를 git에 커밋·공유 시 노출 방지. 기본 redaction.
+SECRET_PATTERNS = [
+    # AWS
+    (re.compile(r'AKIA[0-9A-Z]{16}'), 'AWS_ACCESS_KEY_ID'),
+    (re.compile(r'aws_secret_access_key\s*[=:]\s*["\']?([A-Za-z0-9/+=]{40})["\']?', re.I), 'AWS_SECRET'),
+    # GitHub
+    (re.compile(r'gh[pousr]_[A-Za-z0-9_]{36,}'), 'GITHUB_TOKEN'),
+    # OpenAI / Anthropic
+    (re.compile(r'sk-[A-Za-z0-9]{20,}'), 'OPENAI_KEY'),
+    (re.compile(r'sk-ant-[A-Za-z0-9_\-]{20,}'), 'ANTHROPIC_KEY'),
+    # Generic high-entropy assignments
+    (re.compile(r'(?i)(api[_-]?key|secret|password|token|bearer)\s*[=:]\s*["\']?([A-Za-z0-9_/+=\-]{20,})["\']?'), 'GENERIC_SECRET'),
+    # JWT
+    (re.compile(r'eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'), 'JWT'),
+]
+
+def redact_secrets(text):
+    if not text:
+        return text
+    out = text
+    for pat, label in SECRET_PATTERNS:
+        out = pat.sub(f'[REDACTED:{label}]', out)
+    return out
+
 def collect_git_log(repo_root_path, since="30 days ago", limit=50):
     try:
         out = subprocess.check_output(
             ["git", "log", f"--since={since}", "--oneline", f"-n{limit}"],
             cwd=repo_root_path, text=True, stderr=subprocess.DEVNULL,
         )
-        return out.strip().splitlines()
+        return redact_secrets(out.strip()).splitlines()
     except Exception:
         return []
 
@@ -215,7 +240,7 @@ def collect_nova_state(repo_root_path):
         p = os.path.join(repo_root_path, cand)
         if os.path.exists(p):
             try:
-                return Path(p).read_text(encoding="utf-8")[:8000]  # cap to 8KB
+                return redact_secrets(Path(p).read_text(encoding="utf-8")[:8000])  # cap to 8KB + redact
             except Exception:
                 pass
     return None
@@ -251,11 +276,40 @@ After review, the user will run: mv ROADMAP.md.draft ROADMAP.md && git add ROADM
 DO NOT commit yourself.
 """
 
+def ensure_nova_gitignored(root):
+    """v5.36.0 (W2): .nova/ 디렉토리에 secret을 포함할 수 있는 init-input.json이 들어가므로
+    프로젝트 .gitignore에 .nova/ 등록을 권고/자동 추가. 이미 무시 중이면 skip.
+    """
+    gi_path = os.path.join(root, ".gitignore")
+    nova_entry = ".nova/"
+    try:
+        if os.path.exists(gi_path):
+            content = Path(gi_path).read_text(encoding="utf-8")
+            # 정확 또는 broader 패턴 검사
+            for line in content.splitlines():
+                stripped = line.strip()
+                if stripped in (".nova", ".nova/", "/.nova", "/.nova/"):
+                    return False  # 이미 무시 중
+            # 미등록 — append
+            sep = "" if content.endswith("\n") else "\n"
+            Path(gi_path).write_text(content + sep + nova_entry + "\n", encoding="utf-8")
+            return True
+        else:
+            Path(gi_path).write_text(nova_entry + "\n", encoding="utf-8")
+            return True
+    except Exception:
+        return False
+
 def mode_llm(out_path, force):
     root = repo_root()
     nova_dir = os.path.join(root, ".nova")
     Path(nova_dir).mkdir(parents=True, exist_ok=True)
     input_path = os.path.join(nova_dir, "init-input.json")
+
+    # v5.36.0 (W2): .nova/ gitignore 자동 등록 (시크릿 누출 방지)
+    added = ensure_nova_gitignored(root)
+    if added:
+        print(f"  · .gitignore에 .nova/ 추가 (init-input.json은 redacted secret이지만 안전 권고)")
 
     inputs = {
         "$schema": "https://nova/init-roadmap-input/v1.0",

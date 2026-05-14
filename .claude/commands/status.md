@@ -87,11 +87,13 @@ Agent(
 
 ### Step 3.B — Agent 완료 후 render-status 재실행 (필수)
 
-Agent가 draft를 작성하면 마커의 `RERENDER_CMD` 그대로 실행:
+⚠️ **`RERENDER_CMD` 문자열을 eval/bash -c로 실행 금지** (v5.36.0 — command injection 차단). 마커 값은 v5.36.0부터 single-quote escape되어 출력되지만, 메인 Claude는 그 문자열을 통째로 shell에 넘기지 않고 **DRAFT_PATH/OUT_PATH 값만 추출해 Bash tool 인자로 재구성**:
 
-```bash
-bash "$NOVA_PLUGIN_ROOT/scripts/render-status.sh" --roadmap ${DRAFT_PATH} --open --no-bootstrap
 ```
+Bash(command="bash \"$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap <DRAFT_PATH 값> --out <OUT_PATH 값> --open --no-bootstrap")
+```
+
+`<...>`는 마커에서 추출한 값(single-quote 제거 후). Bash tool이 인자로 안전 전달. 절대 stderr 라인을 `eval`/`bash -c "$LINE"`로 넘기지 않는다.
 
 (`--no-bootstrap`은 무한 루프 차단)
 

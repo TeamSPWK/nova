@@ -1088,3 +1088,88 @@ exec "${CLAUDE_PLUGIN_ROOT}/scripts/render-status.sh" --auto-bootstrap --open "$
 | 우회 차단 검증 | S16 R34 회귀 | 3 케이스 재검증 (nova/swk-gc/md-template) |
 
 Sprint S14~S16은 본 문서 §21~§23 계약을 글자 그대로 따른다.
+
+---
+
+## 25) Phase status 의미론 (v5.35.3+)
+
+§4.3 enum 정의의 보완. 4값의 **의미**를 명시한다 — 어긋나면 dependency-pending phase를 `blocked`로 표기해 dashboard가 빨간 위험 신호로 도배되는 회귀 발생(v5.35.2 이전 실측).
+
+| status | 의미 | 적용 조건 |
+|--------|------|----------|
+| `done` | Exit criteria 통과 + 사용자 검수 완료 | 완료된 phase |
+| `in_progress` | 현재 작업 phase | 동시 1개 권장 (frontmatter `current_phase`와 일치) |
+| `pending` | **선행 phase 미완료**로 인한 단순 순서 대기 | dependency-blocked는 전부 여기 |
+| `blocked` | **외부 trigger**(승인·사고·사람·외부 시스템) 필요 | 진짜 위험 신호 — 빨간 점 |
+
+⚠️ "blocked by Phase X" 같은 phase 간 의존성은 `blocked`가 아닌 `pending`이다. `blocked`는 외부 trigger 한정.
+
+### 25.1 duplicate id 처리 (v5.36.0)
+
+phases[]에 같은 id가 둘 이상 있으면 status 우선순위로 머지:
+
+```
+priority: in_progress(3) > blocked(2) > pending(1) > done(0)
+```
+
+높은 우선순위 status가 채택되고 warnings 기록. v5.35.7까지는 "첫 항목만 사용"이라 두 번째 in_progress가 silent skip되는 함정이 있었다.
+
+## 26) [CLAUDE_AUTO_CONTINUE] 마커 contract (v5.35.6+)
+
+minimal mode + auto-bootstrap 시 `render-status.sh`가 stderr에 출력하는 메인 Claude용 강제 신호.
+
+### 26.1 형식 (v5.36.0)
+
+```
+[CLAUDE_AUTO_CONTINUE]
+DRAFT_PATH=<single-quote-escaped path>     # v5.36.0: shell-safe quoting
+OUT_PATH=<single-quote-escaped abs path>   # v5.35.7: 절대경로, v5.36.0: quoted
+PLAN_COUNT=<integer>                       # SOT 충돌 검사
+NEXT_ACTION=spawn_agent_then_rerender
+AGENT_TYPE=general-purpose
+RERENDER_CMD=<예시 명령 — 참고용, eval 금지>
+[/CLAUDE_AUTO_CONTINUE]
+```
+
+### 26.2 메인 Claude 의무
+
+마커가 stderr에 나타나면 메인 Claude는 **단일 응답 내 자동 수행**:
+
+1. `[2/3]` 블록의 Agent prompt 추출 → `Agent(general-purpose)` spawn
+2. Agent draft 완료 후 **`RERENDER_CMD` 문자열 eval/bash -c 금지**. 대신 `DRAFT_PATH`/`OUT_PATH` 값(single-quote 제거 후)을 추출해 Bash tool 인자로 재구성
+3. 풍부 모드 HTML 갱신 후 사용자에게 결과 1회 보고
+4. SOT 충돌(`PLAN_COUNT > 0`) 시 **default C(임시 풍부 모드) 자동 적용**
+
+### 26.3 SOT 충돌 default 매핑
+
+| 옵션 | 파괴성 | 자동 적용 |
+|------|--------|----------|
+| (A) Plan frontmatter phases v1.0 추가 | 기존 Plan 수정 | 사용자 결정 |
+| (B) Plan 마일스톤 → ROADMAP 흡수 | 큰 변경 | 사용자 결정 |
+| (C) draft 검수 + 임시 풍부 모드 | 0 (commit/파일 0) | ✅ **default 자동** |
+
+## 27) 보안 contract (v5.36.0)
+
+### 27.1 RERENDER_CMD command injection 방어
+
+- 마커 값 (`DRAFT_PATH`, `OUT_PATH`)은 single-quote escape (`'…'`, 내부 `'` → `'\''`)
+- 메인 Claude는 `RERENDER_CMD`를 eval/bash -c 금지 — `DRAFT_PATH`/`OUT_PATH` 값만 인자로 재구성
+- 위반 시 `--out '$(악성)'` 같은 입력으로 임의 명령 실행 (v5.35.7 이전 실증)
+
+### 27.2 enrich-plans path traversal 방어
+
+- `plan_path`는 `safe_join(root, rel_path)`로 검증 — root 외부 거부, 절대경로 거부
+- `os.path.realpath()` 기반 — symlink 우회 차단
+- apply/dry-run/patch 3 경로 모두 동일 가드
+
+### 27.3 init-input.json 시크릿 redaction
+
+- NOVA-STATE.md + git log 수집 시 SECRET_PATTERNS 정규식으로 redact
+- 패턴: AWS key/secret, GitHub token, OpenAI/Anthropic key, JWT, generic high-entropy assignment
+- `.nova/` 자동 gitignore 등록 (defense in depth)
+
+### 27.4 SLUG 입력 검증
+
+- git root basename → `[A-Za-z0-9._-]` 외 모든 문자 → `_` 치환
+- 영숫자 0개이거나 `.`, `..`, `...`만 있으면 `project` fallback
+- `/tmp/ROADMAP-<SLUG>-draft.md` 경로 안전 보장

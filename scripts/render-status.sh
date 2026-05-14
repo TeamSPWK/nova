@@ -71,7 +71,11 @@ TEMPLATE="$ROOT/templates/status-dashboard/index.html"
 # data source 결정 — DATA가 없으면 build 호출
 CLEANUP=""
 if [[ -z "$DATA" ]]; then
-  DATA="$(mktemp -t nova-status-XXXXXX)"
+  # v5.36.0: macOS BSD와 GNU 간 mktemp 호환성 문제(-t 옵션 의미 다름) — 명시적 template path로 통일
+  # TMPDIR이 set돼있지만 디렉토리가 없으면(다른 프로세스가 cleanup) fallback to /tmp
+  TMP_BASE="${TMPDIR:-/tmp}"
+  [[ -d "$TMP_BASE" ]] || TMP_BASE="/tmp"
+  DATA="$(mktemp "$TMP_BASE/nova-status-XXXXXX")"
   CLEANUP="$DATA"
   trap '[[ -n "$CLEANUP" ]] && rm -f "$CLEANUP"' EXIT
   BUILD_ARGS=(--out "$DATA" --quiet)
@@ -131,10 +135,14 @@ except Exception:
     # 우선순위: git root basename → cwd basename → "project"
     SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" 2>/dev/null)
     SLUG="${SLUG:-project}"
-    # slug sanitize — 영숫자/하이픈/언더스코어만 (path injection 차단)
+    # slug sanitize — 영숫자/하이픈/언더스코어/점만 (path injection 차단)
     SLUG=$(printf '%s' "$SLUG" | tr -c 'A-Za-z0-9._-' '_' | tr -s '_' | sed 's/^_//;s/_$//')
     # 한글/CJK 등 비-ASCII만 있는 basename은 sanitize 후 빈 문자열·구분자 잔재만 남음 — fallback 강제
     if ! [[ "$SLUG" =~ [A-Za-z0-9] ]]; then
+      SLUG="project"
+    fi
+    # v5.36.0: '..' 또는 점만 있는 slug는 path traversal 표면 — fallback (W1)
+    if [[ "$SLUG" == "." || "$SLUG" == ".." || "$SLUG" =~ ^\.+$ ]]; then
       SLUG="project"
     fi
     DRAFT_PATH="/tmp/ROADMAP-${SLUG}-draft.md"
@@ -148,16 +156,19 @@ except Exception:
     echo "" >&2
     echo "════════════════════════════════════════════════════════════" >&2
     echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4)" >&2
+    echo "     [EN] minimal mode detected — auto-bootstrap starting" >&2
     echo "════════════════════════════════════════════════════════════" >&2
     if [[ "$PLAN_COUNT" -gt 0 ]]; then
       echo "" >&2
       echo "  ⚠️  기존 docs/plans/*.md 발견 (${PLAN_COUNT}개) — SOT 충돌 가능" >&2
+      echo "     [EN] Existing docs/plans/*.md found (${PLAN_COUNT}) — potential SOT conflict" >&2
       echo "     ROADMAP 채택 시 Plan 외 N+1번째 SOT가 추가됨. drift 위험." >&2
-      echo "     대안:" >&2
+      echo "     대안 / Options:" >&2
       echo "       (A) Plan frontmatter에 v1.0 phases 스키마 추가 → enrich-plans.sh --apply" >&2
       echo "       (B) ROADMAP 채택 후 Plan의 마일스톤 표 흡수 (Plan은 아키텍처·Risk만 유지)" >&2
-      echo "       (C) draft 검수만 하고 채택은 보류 (현 dashboard는 임시 모드 유지)" >&2
-      echo "     ※ 자동 부트스트랩은 계속 진행 — 채택은 사용자 결정사항 (자동 commit 0건)" >&2
+      echo "       (C) draft 검수만 하고 채택은 보류 (현 dashboard는 임시 모드 유지) [default]" >&2
+      echo "     ※ 자동 부트스트랩 계속 진행 — 채택은 사용자 결정 (자동 commit 0건)" >&2
+      echo "     [EN] Auto-bootstrap continues — adoption is user decision (0 auto-commits)" >&2
       echo "" >&2
     fi
     echo "" >&2
@@ -194,15 +205,22 @@ except Exception:
       # 메인 Claude 강제 신호 — commands/status.md §Step 3 자율 우회 차단
       # 이 마커가 stderr에 출력되면 메인 Claude는 무조건 Agent spawn → render 재실행까지 진행
       # OUT_PATH는 절대경로 — Agent Bash cwd가 다르더라도 정확한 위치에 갱신 보장 (v5.35.7)
+      # 값은 single-quote escape — command injection 차단 (v5.36.0)
       # ───────────────────────────────────────────────────────────
+      # single-quote escape: ' → '\'' (POSIX shell safe quoting)
+      shesc() { printf "'%s'" "${1//\'/\'\\\'\'}"; }
+      DRAFT_PATH_Q=$(shesc "$DRAFT_PATH")
+      OUT_ABS_Q=$(shesc "$OUT_ABS")
       echo "" >&2
       echo "[CLAUDE_AUTO_CONTINUE]" >&2
-      echo "DRAFT_PATH=${DRAFT_PATH}" >&2
-      echo "OUT_PATH=${OUT_ABS}" >&2
+      echo "DRAFT_PATH=${DRAFT_PATH_Q}" >&2
+      echo "OUT_PATH=${OUT_ABS_Q}" >&2
       echo "PLAN_COUNT=${PLAN_COUNT}" >&2
       echo "NEXT_ACTION=spawn_agent_then_rerender" >&2
       echo "AGENT_TYPE=general-purpose" >&2
-      echo "RERENDER_CMD=bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH} --out ${OUT_ABS} --open --no-bootstrap" >&2
+      # RERENDER_CMD는 메인 Claude가 직접 eval하지 않고 인자 배열로 재구성해야 함
+      # commands/status.md §Step 3.B 참조
+      echo "RERENDER_CMD=bash \"\$NOVA_PLUGIN_ROOT/scripts/render-status.sh\" --roadmap ${DRAFT_PATH_Q} --out ${OUT_ABS_Q} --open --no-bootstrap" >&2
       echo "[/CLAUDE_AUTO_CONTINUE]" >&2
     fi
   fi

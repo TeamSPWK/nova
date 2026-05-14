@@ -196,11 +196,32 @@ def render_frontmatter_block(fm_dict, comment_header=None):
         lines = comment_header.splitlines() + [""] + lines
     return "\n".join(lines) + "\n"
 
+def safe_join(root, rel_path):
+    """root 외부로 traversal 시도하는 plan_path 차단 (v5.36.0).
+
+    외부 Agent가 작성한 output-*.json의 plan_path 값을 신뢰하지 않는다.
+    Returns (full_path, error). error가 truthy면 호출 측이 skip해야 한다.
+    """
+    if rel_path is None or not isinstance(rel_path, str) or not rel_path.strip():
+        return None, "plan_path 비어있음/타입 불일치"
+    if os.path.isabs(rel_path):
+        return None, f"plan_path 절대경로 거부: {rel_path}"
+    candidate = os.path.join(root, rel_path)
+    real_root = os.path.realpath(root)
+    real_cand = os.path.realpath(candidate)
+    if real_cand != real_root and not real_cand.startswith(real_root + os.sep):
+        return None, f"plan_path 외부 경로 거부 (traversal): {rel_path} → {real_cand}"
+    return candidate, None
+
 def apply_dry_run(root, results):
     counts = {"created": 0, "skipped": 0, "low_conf": 0}
     low_conf_files = []
     for r in results:
-        path = os.path.join(root, r["plan_path"])
+        path, err = safe_join(root, r.get("plan_path"))
+        if err:
+            print(f"WARN: {err}", file=sys.stderr)
+            counts["skipped"] += 1
+            continue
         if r.get("skip_reason"):
             counts["skipped"] += 1
             continue
@@ -227,12 +248,16 @@ def apply_patch(root, results):
     counts = {"hunks": 0, "skipped": 0}
     diff_lines = []
     for r in results:
+        full, err = safe_join(root, r.get("plan_path"))
+        if err:
+            print(f"WARN: {err}", file=sys.stderr)
+            counts["skipped"] += 1
+            continue
         path = r["plan_path"]
         if r.get("skip_reason") or not r.get("proposed_frontmatter"):
             counts["skipped"] += 1
             continue
         fm_block = render_frontmatter_block(r["proposed_frontmatter"]).rstrip("\n") + "\n"
-        full = os.path.join(root, path)
         try:
             original = Path(full).read_text(encoding="utf-8")
         except Exception:
@@ -254,7 +279,11 @@ def apply_patch(root, results):
 def apply_inplace(root, results):
     counts = {"applied": 0, "skipped": 0, "errors": 0}
     for r in results:
-        path = os.path.join(root, r["plan_path"])
+        path, err = safe_join(root, r.get("plan_path"))
+        if err:
+            print(f"WARN: {err}", file=sys.stderr)
+            counts["skipped"] += 1
+            continue
         if r.get("skip_reason") or not r.get("proposed_frontmatter"):
             counts["skipped"] += 1
             continue

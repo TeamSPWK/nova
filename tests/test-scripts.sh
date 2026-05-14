@@ -2969,11 +2969,12 @@ _test_R34ae() {
 assert "R34ae: 마커 실측 — minimal 부트스트랩 실행 시 [CLAUDE_AUTO_CONTINUE] 블록 stderr 출력" \
   "_test_R34ae"
 # v5.35.7 — OUT 절대경로화 (cwd 무관 rerender) + minimal open skip
+# v5.36.0 이후 OUT_PATH/DRAFT_PATH가 quoted 변수(${OUT_ABS_Q}) 사용 — 매칭 패턴 유연화
 assert "R34af: render-status.sh — OUT_ABS 절대경로 산출 + OUT_PATH 마커 출력" \
   "grep -q 'OUT_ABS=' '$ROOT_DIR/scripts/render-status.sh' && \
-   grep -q 'OUT_PATH=\\\${OUT_ABS}' '$ROOT_DIR/scripts/render-status.sh'"
+   grep -qE 'OUT_PATH=\\\${OUT_ABS' '$ROOT_DIR/scripts/render-status.sh'"
 assert "R34ag: render-status.sh — RERENDER_CMD에 --out 절대경로 포함" \
-  "grep -qE 'RERENDER_CMD=.+--out \\\${OUT_ABS}' '$ROOT_DIR/scripts/render-status.sh'"
+  "grep -qE 'RERENDER_CMD=.+--out \\\${OUT_ABS' '$ROOT_DIR/scripts/render-status.sh'"
 assert "R34ah: render-status.sh — minimal+auto-bootstrap 시 첫 HTML open skip" \
   "grep -q 'minimal HTML — 브라우저 open skip' '$ROOT_DIR/scripts/render-status.sh' && \
    grep -q 'MINIMAL_CHECK.*TRIGGER' '$ROOT_DIR/scripts/render-status.sh'"
@@ -3012,6 +3013,135 @@ sys.exit(0 if d.get('mode') == 'roadmap' and len(d.get('phases', [])) == 1 else 
 }
 assert "R34ai: cwd 무관 rerender — 외부 cwd에서 --out 절대경로로 호출 시 정확한 위치에 풍부 모드 갱신" \
   "_test_R34ai"
+
+# v5.36.0 — 보안 가드 + 부채 정리 (모든 함수는 cwd를 ROOT_DIR로 명시 복귀하여 누수 차단)
+# C1: RERENDER_CMD command injection 차단 — 마커 값 single-quote escape
+_test_R34aj() {
+  rm -f /tmp/nova-inj-canary /tmp/inj-stderr
+  local work_dir rc1=1 rc2=1
+  work_dir=$(mktemp -d)
+  ( cd "$work_dir" && git init -q && \
+    bash "$ROOT_DIR/scripts/render-status.sh" --out '$(touch /tmp/nova-inj-canary)' --auto-bootstrap >/dev/null 2>/tmp/inj-stderr ) || true
+  # OUT_PATH가 single-quote로 감싸져 있는지
+  grep -qE "OUT_PATH='[^']*\\\$\\(touch /tmp/nova-inj-canary\\)" /tmp/inj-stderr && rc1=0
+  # eval 실행 시도 — canary 안 생기면 OK
+  local rerender_line
+  rerender_line=$(grep '^RERENDER_CMD=' /tmp/inj-stderr | head -1)
+  ( eval "${rerender_line#RERENDER_CMD=}" >/dev/null 2>&1 ) || true
+  [[ ! -f /tmp/nova-inj-canary ]] && rc2=0
+  rm -rf "$work_dir" /tmp/inj-stderr /tmp/nova-inj-canary
+  [[ $rc1 -eq 0 && $rc2 -eq 0 ]]
+}
+assert "R34aj: C1 — RERENDER_CMD injection 차단 (single-quote escape + eval 시 canary 미생성)" \
+  "_test_R34aj"
+
+# C2: enrich-plans path traversal 차단
+_test_R34ak() {
+  local work_dir victim rc=1
+  work_dir=$(mktemp -d)
+  mkdir -p "$work_dir/docs/plans" "$work_dir/.nova/enrich-batches"
+  echo "# Plan" > "$work_dir/docs/plans/a.md"
+  victim="$work_dir/victim-canary.md"
+  echo "# legit" > "$victim"
+  cat > "$work_dir/.nova/enrich-batches/output-000.json" <<EOF
+{"results": [{"plan_path": "../victim-canary.md", "proposed_frontmatter": {"plan_id": "hijacked"}, "confidence": "high"}]}
+EOF
+  ( cd "$work_dir" && bash "$ROOT_DIR/scripts/enrich-plans.sh" --apply --force >/dev/null 2>&1 ) || true
+  ! grep -q 'plan_id: hijacked' "$victim" && rc=0
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34ak: C2 — enrich-plans plan_path traversal 차단 (root 외부 경로 거부)" \
+  "_test_R34ak"
+
+# W1: SLUG 점-only 거부 (cwd 변경 없음, subshell 사용)
+_test_R34al() {
+  local parent dot_dir out
+  parent=$(mktemp -d)
+  dot_dir="$parent/..."
+  mkdir -p "$dot_dir"
+  out=$( cd "$dot_dir" && git init -q && bash "$ROOT_DIR/scripts/render-status.sh" --auto-bootstrap 2>&1 )
+  rm -rf "$parent"
+  ! echo "$out" | grep -qE 'ROADMAP-\.{2,}-draft\.md'
+}
+assert "R34al: W1 — SLUG '..'/'...' fallback to 'project' (path traversal 표면 차단)" \
+  "_test_R34al"
+
+# W3: mktemp BSD/GNU 호환 (-t 없이 명시적 template) — grep만, 부작용 없음
+assert "R34am: W3 — render-status.sh mktemp는 명시적 template ('-t' 제거)" \
+  "! grep -qE 'mktemp -t' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'mktemp \"' '$ROOT_DIR/scripts/render-status.sh'"
+
+# W5: duplicate phase id 시 status 우선순위 머지
+_test_R34an() {
+  local work_dir rc=1
+  work_dir=$(mktemp -d)
+  cat > "$work_dir/ROADMAP.md" <<'YAML'
+---
+roadmap_id: dup-test
+title: test
+current_phase: P1
+phases:
+  - {id: P1, title: First done, status: done, summary: ""}
+  - {id: P1, title: Second in_progress, status: in_progress, summary: ""}
+---
+# x
+YAML
+  ( bash "$ROOT_DIR/scripts/render-status.sh" --roadmap "$work_dir/ROADMAP.md" --out "$work_dir/out.html" --no-bootstrap >/dev/null 2>&1 ) || true
+  if [[ -f "$work_dir/out.html" ]]; then
+    if python3 -c "
+import re, json, sys
+html = open('$work_dir/out.html').read()
+m = re.search(r'__NOVA_DATA__\*/(.+?)/\*__NOVA_DATA_END__', html, re.DOTALL)
+d = json.loads(m.group(1).strip())
+phases = d.get('phases', [])
+sys.exit(0 if len(phases) == 1 and phases[0].get('status') == 'in_progress' else 1)
+" 2>/dev/null; then
+      rc=0
+    fi
+  fi
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34an: W5 — duplicate phase id 시 in_progress가 done보다 우선 채택" \
+  "_test_R34an"
+
+# W2: init-input.json secret redaction (cwd subshell 격리)
+_test_R34ao() {
+  local work_dir rc=1
+  work_dir=$(mktemp -d)
+  cat > "$work_dir/NOVA-STATE.md" <<'EOF'
+# Nova State
+- API key: sk-ant-test123456789012345_REDACT_ME
+- AWS: AKIAIOSFODNN7EXAMPLE
+EOF
+  ( cd "$work_dir" && git init -q && bash "$ROOT_DIR/scripts/init-roadmap.sh" --llm >/dev/null 2>&1 ) || true
+  if [[ -f "$work_dir/.nova/init-input.json" ]]; then
+    if ! grep -qE 'sk-ant-test123456789012345|AKIAIOSFODNN7EXAMPLE' "$work_dir/.nova/init-input.json" && \
+       grep -q 'REDACTED' "$work_dir/.nova/init-input.json"; then
+      rc=0
+    fi
+  fi
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34ao: W2 — init-input.json에 시크릿 패턴 redaction ([REDACTED:LABEL])" \
+  "_test_R34ao"
+
+# W6: stderr 영어 병기
+assert "R34ap: W6 — render-status.sh stderr 안내에 영어 부제 ([EN] 라인)" \
+  "grep -q '\\[EN\\] minimal mode detected' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q '\\[EN\\] Existing docs/plans' '$ROOT_DIR/scripts/render-status.sh'"
+
+# Design SOT drift 동기화
+assert "R34aq: design 문서 §25~§27 — phase status 의미론 + 마커 contract + 보안 contract" \
+  "grep -q '## 25) Phase status 의미론' '$ROOT_DIR/docs/designs/status-dashboard.md' && \
+   grep -q '## 26) \\[CLAUDE_AUTO_CONTINUE\\] 마커 contract' '$ROOT_DIR/docs/designs/status-dashboard.md' && \
+   grep -q '## 27) 보안 contract' '$ROOT_DIR/docs/designs/status-dashboard.md'"
+
+# commands/status.md — RERENDER_CMD eval 금지 명시
+assert "R34ar: commands/status.md — RERENDER_CMD eval/bash -c 금지 명시" \
+  "grep -q 'eval/bash -c 금지\\|eval/bash -c로 실행 금지' '$ROOT_DIR/commands/status.md'"
 
 echo ""
 
