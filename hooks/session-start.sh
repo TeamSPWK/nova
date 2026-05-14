@@ -104,17 +104,36 @@ PYEOF
       [ -f "$_PREVIEW" ] && _PV_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('$_PREVIEW')))" 2>/dev/null || echo 0)
       _ST_MTIME=$(python3 -c "import os; print(int(os.path.getmtime('NOVA-STATE.md')))" 2>/dev/null || echo 0)
       if [ "$_ST_MTIME" -gt "$_PV_MTIME" ]; then
-        # dry-run: stdout만 preview 파일로, stderr는 log로
-        bash "$_MIGRATE_SCRIPT" >"$_PREVIEW" 2>".nova/migrate-state.log" || true
+        # dry-run: 안내 헤더 + stdout 결과 → preview 파일
+        # 안내 헤더는 사용자가 마크다운 뷰어로 열 때 즉시 보이도록 markdown 형식.
+        {
+          printf -- '<!-- Nova v1→v2 Migration Preview (%s) -->\n' "$(date '+%Y-%m-%d %H:%M')"
+          printf -- '<!-- 검수 OK → 적용:  bash scripts/migrate-nova-state.sh --apply -->\n'
+          printf -- '<!-- 손실 우려 → 끄기: NOVA_DISABLE_AUTO_MIGRATE=1 -->\n'
+          printf -- '<!-- 백업: --apply 시 NOVA-STATE.md.v1.bak 자동 생성 -->\n\n'
+          printf -- '> [!IMPORTANT]\n'
+          printf -- '> 📋 **v1→v2 Migration Preview** — 이 파일은 자동 생성된 dry-run 미리보기.\n'
+          printf -- '> NOVA-STATE.md 자체는 **건드리지 않음**. 검수 후 명시 apply 필요.\n'
+          printf -- '>\n'
+          printf -- '> - ✅ OK: `bash scripts/migrate-nova-state.sh --apply`\n'
+          printf -- '> - ⚠️ 손실 우려 (변형 v1): `NOVA_DISABLE_AUTO_MIGRATE=1` 환경변수로 자동 dry-run 끄기\n\n'
+          printf -- '---\n'
+          printf -- '*이하 변환 결과 미리보기 (적용 시 NOVA-STATE.md 내용)*\n\n'
+          bash "$_MIGRATE_SCRIPT" 2>".nova/migrate-state.log"
+        } >"$_PREVIEW" 2>>".nova/migrate-state.log" || true
       fi
       if [ -s "$_PREVIEW" ]; then
         MIGRATE_NOTICE="\n\n📋 NOVA-STATE.md v1 감지 — v2 dry-run preview 준비됨: \`.nova/migrate-preview.md\`. 검수 후 \`bash scripts/migrate-nova-state.sh --apply\` 로 명시 적용. (자동 apply 안 함 — 사용자별 STATE 변형으로 정보 손실 가능성 보호)"
+        # sessionTitle에 prefix — 탭/스테이터스라인에서 즉시 인지
+        MIGRATE_PREFIX="⚠️ v1→v2 검수 대기 · "
       fi
     fi
   fi
 
   if [ -n "$GOAL" ]; then
-    SESSION_TITLE="Nova: $GOAL"
+    SESSION_TITLE="Nova: ${MIGRATE_PREFIX:-}$GOAL"
+  elif [ -n "${MIGRATE_PREFIX:-}" ]; then
+    SESSION_TITLE="Nova: ${MIGRATE_PREFIX}(v1 STATE)"
   fi
 elif [ -f "NOVA-STATE.md" ]; then
   # python3 미설치 환경 fallback (v1 패턴만)

@@ -3356,6 +3356,33 @@ assert "R37i: session-start.sh — v1 fallback sessionTitle 길이 ≤120자 (CJ
    _LEN=\$(echo -n \"\$T\" | wc -c | tr -d ' '); \
    cd - >/dev/null; rm -rf \"\$TMPD\"; [ \"\$_LEN\" -le 120 ]"
 
+# R37j: v1 감지 시 sessionTitle에 ⚠️ v1→v2 prefix (시각 가시화 — 탭 제목 즉시 인지)
+assert "R37j: session-start.sh v1 감지 시 sessionTitle에 '⚠️ v1→v2 검수 대기' prefix" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n- **Goal**: test\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   T=\$(echo '{}' | bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; \
+   echo \"\$T\" | grep -q 'v1→v2 검수 대기'"
+
+# R37k: preview 파일에 IMPORTANT 안내 블록 + 적용/끄기 명령
+assert "R37k: .nova/migrate-preview.md — IMPORTANT 안내 블록 + apply/disable 명령 포함" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '# Nova State\n- **Goal**: test\n\n## Last Activity\n- 2026-05-14 test\n' > NOVA-STATE.md; \
+   echo '{}' | bash $ROOT_DIR/hooks/session-start.sh >/dev/null 2>&1; \
+   S=0; \
+   grep -q 'Migration Preview' .nova/migrate-preview.md || S=1; \
+   grep -q 'migrate-nova-state.sh --apply' .nova/migrate-preview.md || S=1; \
+   grep -q 'NOVA_DISABLE_AUTO_MIGRATE' .nova/migrate-preview.md || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37l: v2 STATE는 sessionTitle prefix 없음 (정상 시 깨끗)
+assert "R37l: session-start.sh v2 STATE → sessionTitle prefix X (정상시 깨끗)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: clean v2\nactive_ao: null\nhandoff: null\n---\n# Body\n' > NOVA-STATE.md; \
+   T=\$(echo '{}' | bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; \
+   ! echo \"\$T\" | grep -q '검수 대기'"
+
 echo ""
 
 # ═══════════════════════════════════════════
