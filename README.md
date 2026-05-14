@@ -9,6 +9,7 @@
 [![CI](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamSPWK/nova/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-5.35.7-blue)](https://github.com/TeamSPWK/nova/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![SafeSkill 77/100](https://img.shields.io/badge/SafeSkill-77%2F100_Passes%20with%20Notes-yellow)](https://safeskill.dev/scan/teamspwk-nova)
 
 **Self-only metrics** (n < threshold = gray-out, honest signal — see [`docs/guides/measurement.md`](docs/guides/measurement.md)) · **UI changes** gated by G1+G3 pair — see [`docs/guides/ui-quality-gate.md`](docs/guides/ui-quality-gate.md):
 <!-- nova-metrics:badges:start -->
