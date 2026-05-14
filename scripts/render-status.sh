@@ -155,23 +155,86 @@ except Exception:
 
     echo "" >&2
     echo "════════════════════════════════════════════════════════════" >&2
-    echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4)" >&2
+    echo "  ⚡ minimal mode 감지 — 자동 부트스트랩 (Phase 4+5)" >&2
     echo "     [EN] minimal mode detected — auto-bootstrap starting" >&2
     echo "════════════════════════════════════════════════════════════" >&2
+    # SOT 충돌 경고 — auto-fill 전에 사용자에게 알림 (PLAN_COUNT > 0 시)
     if [[ "$PLAN_COUNT" -gt 0 ]]; then
       echo "" >&2
       echo "  ⚠️  기존 docs/plans/*.md 발견 (${PLAN_COUNT}개) — SOT 충돌 가능" >&2
       echo "     [EN] Existing docs/plans/*.md found (${PLAN_COUNT}) — potential SOT conflict" >&2
-      echo "     ROADMAP 채택 시 Plan 외 N+1번째 SOT가 추가됨. drift 위험." >&2
-      echo "     대안 / Options:" >&2
-      echo "       (A) Plan frontmatter에 v1.0 phases 스키마 추가 → enrich-plans.sh --apply" >&2
-      echo "       (B) ROADMAP 채택 후 Plan의 마일스톤 표 흡수 (Plan은 아키텍처·Risk만 유지)" >&2
-      echo "       (C) draft 검수만 하고 채택은 보류 (현 dashboard는 임시 모드 유지) [default]" >&2
-      echo "     ※ 자동 부트스트랩 계속 진행 — 채택은 사용자 결정 (자동 commit 0건)" >&2
-      echo "     [EN] Auto-bootstrap continues — adoption is user decision (0 auto-commits)" >&2
+      echo "     auto-fill 진행 — heuristic/api로 자동 추출 후 사용자 검수 권장" >&2
+    fi
+
+    # ─────────────────────────────────────────────────────────────
+    # v5.37.0 Phase 5 — dual fallback: (B) ANTHROPIC_API → (A) heuristic → (마커)
+    # 셸 단독 자동화 환경(CI, 사용자 셸)에서도 풍부 모드까지 자동 도달 보장
+    # ─────────────────────────────────────────────────────────────
+    AUTOFILL_DRAFT=""
+    AUTOFILL_MODE=""
+    # 시도 1: --api (ANTHROPIC_API_KEY 있을 때만)
+    if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+      echo "" >&2
+      echo "  [auto-fill] (B) Anthropic API 시도..." >&2
+      if "$DIR/init-roadmap.sh" --api --out "$DRAFT_PATH" --force >&2 2>&1; then
+        AUTOFILL_DRAFT="$DRAFT_PATH"
+        AUTOFILL_MODE="api"
+        echo "  ✓ api 모드 성공 — phase 데이터 LLM 추론 완료" >&2
+      else
+        echo "  · api 모드 실패 — heuristic으로 fallback" >&2
+      fi
+    fi
+    # 시도 2: --heuristic (LLM 없이 결정론적, 항상 시도)
+    if [[ -z "$AUTOFILL_DRAFT" ]]; then
+      echo "" >&2
+      echo "  [auto-fill] (A) heuristic 결정론 추출 시도..." >&2
+      if "$DIR/init-roadmap.sh" --heuristic --out "$DRAFT_PATH" --force >&2 2>&1; then
+        AUTOFILL_DRAFT="$DRAFT_PATH"
+        AUTOFILL_MODE="heuristic"
+        echo "  ✓ heuristic 모드 성공 — frontmatter 없는 plan에서 phase 추출" >&2
+      else
+        echo "  · heuristic 모드 실패 — Plan 부재 또는 추출 불가" >&2
+      fi
+    fi
+    # 시도 1/2 성공 → 풍부 모드 rerender 후 종료 (마커 출력 skip)
+    if [[ -n "$AUTOFILL_DRAFT" ]]; then
+      echo "" >&2
+      echo "  [auto-fill] 풍부 모드 rerender 진행 (--no-bootstrap)..." >&2
+      OUT_ABS_FOR_RERENDER="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
+      if bash "$DIR/render-status.sh" --roadmap "$AUTOFILL_DRAFT" --out "$OUT_ABS_FOR_RERENDER" --no-bootstrap >&2 2>&1; then
+        echo "" >&2
+        echo "════════════════════════════════════════════════════════════" >&2
+        echo "  ✅ 자동 풍부 모드 완료 (mode: ${AUTOFILL_MODE})" >&2
+        echo "     [EN] Auto rich-mode completed (${AUTOFILL_MODE})" >&2
+        echo "     Draft: ${AUTOFILL_DRAFT}" >&2
+        echo "     HTML:  ${OUT_ABS_FOR_RERENDER}" >&2
+        if [[ "$AUTOFILL_MODE" == "heuristic" ]]; then
+          echo "     ⚠️ heuristic 정확도 낮을 수 있음 — Claude session에서 /nova:status 호출 권장" >&2
+        fi
+        echo "════════════════════════════════════════════════════════════" >&2
+        # --open이 켜져 있으면 풍부 모드 HTML만 열기
+        if $OPEN; then
+          case "$(uname -s)" in
+            Darwin) open "file://$OUT_ABS_FOR_RERENDER" ;;
+            Linux)  xdg-open "file://$OUT_ABS_FOR_RERENDER" >/dev/null 2>&1 || true ;;
+          esac
+        fi
+        exit 0
+      else
+        echo "  · rerender 실패 — 마커 흐름으로 fallback" >&2
+      fi
+    fi
+    # 시도 3: 둘 다 실패 → 기존 마커 흐름 (Claude session 대기)
+    echo "" >&2
+    echo "  [auto-fill] 결정론 자동 추출 실패 — Claude session에 위임 (마커 출력)" >&2
+    if [[ "$PLAN_COUNT" -gt 0 ]]; then
+      echo "" >&2
+      echo "  SOT 결정 옵션 (Plan/ROADMAP 충돌) / Options:" >&2
+      echo "    (A) Plan frontmatter v1.0 phases 추가 → enrich-plans.sh --apply" >&2
+      echo "    (B) ROADMAP 채택 후 Plan 마일스톤 흡수" >&2
+      echo "    (C) draft 검수만 (default — 자동 commit 0건)" >&2
       echo "" >&2
     fi
-    echo "" >&2
     echo "  [1/3] 자료 수집 (init-roadmap.sh --llm)" >&2
     if "$DIR/init-roadmap.sh" --llm >&2 2>&1; then
       echo "" >&2

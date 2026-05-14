@@ -405,6 +405,8 @@ def validate_roadmap(fm, path):
         "external_pending": [],
         "links": fm.get("links") or [],
         "path": path,
+        # v5.37.0: dashboard 배지용 — heuristic/api/manual 구분
+        "auto_mode": fm.get("_mode") or "manual",
     }
 
     # v5.36.0: duplicate id 시 status 우선순위 머지 (W5)
@@ -638,6 +640,7 @@ def main():
             "roadmap_id": roadmap["roadmap_id"],
             "title": roadmap["title"],
             "path": roadmap_path_rel,
+            "auto_mode": roadmap.get("auto_mode", "manual"),  # v5.37.0
             **stale_fields,
         }
         result["cursor"] = {

@@ -3145,6 +3145,95 @@ assert "R34aq: design 문서 §25~§27 — phase status 의미론 + 마커 contr
 assert "R34ar: commands/status.md — RERENDER_CMD eval/bash -c 금지 명시" \
   "grep -q 'eval/bash -c 금지\\|eval/bash -c로 실행 금지' '$ROOT_DIR/commands/status.md'"
 
+# v5.37.0 — 셸 단독 자동 풍부 모드 (heuristic + api dual fallback)
+# heuristic mode 추가
+assert "R34as: init-roadmap.py — --heuristic 모드 + mode_heuristic 함수" \
+  "grep -q 'heuristic' '$ROOT_DIR/scripts/lib/init-roadmap.py' && \
+   grep -q 'def mode_heuristic' '$ROOT_DIR/scripts/lib/init-roadmap.py' && \
+   grep -q '_mode' '$ROOT_DIR/scripts/lib/init-roadmap.py'"
+# api mode 추가 (ANTHROPIC_API_KEY 옵션)
+assert "R34at: init-roadmap.py — --api 모드 + ANTHROPIC_API_KEY graceful skip" \
+  "grep -q 'def mode_api' '$ROOT_DIR/scripts/lib/init-roadmap.py' && \
+   grep -q 'ANTHROPIC_API_KEY' '$ROOT_DIR/scripts/lib/init-roadmap.py' && \
+   grep -q 'api.anthropic.com' '$ROOT_DIR/scripts/lib/init-roadmap.py'"
+# render-status.sh dual fallback
+assert "R34au: render-status.sh — dual fallback (api → heuristic → 마커)" \
+  "grep -q 'auto-fill' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q 'AUTOFILL_MODE' '$ROOT_DIR/scripts/render-status.sh' && \
+   grep -q '자동 풍부 모드 완료' '$ROOT_DIR/scripts/render-status.sh'"
+# build-status.py에 auto_mode 전달
+assert "R34av: build-status.py — roadmap.auto_mode 필드 (heuristic/api/manual 구분)" \
+  "grep -q 'auto_mode' '$ROOT_DIR/scripts/lib/build-status.py'"
+# template에 mode 배지
+assert "R34aw: template — auto-mode 배지 (heuristic/api 표시)" \
+  "grep -q 'autoModeBadge' '$ROOT_DIR/templates/status-dashboard/index.html' && \
+   grep -q 'Auto-heuristic mode' '$ROOT_DIR/templates/status-dashboard/index.html' && \
+   grep -q 'Auto-API mode' '$ROOT_DIR/templates/status-dashboard/index.html'"
+# 실측: heuristic 단독 동작 — frontmatter 없는 plan에서 phase 자동 추출
+_test_R34ax() {
+  local work_dir rc=1
+  work_dir=$(mktemp -d)
+  mkdir -p "$work_dir/docs/plans"
+  cat > "$work_dir/docs/plans/m1-foo.md" <<'EOF'
+# M1 Foundation
+
+> Status: PASS
+
+multi-tenant 기반 구축.
+EOF
+  cat > "$work_dir/docs/plans/m2-bar.md" <<'EOF'
+# M2 Features
+
+> Status: wip
+
+기능 개발.
+EOF
+  cat > "$work_dir/NOVA-STATE.md" <<'EOF'
+# Nova
+- **Phase**: M2 Features
+EOF
+  ( cd "$work_dir" && git init -q && bash "$ROOT_DIR/scripts/init-roadmap.sh" --heuristic --out "$work_dir/ROADMAP.auto.md" --force >/dev/null 2>&1 ) || true
+  if [[ -f "$work_dir/ROADMAP.auto.md" ]]; then
+    grep -q "_mode: heuristic" "$work_dir/ROADMAP.auto.md" && \
+    grep -q "id: m1-foo" "$work_dir/ROADMAP.auto.md" && \
+    grep -q "id: m2-bar" "$work_dir/ROADMAP.auto.md" && \
+    grep -q "current_phase: m2-bar" "$work_dir/ROADMAP.auto.md" && rc=0
+  fi
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34ax: heuristic — frontmatter 없는 plan에서 phase 자동 추출 + NOVA-STATE current_phase 매칭" \
+  "_test_R34ax"
+# 실측: 셸 단독으로 dual fallback 동작 → 풍부 모드 도달
+_test_R34ay() {
+  local work_dir rc=1
+  work_dir=$(mktemp -d)
+  mkdir -p "$work_dir/docs/plans"
+  cat > "$work_dir/docs/plans/m1.md" <<'EOF'
+# M1
+> Status: wip
+First milestone.
+EOF
+  unset ANTHROPIC_API_KEY  # heuristic만 사용
+  ( cd "$work_dir" && git init -q && bash "$ROOT_DIR/scripts/render-status.sh" --auto-bootstrap >/dev/null 2>&1 ) || true
+  if [[ -f "$work_dir/.nova/status/index.html" ]]; then
+    if python3 -c "
+import re, json, sys
+html = open('$work_dir/.nova/status/index.html').read()
+m = re.search(r'__NOVA_DATA__\*/(.+?)/\*__NOVA_DATA_END__', html, re.DOTALL)
+d = json.loads(m.group(1).strip())
+ok = d.get('mode') == 'roadmap' and not d.get('minimal') and len(d.get('phases',[])) == 1
+sys.exit(0 if ok else 1)
+" 2>/dev/null; then
+      rc=0
+    fi
+  fi
+  rm -rf "$work_dir"
+  return $rc
+}
+assert "R34ay: 셸 단독 자동 풍부 모드 도달 (heuristic dual fallback)" \
+  "_test_R34ay"
+
 echo ""
 
 # ═══════════════════════════════════════════

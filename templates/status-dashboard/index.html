@@ -83,10 +83,25 @@
         <span class="text-xs text-mute">${esc(reason)}</span>
       </div>`;
     }
+    // v5.37.0: auto-mode 배지 (heuristic/api 자동 추출 ROADMAP)
+    let autoModeBadge = '';
+    const autoMode = d.roadmap?.auto_mode;
+    if (autoMode === 'heuristic') {
+      autoModeBadge = `<div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-warn/10 border border-warn/30">
+        <span class="text-warn text-sm font-semibold">📝 Auto-heuristic mode</span>
+        <span class="text-sm text-ink">결정론 추출 — 정확도 낮을 수 있음, Claude session에서 /nova:status 호출 권장</span>
+      </div>`;
+    } else if (autoMode === 'api') {
+      autoModeBadge = `<div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-progress/10 border border-progress/30">
+        <span class="text-progress text-sm font-semibold">🤖 Auto-API mode</span>
+        <span class="text-sm text-ink">Anthropic API LLM 추출 — 사용자 검수 권장 (자동 commit 0건)</span>
+      </div>`;
+    }
     return `
       <header class="mb-10">
         <h1 class="text-2xl font-bold">${meta.join(' ')}</h1>
         <div class="mt-2 flex items-center gap-2 text-sm text-mute">${subline.join(' ')}</div>
+        ${autoModeBadge}
         ${staleBadge}
         <details class="mt-4 text-xs text-mute">
           <summary class="cursor-pointer hover:text-ink select-none">ℹ️ 이 페이지가 뭔가요?</summary>

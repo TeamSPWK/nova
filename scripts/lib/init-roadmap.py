@@ -34,7 +34,7 @@ FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 # ---------------------------------------------------------------- args
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--mode", required=True, choices=["blank", "scan", "llm"])
+    p.add_argument("--mode", required=True, choices=["blank", "scan", "llm", "heuristic", "api"])
     p.add_argument("--out", default="ROADMAP.md")
     p.add_argument("--force", action="store_true")
     return p.parse_args()
@@ -338,6 +338,230 @@ def mode_llm(out_path, force):
     print(f"    review → mv ROADMAP.md.draft {out_path} && git add {out_path} && git commit")
     print(f"\n  ※ 외부 API 호출 0건 (Claude Code 세션 모델 사용)")
 
+# ---------------------------------------------------------------- mode: heuristic (v5.37.0)
+# 결정론적 phase 추출 — LLM 없이 frontmatter 없는 plan에서도 정보 추출
+# 우선순위: ROADMAP frontmatter > plan frontmatter > plan markdown header > NOVA-STATE 파싱
+
+PLAN_HEADER_RE = re.compile(r'^>\s*(Status|Owner|Goal|Created|Updated|Mode|Iteration|Phase)\s*:\s*(.+?)\s*$', re.M | re.I)
+NOVA_PHASE_RE = re.compile(r'^\s*[-*]\s*\*\*Phase\*\*\s*:\s*(.+?)\s*$', re.M | re.I)
+TASKS_TABLE_ROW_RE = re.compile(r'^\|\s*([^|]+?)\s*\|\s*(done|todo|in_progress|pending|blocked|PASS|FAIL|wip|진행|완료|대기|차단)\s*\|', re.M | re.I)
+
+# Status 텍스트 → enum normalize
+STATUS_NORMALIZE = {
+    "done": "done", "pass": "done", "완료": "done",
+    "todo": "pending", "pending": "pending", "대기": "pending",
+    "in_progress": "in_progress", "in progress": "in_progress", "wip": "in_progress", "진행": "in_progress",
+    "blocked": "blocked", "fail": "blocked", "차단": "blocked",
+}
+
+def normalize_status(s):
+    if not s: return "pending"
+    return STATUS_NORMALIZE.get(s.strip().lower(), "pending")
+
+def heuristic_extract_plan(path):
+    """frontmatter 없는 plan에서 markdown header에서 metadata 추출.
+    Returns dict with id/title/status/summary or None if 추출 실패."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except Exception:
+        return None
+    basename = os.path.basename(path).replace(".md", "")
+    # title — first # heading or filename
+    title_match = re.search(r'^#\s+(.+?)\s*$', text, re.M)
+    title = title_match.group(1).strip() if title_match else basename
+    # status from `> Status:` line
+    status = "pending"
+    for m in PLAN_HEADER_RE.finditer(text[:2000]):
+        key, val = m.group(1).lower(), m.group(2)
+        if key == "status":
+            status = normalize_status(val)
+            break
+    # summary — first paragraph after title (max 120 chars)
+    body = text[title_match.end():] if title_match else text
+    body = re.sub(r'^>\s*.+$', '', body, flags=re.M)  # remove blockquote metadata
+    para_match = re.search(r'^([^\n#>].{10,200}?)(?:\n\n|\n#|\Z)', body.strip(), re.S | re.M)
+    summary = para_match.group(1).strip()[:120] if para_match else ""
+    return {"id": basename, "title": title[:80], "status": status, "summary": summary}
+
+def heuristic_extract_nova_state_phase(root):
+    """NOVA-STATE.md에서 current_phase 추출 (`**Phase**:` 라인)."""
+    state = collect_nova_state(root)
+    if not state:
+        return None
+    m = NOVA_PHASE_RE.search(state)
+    if m:
+        # "M1 Done — ...", "Phase 1 in progress", etc → 첫 토큰만
+        raw = m.group(1).strip()
+        first_token = re.split(r'[\s\—\-:]+', raw, maxsplit=1)[0].rstrip(',.;')
+        return first_token if first_token else None
+    return None
+
+def mode_heuristic(out_path, force):
+    root = repo_root()
+    plan_paths = sorted(glob_mod.glob(os.path.join(root, "docs/plans/*.md")))
+    # archived plan 제외
+    plan_paths = [p for p in plan_paths if "archived" not in p.lower()]
+
+    if not plan_paths:
+        print(f"[heuristic] docs/plans/*.md 0개 — heuristic 추출 불가", file=sys.stderr)
+        sys.exit(2)
+
+    phases = []
+    for p in plan_paths:
+        info = heuristic_extract_plan(p)
+        if info:
+            phases.append(info)
+
+    if not phases:
+        print(f"[heuristic] plan {len(plan_paths)}개 발견했으나 markdown header 추출 실패", file=sys.stderr)
+        sys.exit(3)
+
+    # current_phase: NOVA-STATE에서 추론 → 매칭되는 id 또는 첫 in_progress
+    state_phase = heuristic_extract_nova_state_phase(root)
+    current = None
+    if state_phase:
+        for ph in phases:
+            if state_phase.lower() in ph["id"].lower() or state_phase.lower() in ph["title"].lower():
+                current = ph["id"]
+                ph["status"] = "in_progress"
+                break
+    if not current:
+        in_progress = next((ph for ph in phases if ph["status"] == "in_progress"), None)
+        if in_progress:
+            current = in_progress["id"]
+        else:
+            current = phases[0]["id"]
+            phases[0]["status"] = "in_progress"
+
+    slug = os.path.basename(root) or "project"
+    slug_safe = re.sub(r'[^A-Za-z0-9._-]', '_', slug).strip('_') or "project"
+
+    fm = {
+        "roadmap_id": slug_safe,
+        "title": f"{slug_safe} (auto-heuristic)",
+        "created": today_iso(),
+        "current_phase": current,
+        "phases": phases,
+        "external_pending": [],
+        "_mode": "heuristic",  # dashboard 배지용
+    }
+    yaml_str = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, default_flow_style=False)
+    content = (
+        "---\n" + yaml_str + "---\n\n"
+        f"# Roadmap (auto-heuristic from docs/plans/)\n\n"
+        f"> Auto-generated by `init-roadmap.sh --heuristic` ({today_iso()}).\n"
+        f"> 결정론적 추출 — frontmatter 없는 plan에서 markdown header + 파일명 기반.\n"
+        f"> ⚠️ 정확도 낮을 수 있음 — 사용자 검수 권장.\n"
+        f"> 더 정확한 결과: Claude Code session에서 `/nova:status` 호출 → Agent LLM 추론.\n\n"
+        f"## 📍 발견된 phases\n\n{len(phases)}개 ({', '.join(p['id'] for p in phases[:5])}{'...' if len(phases)>5 else ''})\n"
+    )
+    Path(out_path).write_text(content, encoding="utf-8")
+    print(f"\n✓ heuristic 추출 완료: {out_path}", file=sys.stderr)
+    print(f"  - plans: {len(plan_paths)}개 → phases: {len(phases)}개", file=sys.stderr)
+    print(f"  - current_phase: {current}", file=sys.stderr)
+    print(f"  - ⚠️ 정확도 낮을 수 있음 — 사용자 검수 권장", file=sys.stderr)
+
+# ---------------------------------------------------------------- mode: api (v5.37.0)
+# ANTHROPIC_API_KEY 있으면 curl로 Claude API 직접 호출 — 옵션 (메모리 'API 키 의존성 0 원칙' 준수: 필수 강제 X)
+def mode_api(out_path, force):
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print(f"[api] ANTHROPIC_API_KEY 환경변수 없음 — skip (heuristic 또는 마커로 fallback)", file=sys.stderr)
+        sys.exit(2)
+    root = repo_root()
+
+    # 자료 수집 — mode_llm과 동일하지만 .nova/init-input.json은 안 만듦 (API 직접 호출)
+    nova_state = collect_nova_state(root) or ""
+    git_log = collect_git_log(root)
+    plans_meta = scan_plans(root)
+    docs_list = collect_existing_docs(root)
+
+    prompt = f"""다음 입력을 분석해 ROADMAP.md frontmatter(YAML)를 작성하라. 본문 markdown은 작성 금지. frontmatter만 출력. 자동 commit 금지.
+
+## 입력
+NOVA-STATE.md:
+{nova_state[:3000]}
+
+git log 30d (max 30 commits):
+{chr(10).join(git_log[:30])}
+
+docs/plans (with parent_phase):
+{json.dumps(plans_meta, ensure_ascii=False, indent=2)[:2000]}
+
+existing docs:
+{json.dumps(docs_list, ensure_ascii=False)[:500]}
+
+## 출력 스키마
+```yaml
+roadmap_id: <slug>
+title: <한 줄 프로젝트 설명>
+created: {today_iso()}
+current_phase: <phases[].id 중 in_progress인 것>
+phases:
+  - id: <slug-safe>
+    title: <phase 명, id와 다른 값>
+    status: <done|in_progress|pending|blocked>
+    summary: <한 줄>
+external_pending: []
+```
+
+## 규칙
+- phase status 의미: done=완료/in_progress=현재/pending=선행 phase 대기/blocked=외부 trigger 필요
+- "blocked by phase X" 의존성은 blocked가 아닌 pending
+- 추측 영역은 title에 "⚠️ unsure" 표기
+- YAML만 출력 (```yaml ... ``` 블록), 다른 설명 X
+"""
+
+    import urllib.request, urllib.error
+    payload = json.dumps({
+        "model": "claude-haiku-4-5-20251001",
+        "max_tokens": 4096,
+        "messages": [{"role": "user", "content": prompt}],
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        print(f"[api] Anthropic API HTTP {e.code}: {e.reason}", file=sys.stderr)
+        sys.exit(4)
+    except Exception as e:
+        print(f"[api] Anthropic API 호출 실패: {e}", file=sys.stderr)
+        sys.exit(4)
+
+    text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+    yaml_match = re.search(r'```ya?ml\s*\n(.*?)\n```', text, re.S)
+    yaml_body = yaml_match.group(1) if yaml_match else text.strip()
+    try:
+        fm = yaml.safe_load(yaml_body) or {}
+    except yaml.YAMLError as e:
+        print(f"[api] LLM 응답 YAML 파싱 실패: {e}", file=sys.stderr)
+        sys.exit(5)
+    if not isinstance(fm, dict) or "phases" not in fm:
+        print(f"[api] LLM 응답에 phases 키 없음 — skip", file=sys.stderr)
+        sys.exit(5)
+
+    fm["_mode"] = "api"  # dashboard 배지용
+    yaml_str = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, default_flow_style=False)
+    content = (
+        "---\n" + yaml_str + "---\n\n"
+        f"# Roadmap (auto-api LLM)\n\n"
+        f"> Auto-generated by `init-roadmap.sh --api` ({today_iso()}) via Anthropic API.\n"
+        f"> 사용자 검수 후 채택: `mv {out_path} ROADMAP.md`.\n"
+    )
+    Path(out_path).write_text(content, encoding="utf-8")
+    print(f"\n✓ api 추출 완료: {out_path}", file=sys.stderr)
+    print(f"  - phases: {len(fm.get('phases', []))}개", file=sys.stderr)
+    print(f"  - current_phase: {fm.get('current_phase', '-')}", file=sys.stderr)
+
 # ---------------------------------------------------------------- main
 def main():
     args = parse_args()
@@ -347,6 +571,10 @@ def main():
         mode_scan(args.out, args.force)
     elif args.mode == "llm":
         mode_llm(args.out, args.force)
+    elif args.mode == "heuristic":
+        mode_heuristic(args.out, args.force)
+    elif args.mode == "api":
+        mode_api(args.out, args.force)
 
 if __name__ == "__main__":
     main()

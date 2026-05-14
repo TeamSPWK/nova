@@ -35,6 +35,8 @@ while [[ $# -gt 0 ]]; do
     --blank) MODE="blank"; shift ;;
     --scan)  MODE="scan";  shift ;;
     --llm)   MODE="llm";   shift ;;
+    --heuristic) MODE="heuristic"; shift ;;
+    --api)   MODE="api";   shift ;;
     --out) OUT="$2"; shift 2 ;;
     --force) FORCE=true; shift ;;
     -h|--help) print_help; exit 0 ;;
@@ -43,7 +45,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$MODE" ]]; then
-  echo "[init-roadmap] 모드를 명시하세요 (--blank / --scan / --llm)" >&2
+  echo "[init-roadmap] 모드를 명시하세요 (--blank / --scan / --llm / --heuristic / --api)" >&2
   print_help >&2
   exit 2
 fi
