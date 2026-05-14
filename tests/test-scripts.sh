@@ -3025,9 +3025,11 @@ _test_R34aj() {
   # OUT_PATH가 single-quote로 감싸져 있는지
   grep -qE "OUT_PATH='[^']*\\\$\\(touch /tmp/nova-inj-canary\\)" /tmp/inj-stderr && rc1=0
   # eval 실행 시도 — canary 안 생기면 OK
-  local rerender_line
+  # v5.36.1: --open 제거 — macOS open이 literal `$(touch ...)` 경로 열기 시도하며 시스템 알림 띄우는 부작용 차단
+  local rerender_line rerender_clean
   rerender_line=$(grep '^RERENDER_CMD=' /tmp/inj-stderr | head -1)
-  ( eval "${rerender_line#RERENDER_CMD=}" >/dev/null 2>&1 ) || true
+  rerender_clean=$(printf '%s' "${rerender_line#RERENDER_CMD=}" | sed 's/ --open//g')
+  ( eval "$rerender_clean" >/dev/null 2>&1 ) || true
   [[ ! -f /tmp/nova-inj-canary ]] && rc2=0
   rm -rf "$work_dir" /tmp/inj-stderr /tmp/nova-inj-canary
   [[ $rc1 -eq 0 && $rc2 -eq 0 ]]
