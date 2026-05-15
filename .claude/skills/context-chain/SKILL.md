@@ -61,6 +61,8 @@ Sprint 1부터 Nova는 두 기록 체계를 **병행**한다(이중화 아님):
 
 **정리 의무 (필수)**: 갱신 트리거 9개 진입점(`/nova:plan`, `/nova:design`, `/nova:deepplan`, `/nova:run`, `/nova:auto`, `/nova:review`, `/nova:check`, `/nova:ux-audit`, `/nova:evolve`)은 갱신 직후 NOVA-STATE.md가 50줄을 초과하면 가장 오래된 Last Activity / Recently Done 항목부터 제거하여 50줄 이내로 트림한다. 갱신만 강제하고 정리를 빠뜨리면 단조 증가한다 — 갱신/정리는 한 동작의 두 면이다. orchestrator/deepplan 스킬도 동일 의무를 진다.
 
+**v3 marker 영역 카운트 제외 (Sprint 2, v5.42.0+)**: NOVA-STATE.md의 `<!-- nova:registry-rendered:start -->` ~ `<!-- nova:registry-rendered:end -->` 사이는 `scripts/registry-render-state.sh`가 자동 렌더하는 영역이다. 50줄 트림 카운트 시 **이 marker 안쪽 라인은 제외**한다 (자동 렌더 영역은 사람용 cursor 아님). 트림 도구가 marker 외 영역만 50줄 이내로 유지하면 충분. work-item index는 `.nova/work-items/index.json`이 진실원이므로 NOVA-STATE에 중복 기록 X.
+
 **예외 — `evolve_decision` 이벤트 (v5.20.0+, JSONL only)**: `/nova:evolve --accept`/`--reject` 호출은 `.nova/events.jsonl`에 `evolve_decision` 이벤트만 append한다. NOVA-STATE.md 갱신 트리거 X — `--accept`/`--reject` 다중 호출이 트림 루프를 유발할 위험을 회피하기 위함. 9 진입점 동결 유지 (Plan 결정 v5.20.0 — `docs/plans/measurement-infrastructure.md` 결정 #3).
 
 ## Last Activity 포맷

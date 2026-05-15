@@ -252,6 +252,17 @@ audit-self 종료 시:
 - `/nova:check` — 설계-구현 정합성. audit-self는 보안 정합성 전담
 - `/nova:next` — Nova 운영 워크플로우. 릴리스 직전 audit-self 권장
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+`/nova:audit-self` Phase 5 결과 정리에서 Critical 발견 시 메인 에이전트가 **registry-write.sh require-review**를 호출한다 (해당 영역의 work-item 또는 신규 발급 후).
+
+```bash
+bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" require-review "$WI_ID"
+```
+
+- audit-self는 Nova 자체 운영 점검 — 일반적으로 work-item 없는 메타 영역. Critical 발견 시 신규 WI 발급(`create`) 후 즉시 `require-review` set.
+- audit_self_verdict 이벤트는 별도 record-event 기록.
+
 # Input
 
 $ARGUMENTS

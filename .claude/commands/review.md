@@ -416,6 +416,18 @@ Nova 자체는 `/ultrareview`를 자동 호출하지 않는다. 사용자가 판
 - **UI/UX 심층 분석**: 프론트엔드 변경(컴포넌트, 스타일, 라우팅)이 주된 리뷰 대상이면, 판정 후 `/nova:ux-audit`를 안내한다. 이 커맨드는 접근성(WCAG 2.2), 인지 부하, 성능(Core Web Vitals), 다크 패턴을 5인 적대적 평가자로 심층 분석한다.
 - **Learned Rules 참조**: 프로젝트에 `.claude/rules/` 파일이 있으면, 리뷰 시 해당 규칙을 Evaluation Criteria에 추가로 적용한다. 반복 지적된 패턴이 있으면 규칙화를 제안한다: "이 패턴이 N회 이상 지적되었습니다. `.claude/rules/`에 규칙으로 등록하시겠습니까?"
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+`/nova:review` 완료 직후, 검토 대상 work-item이 있으면 메인 에이전트가 **registry-write.sh require-review**를 호출하여 `review_required=true` 플래그를 set한다.
+
+```bash
+bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" require-review "$WI_ID"
+```
+
+- status=done인 WI에는 호출 불가 (invariant 충돌 — registry-write가 자동 거부).
+- review 결과 PASS면 메인이 별도로 `evaluator-pass` 호출 (transition).
+- 호출 권한: 메인만. evaluator skill(sub-agent)은 *권고만 stdout 출력*, 직접 호출 금지.
+
 # Input
 
 $ARGUMENTS

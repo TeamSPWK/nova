@@ -66,5 +66,17 @@ Claude Code `/ultraplan`은 클라우드 CCR에서 최대 30분 전용 컴퓨트
 
 Nova 자체는 `/ultraplan`을 자동 호출하지 않는다. 사용자가 판단하여 독립 실행한다.
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+deepplan Phase E (Refiner 저장) 직후, 메인 에이전트가 **registry-write.sh create**를 호출하여 work-item을 발급한다 (status=proposed, priority=high가 기본 — deepplan 대상은 복잡도 높음).
+
+```bash
+WI_ID=$(bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" create "<deepplan title>" \
+  --priority=high \
+  --source-doc=docs/plans/<slug>.md)
+```
+
+deepplan은 plan_created 이벤트도 함께 기록되지만, work_item_created 이벤트는 registry-write.sh가 내부적으로 발화하므로 추가 호출 불요. sub-agent 호출 금지.
+
 # Input
 $ARGUMENTS

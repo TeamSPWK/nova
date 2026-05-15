@@ -420,6 +420,15 @@ Plan을 저장하되 헤더에 미해결 마커를 추가한다:
      ```
    - **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. (상세: skills/context-chain/SKILL.md)
 
+3.5. **v3 work-item registry 갱신 (Sprint 2)**:
+   - 메인 컨텍스트가 **`registry-write.sh create`**로 work-item 발급 (status=proposed, priority=high 기본)
+     ```bash
+     WI_ID=$(bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" create "<deepplan title>" \
+       --priority=high --source-doc=docs/plans/{slug}.md)
+     ```
+   - 후속 Design·Run 사이클이 이 `$WI_ID`를 이어받아 update/transition 수행
+   - skill 자체(sub-agent)는 호출 금지 — 메인 책임 (단일 쓰기 경로)
+
 4. **완료 보고**:
    ```
    ━━━ Nova DeepPlan — 완료 ━━━━━━━━━━━━━━━━━━━━━

@@ -564,6 +564,24 @@ NOVA-STATE.md가 있으면 Last Activity를 갱신한다:
 
 **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 
+### v3 work-item registry 갱신 (Sprint 2)
+
+Phase 7 결과 보고 직후, **orchestrator(메인 컨텍스트)가 직접 `registry-write.sh` 호출**한다. Evaluator sub-agent는 verdict만 stdout 출력 — orchestrator가 받아 처리:
+
+- **Evaluator PASS** → `evaluator-pass` 호출 (원자적 status=done + review_required=false + evidence)
+  ```bash
+  bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" evaluator-pass "$WI_ID" \
+    --commit-sha="$(git rev-parse HEAD)" \
+    --test-output="<verification path>"
+  ```
+- **블로커 발견** → `transition <wi> blocked --blocked-reason="..."`
+- **Evaluator FAIL** → status 유지 (active). Refiner sub-agent 결과 받아 메인이 재시도. transition 호출 X.
+
+권한 경계 (Sprint 0 spec `docs/specs/registry-write-authority-v3.md`):
+- orchestrator skill 자체는 *조정자* — sub-agent들이 직접 registry-write 호출 금지
+- evaluator·qa-engineer·refiner sub-agent는 *판정·제안만*, registry 쓰기 절대 X
+- 메인(또는 orchestrator)이 verdict 받아 위 명령 1회 호출 (단일 쓰기 경로)
+
 ## 플래그
 
 | 플래그 | 동작 |

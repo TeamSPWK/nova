@@ -300,6 +300,26 @@ Generator 서브에이전트 spawn (이슈 목록 + 수정 범위 전달)
 - Phase를 검증 결과에 따라 갱신 (PASS → done, FAIL → building)
 - **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+`/nova:run` Phase 6 State Update에서 NOVA-STATE.md 직접 Edit 대신 **registry-write.sh** 경유:
+
+- **Evaluator PASS**: 메인 에이전트가 `evaluator-pass` 호출 (원자적: status=done + review_required=false + evidence.commit_sha)
+  ```bash
+  bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" evaluator-pass "$WI_ID" \
+    --commit-sha="$(git rev-parse HEAD)" \
+    --test-output=tests/<test>.sh \
+    --files="<changed paths comma-sep>"
+  ```
+- **블로커 발견**: `transition blocked` 호출 (blocked_reason 필수)
+  ```bash
+  bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" transition "$WI_ID" blocked \
+    --blocked-reason="<구체적 블로커 설명>"
+  ```
+- **Evaluator FAIL**: status 유지 (active), Refiner 후 재실행. transition 호출 불요.
+
+Evaluator skill(sub-agent)이 직접 registry-write 호출 금지 — sub-agent는 verdict만 stdout 출력. 메인이 verdict 받아 위 명령 호출.
+
 # Input
 
 $ARGUMENTS

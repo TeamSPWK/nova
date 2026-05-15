@@ -305,6 +305,17 @@ Critical/High 이슈에 대해 수정안 생성:
 - `--screenshot` 시 Puppeteer MCP 필요 (미연결 시 경고 후 코드 분석 fallback)
 - 감정/위트 없이 객관적으로. 코드 근거 없는 지적 금지.
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+`/nova:ux-audit` 완료 직후, Critical 발견 시 메인 에이전트가 **registry-write.sh require-review**를 호출하여 UI/UX 관련 work-item에 검증 요청 플래그를 set한다.
+
+```bash
+bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" require-review "$WI_ID"
+```
+
+- Critical 없음: registry 호출 불요. log-metric.sh 이벤트만 기록.
+- ux-audit skill(sub-agent)은 *Critical 보고만*, 직접 registry-write 호출 금지 — 메인이 권고 받아 위 명령 실행.
+
 # Input
 
 $ARGUMENTS

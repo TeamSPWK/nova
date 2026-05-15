@@ -238,5 +238,17 @@ Before/After 코드 + 변경 요약
 - 사소한 스타일은 린터에 위임, 구조적 문제만 지적
 - PASS라도 발견한 모든 이슈를 빠짐없이 보고한다
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+`/nova:check`에서 Critical 이슈를 발견한 경우, 영향받는 work-item에 대해 메인 에이전트가 **registry-write.sh require-review**를 호출한다.
+
+```bash
+bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" require-review "$WI_ID"
+```
+
+- Critical 없음 (PASS): registry 호출 불요.
+- registry-drift-check.sh의 Hard 9 룰 위반(H1~H9)도 require-review 트리거 — Sprint 4에서 통합.
+- 호출 권한: 메인만.
+
 # Input
 $ARGUMENTS

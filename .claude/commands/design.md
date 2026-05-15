@@ -117,5 +117,18 @@ E2E 테스트나 `/check` 검증에서 설계 자체의 문제가 발견되면:
 - Plan의 모든 요구사항이 Design에 반영되었는지 확인
 - 아키텍처 판단이 어려우면 `/ask`로 다관점 자문
 
+## v3 work-item registry 갱신 (Sprint 2)
+
+Design 문서 저장 직후, 메인 에이전트가 **registry-write.sh update**를 호출하여 work-item의 `source_docs`에 design 경로를 추가한다 (Plan 단계에서 발급한 WI_ID가 있을 때).
+
+```bash
+bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" update "$WI_ID" \
+  source_docs="docs/plans/<slug>.md,docs/designs/<slug>.md"
+```
+
+기존 WI가 없으면 (단독 Design): `registry-write.sh create` 호출로 신규 발급.
+
+호출 권한: 메인 에이전트만. sub-agent 호출 금지.
+
 # Input
 $ARGUMENTS

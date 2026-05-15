@@ -210,10 +210,10 @@ record_event_safe() {
   local extra=${2:-'{}'}
   local actor
   actor=$(infer_actor)
-  # actor 필드 + schema_version 3.0 명시
+  # actor 필드 첨가 (schema_version은 record-event.sh top-level에서 관리)
   local payload
   payload=$(jq -cn --arg a "$actor" --argjson e "$extra" \
-    '{actor:$a, schema_version:"3.0"} + $e' 2>/dev/null) || payload="$extra"
+    '{actor:$a} + $e' 2>/dev/null) || payload="$extra"
   local rec="$NOVA_PLUGIN_PATH/hooks/record-event.sh"
   if [ -x "$rec" ] || [ -f "$rec" ]; then
     bash "$rec" "$etype" "$payload" 2>/dev/null || true

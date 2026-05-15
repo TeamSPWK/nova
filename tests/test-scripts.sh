@@ -1679,7 +1679,7 @@ assert "S2b.6: record-event.sh tool_constraint_violation 기록 + schema 유효"
   "TMPD=\$(mktemp -d); (cd \"\$TMPD\" && \
     bash '$ROOT_DIR/hooks/record-event.sh' tool_constraint_violation '{\"agent\":\"test\",\"tool_attempted\":\"Bash\",\"matched_pattern\":\"Bash(rm -rf *)\"}' && \
     [ \"\$(jq -r '.event_type' .nova/events.jsonl | head -1)\" = 'tool_constraint_violation' ] && \
-    [ \"\$(jq -r '.schema_version' .nova/events.jsonl | head -1)\" = '2' ] \
+    [ \"\$(jq -r '.schema_version' .nova/events.jsonl | head -1)\" = '3' ] \
   ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
 
 # S2b.7: evaluator SKILL.md — tool_constraint_violation 감사 섹션
@@ -2279,9 +2279,9 @@ PID_LIB="$ROOT_DIR/scripts/lib/pattern-id.sh"
 # M1: pattern-id.sh 존재 + 실행 권한
 assert "M1: scripts/lib/pattern-id.sh 존재 + 실행 권한" "[ -x '$PID_LIB' ]"
 
-# M2: record-event.sh schema v2
-assert "M2: record-event.sh schema_version=2" \
-  "grep -q 'schema_version: 2' '$ROOT_DIR/hooks/record-event.sh'"
+# M2: record-event.sh schema v3 (v5.42.0+, Sprint 2-A에서 v2→v3 승격)
+assert "M2: record-event.sh schema_version=3" \
+  "grep -q 'schema_version: 3' '$ROOT_DIR/hooks/record-event.sh'"
 
 # M3: record-event.sh extra payload 가이드 (tool, duration_ms, pattern_id, decision)
 assert "M3: record-event.sh extra payload 가이드 (tool/duration_ms/pattern_id ≥ 3)" \
@@ -3477,6 +3477,151 @@ assert "1-E: commands/setup.md — v3 work-item registry 부트스트랩 안내 
 assert "1-E: docs/templates/nova-state.md — registry-rendered marker 추가" \
   "grep -q 'nova:registry-rendered:start' '$ROOT_DIR/docs/templates/nova-state.md' && \
    grep -q 'nova:registry-rendered:end' '$ROOT_DIR/docs/templates/nova-state.md'"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# Sprint 2 (9 진입점 통합 + record-event v3 + render-state) 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint 2: 9 진입점 통합 + render-state]${NC}"
+
+# Sprint 2-A: record-event.sh schema v3
+assert "2-A: hooks/record-event.sh — schema_version 3" \
+  "grep -q 'schema_version: 3,' '$ROOT_DIR/hooks/record-event.sh'"
+assert "2-A: record-event.sh — Schema v3 신규 이벤트 3종 안내 주석" \
+  "grep -q 'work_item_created' '$ROOT_DIR/hooks/record-event.sh' && \
+   grep -q 'work_item_transitioned' '$ROOT_DIR/hooks/record-event.sh' && \
+   grep -q 'registry_rendered' '$ROOT_DIR/hooks/record-event.sh'"
+assert "2-A: registry-write.sh — payload schema_version 중복 제거" \
+  "! grep -q 'schema_version:\"3.0\"' '$ROOT_DIR/scripts/registry-write.sh'"
+
+# Sprint 2-B: registry-render-state.sh
+assert "2-B: scripts/registry-render-state.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/registry-render-state.sh' ]"
+assert "2-B: registry-render-state.sh — bash syntax" \
+  "bash -n '$ROOT_DIR/scripts/registry-render-state.sh'"
+assert "2-B: render-state — marker 영역 + priority 정렬 + Active Tree/Recent Activity" \
+  "grep -q 'nova:registry-rendered:start' '$ROOT_DIR/scripts/registry-render-state.sh' && \
+   grep -q 'Active Tree' '$ROOT_DIR/scripts/registry-render-state.sh' && \
+   grep -q 'Recent Activity' '$ROOT_DIR/scripts/registry-render-state.sh'"
+
+# Sprint 2-C: 8 진입점 매트릭스 (state-call-graph-v3.md §2.1)
+assert "2-C: commands/plan.md — registry-write.sh create 호출 안내" \
+  "grep -q 'registry-write.sh.*create' '$ROOT_DIR/.claude/commands/plan.md'"
+assert "2-C: commands/design.md — registry-write.sh update 호출 안내" \
+  "grep -q 'registry-write.sh.*update' '$ROOT_DIR/.claude/commands/design.md'"
+assert "2-C: commands/deepplan.md — registry-write.sh create 호출 안내" \
+  "grep -q 'registry-write.sh.*create' '$ROOT_DIR/.claude/commands/deepplan.md'"
+assert "2-C: commands/run.md — evaluator-pass 또는 transition blocked 호출 안내" \
+  "grep -qE '(evaluator-pass|transition.*blocked)' '$ROOT_DIR/.claude/commands/run.md'"
+assert "2-C: commands/review.md — require-review 호출 안내" \
+  "grep -q 'require-review' '$ROOT_DIR/.claude/commands/review.md'"
+assert "2-C: commands/check.md — require-review 호출 안내" \
+  "grep -q 'require-review' '$ROOT_DIR/.claude/commands/check.md'"
+assert "2-C: commands/ux-audit.md — require-review 호출 안내" \
+  "grep -q 'require-review' '$ROOT_DIR/.claude/commands/ux-audit.md'"
+assert "2-C: commands/audit-self.md — require-review 호출 안내" \
+  "grep -q 'require-review' '$ROOT_DIR/.claude/commands/audit-self.md'"
+assert "2-C: commands/evolve.md — registry-write 미언급 (JSONL only)" \
+  "! grep -q 'registry-write.sh' '$ROOT_DIR/.claude/commands/evolve.md'"
+
+# Sprint 2-D: skills 매트릭스
+assert "2-D: skills/orchestrator/SKILL.md — registry-write evaluator-pass/transition" \
+  "grep -qE 'registry-write.sh.*(evaluator-pass|transition)' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
+assert "2-D: skills/deepplan/SKILL.md — registry-write create" \
+  "grep -q 'registry-write.sh.*create' '$ROOT_DIR/.claude/skills/deepplan/SKILL.md'"
+assert "2-D: skills/context-chain/SKILL.md — marker 영역 카운트 제외 룰" \
+  "grep -qE '(marker.*제외|registry-rendered.*카운트)' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
+assert "2-D: skills/evaluator/SKILL.md — registry-write 미언급 (sub-agent 정책)" \
+  "! grep -q 'registry-write.sh' '$ROOT_DIR/.claude/skills/evaluator/SKILL.md'"
+assert "2-D: skills/ux-audit/SKILL.md — registry-write 미언급" \
+  "! grep -q 'registry-write.sh' '$ROOT_DIR/.claude/skills/ux-audit/SKILL.md'"
+assert "2-D: skills/strategic-compact/SKILL.md — registry-write 미언급" \
+  "! grep -q 'registry-write.sh' '$ROOT_DIR/.claude/skills/strategic-compact/SKILL.md'"
+
+# Sprint 2-E: 통합 테스트 존재
+assert "2-E: tests/test-sprint2-integration.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/tests/test-sprint2-integration.sh' ]"
+assert "2-E: 통합 테스트 — bash syntax 통과" \
+  "bash -n '$ROOT_DIR/tests/test-sprint2-integration.sh'"
+
+# 거짓양성 거름 grep — 직접 NOVA-STATE 쓰기 코드 0건 (좁힌 패턴)
+assert "2-X: 직접 NOVA-STATE 쓰기 코드 0건 (redirect 패턴만 매칭)" \
+  "! grep -rE '(\\bcat[[:space:]]+>[[:space:]]*NOVA-STATE|\\becho[[:space:]]+.*>[[:space:]]*NOVA-STATE|\\bsed[[:space:]]+-i.*NOVA-STATE|\\bappend[[:space:]]+[a-z>].*>[[:space:]]*NOVA-STATE)' '$ROOT_DIR/.claude/commands/'*.md '$ROOT_DIR/.claude/skills/'*/SKILL.md 2>/dev/null"
+
+echo ""
+
+# ═══════════════════════════════════════════
+# Sprint 3+4+5 (v3 migrate + drift 18 + fixture) 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint 3+4+5: migrate + drift + fixture]${NC}"
+
+# Sprint 3: migrate-state-v3.sh
+assert "3-A: scripts/migrate-state-v3.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/migrate-state-v3.sh' ]"
+assert "3-A: migrate-state-v3.sh — bash syntax" \
+  "bash -n '$ROOT_DIR/scripts/migrate-state-v3.sh'"
+assert "3-A: migrate-state-v3.sh — PoC 5 규칙 명시 (priority/blocked_reason/depends_on/source_docs/commit_sha)" \
+  "grep -q 'PoC 5 규칙' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q 'priority=medium 기본' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q 'depends_on 추론 금지' '$ROOT_DIR/scripts/migrate-state-v3.sh'"
+assert "3-A: migrate-state-v3.sh — --apply / --dry-run / --input / --project 옵션" \
+  "grep -q '\\-\\-apply' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q '\\-\\-dry-run' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q '\\-\\-input' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q '\\-\\-project' '$ROOT_DIR/scripts/migrate-state-v3.sh'"
+assert "3-A: migrate-state-v3.sh — 백업 (.v2.bak) + marker 자동 추가" \
+  "grep -q 'v2.bak' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
+   grep -q 'nova:registry-rendered:start' '$ROOT_DIR/scripts/migrate-state-v3.sh'"
+
+# Sprint 4: registry-drift-check.sh
+assert "4-A: scripts/registry-drift-check.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/registry-drift-check.sh' ]"
+assert "4-A: registry-drift-check.sh — bash syntax" \
+  "bash -n '$ROOT_DIR/scripts/registry-drift-check.sh'"
+assert "4-A: drift-check — Hard 9 룰 (H1~H9) 모두 구현" \
+  "for r in H1 H2 H3 H4 H5 H6 H7 H8 H9; do grep -q \"\$r\" '$ROOT_DIR/scripts/registry-drift-check.sh' || exit 1; done"
+assert "4-A: drift-check — Warn 9 룰 (W1~W9) 모두 구현" \
+  "for r in W1 W2 W3 W4 W5 W6 W7 W8 W9; do grep -q \"\$r\" '$ROOT_DIR/scripts/registry-drift-check.sh' || exit 1; done"
+assert "4-A: drift-check — H1 실패 시 H2~H9 SKIP (Critic #18)" \
+  "grep -q 'SKIP_REMAINING_HARD' '$ROOT_DIR/scripts/registry-drift-check.sh'"
+assert "4-A: drift-check — --severity / --jsonl 옵션" \
+  "grep -q '\\-\\-severity' '$ROOT_DIR/scripts/registry-drift-check.sh' && \
+   grep -q '\\-\\-jsonl' '$ROOT_DIR/scripts/registry-drift-check.sh'"
+
+# Sprint 5: fixture 디렉토리
+assert "5-A: tests/fixtures/drift-cases/ 디렉토리 존재" \
+  "[ -d '$ROOT_DIR/tests/fixtures/drift-cases' ]"
+assert "5-A: drift-cases/h6-done-no-evidence fixture" \
+  "[ -f '$ROOT_DIR/tests/fixtures/drift-cases/h6-done-no-evidence/.nova/work-items/index.json' ]"
+assert "5-A: drift-cases/h8-pending-marker fixture (마커 파일)" \
+  "ls '$ROOT_DIR/tests/fixtures/drift-cases/h8-pending-marker/.nova/work-items/'.pending-transition-* 2>/dev/null | grep -q ."
+assert "5-A: drift-cases/h9-blocked-no-reason fixture" \
+  "[ -f '$ROOT_DIR/tests/fixtures/drift-cases/h9-blocked-no-reason/.nova/work-items/index.json' ]"
+assert "5-A: drift-cases/w6-uuid-fallback fixture" \
+  "ls '$ROOT_DIR/tests/fixtures/drift-cases/w6-uuid-fallback/.nova/work-items/'WI-[a-f0-9]*-*.json 2>/dev/null | grep -q ."
+assert "5-A: drift-cases/README.md 가이드" \
+  "[ -f '$ROOT_DIR/tests/fixtures/drift-cases/README.md' ]"
+
+# Sprint 5: Nova 본 레포 자체 적용 dry-run (Sprint 6 Nice-to-have)
+assert "5-B: Nova 본 레포 setup.sh --upgrade --dry-run exit 0" \
+  "NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/setup.sh' --upgrade --dry-run >/dev/null 2>&1"
+assert "5-B: Nova 본 레포 migrate-state-v3.sh --dry-run exit 0" \
+  "NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/migrate-state-v3.sh' --dry-run --project='$ROOT_DIR' >/dev/null 2>&1"
+
+# Sprint 6: 사용자 가이드
+assert "6-A: docs/guides/sibling-migration-v3.md 존재" \
+  "[ -f '$ROOT_DIR/docs/guides/sibling-migration-v3.md' ]"
+assert "6-A: 가이드 — TL;DR + 8단계 + FAIL 시나리오 + cheatsheet 회귀 가드" \
+  "grep -q 'TL;DR' '$ROOT_DIR/docs/guides/sibling-migration-v3.md' && \
+   grep -q '단계 1:' '$ROOT_DIR/docs/guides/sibling-migration-v3.md' && \
+   grep -q 'FAIL 시나리오' '$ROOT_DIR/docs/guides/sibling-migration-v3.md' && \
+   grep -q 'Cheatsheet' '$ROOT_DIR/docs/guides/sibling-migration-v3.md'"
+assert "6-A: 가이드 — 7 형제 프로젝트 순차 권장 (Architect #11)" \
+  "grep -q '7 형제 프로젝트' '$ROOT_DIR/docs/guides/sibling-migration-v3.md' && \
+   grep -q '순차' '$ROOT_DIR/docs/guides/sibling-migration-v3.md'"
 
 echo ""
 

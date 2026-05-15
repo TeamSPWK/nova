@@ -4,12 +4,21 @@
 # 사용법:
 #   bash hooks/record-event.sh <event_type> [<extra_json>]
 #
-# extra payload 권장 nullable 필드 (schema v2, v5.20.0+):
+# extra payload 권장 nullable 필드 (schema v3, v5.42.0+):
 #   - tool         : 도구 이름 (예: "Bash", "Read"). PostToolUse 훅(v5.21.0+)에서 채움
 #   - duration_ms  : 도구 실행 시간 (밀리초). PostToolUse stdin payload에서 추출
 #   - pattern_id   : 패턴 식별자 (8자 hex). evolve_decision 이벤트에만 명시 기록
 #   - decision     : "accept" 또는 "reject" (evolve_decision 이벤트일 때만)
+#   - actor        : 호출 주체 (work-item 이벤트, v3+). 예: "command:/nova:run", "skill:orchestrator", "user:direct"
+#   - wi_id        : work-item ID (work_item_* 이벤트, v3+). 예: "WI-0042-add-search"
 # confidence는 events.jsonl에 기록하지 않는다 — analyze-observations.sh가 산출 시점에 in-memory 계산.
+#
+# Schema v3 신규 이벤트 (Nova v5.42.0+, work-item registry):
+#   - work_item_created      : registry-write.sh create 호출 시
+#   - work_item_transitioned : registry-write.sh transition / evaluator-pass 호출 시
+#   - registry_rendered      : registry-render-state.sh가 NOVA-STATE.md marker 갱신 시
+#
+# Forgiving Reader (Postel): v2 line(schema_version:2)도 분석기가 그대로 처리 — top-level 필드 동일.
 #
 # 환경변수:
 #   NOVA_DISABLE_EVENTS=1      → 즉시 exit 0 (옵트아웃)
@@ -130,7 +139,7 @@ LINE=$(jq -cn \
   --argjson extra "$EXTRA_CLEAN" \
   --arg cwdh "$CWD_HASH" \
   '{
-    schema_version: 2,
+    schema_version: 3,
     timestamp: $ts,
     timestamp_epoch: $ts_epoch,
     monotonic_ns: $mono,
