@@ -3608,8 +3608,8 @@ assert "5-A: drift-cases/README.md 가이드" \
 # Sprint 5: Nova 본 레포 자체 적용 dry-run (Sprint 6 Nice-to-have)
 assert "5-B: Nova 본 레포 setup.sh --upgrade --dry-run exit 0" \
   "NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/setup.sh' --upgrade --dry-run >/dev/null 2>&1"
-assert "5-B: Nova 본 레포 migrate-state-v3.sh --dry-run exit 0" \
-  "NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/migrate-state-v3.sh' --dry-run --project='$ROOT_DIR' >/dev/null 2>&1"
+assert "5-B: Nova 본 레포 migrate-state-v3.sh --dry-run exit 0 (NOVA-STATE.md 부재 시 skip)" \
+  "[ ! -f '$ROOT_DIR/NOVA-STATE.md' ] || NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/migrate-state-v3.sh' --dry-run --project='$ROOT_DIR' >/dev/null 2>&1"
 
 # Sprint 6: 사용자 가이드
 assert "6-A: docs/guides/sibling-migration-v3.md 존재" \

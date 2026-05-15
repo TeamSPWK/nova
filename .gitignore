@@ -48,6 +48,9 @@ mcp-server/node_modules/
 nova-orbit/
 .nova/
 
+# Sprint 5 v3 drift fixtures — .nova/ ignore에서 제외 (tests용 git-tracked)
+!tests/fixtures/**
+
 # Test cache (fixture 실행 산출물)
 tests/.cache/
 

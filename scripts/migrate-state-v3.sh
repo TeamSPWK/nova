@@ -115,8 +115,10 @@ if raw.startswith('---\n'):
 
 # 2) 섹션별 파싱 — 마크다운 헤더 기반
 def find_section(text, header_pattern):
-    """## Tasks 같은 섹션 본문(다음 ## 헤더까지) 반환"""
-    m = re.search(rf'^##\s+{header_pattern}\s*$', text, re.MULTILINE)
+    """## Tasks 같은 섹션 본문(다음 ## 헤더까지) 반환.
+    이모지 prefix 허용: ## 🌳 Active Tree, ## 📊 Recent Activity 등."""
+    # 이모지/유니코드 심볼 prefix (0~3 문자) 허용
+    m = re.search(rf'^##\s+(?:\S{{1,3}}\s+)?{header_pattern}\s*$', text, re.MULTILINE)
     if not m:
         return None
     start = m.end()
@@ -200,7 +202,7 @@ for row in parse_table(tasks_sec):
     stats['tasks'] += 1
 
 # Recently Done 표 (commit_sha 추출 시 status=done)
-recent_sec = find_section(body, r'Recently Done(\s*\(.+\))?')
+recent_sec = find_section(body, r'(Recently Done|Recent Activity)(\s*\(.+\))?')
 for row in parse_table(recent_sec):
     if len(row) < 1 or not row[0]:
         continue
