@@ -3394,6 +3394,93 @@ assert "R37o: session-start.sh — 자동 액션 (PENDING/preview 생성) 코드
 echo ""
 
 # ═══════════════════════════════════════════
+# Sprint 1 (v3 work-item registry) 산출물 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint 1: v3 work-item registry]${NC}"
+
+# Sprint 1-A: schema 2개 + README 템플릿
+assert "1-A: docs/templates/schema/work-item.schema.json 존재" \
+  "[ -f '$ROOT_DIR/docs/templates/schema/work-item.schema.json' ]"
+assert "1-A: docs/templates/schema/index.schema.json 존재" \
+  "[ -f '$ROOT_DIR/docs/templates/schema/index.schema.json' ]"
+assert "1-A: docs/templates/nova-readme.md 존재" \
+  "[ -f '$ROOT_DIR/docs/templates/nova-readme.md' ]"
+assert "1-A: work-item.schema.json — jq empty 통과" \
+  "jq empty '$ROOT_DIR/docs/templates/schema/work-item.schema.json'"
+assert "1-A: index.schema.json — jq empty 통과" \
+  "jq empty '$ROOT_DIR/docs/templates/schema/index.schema.json'"
+assert "1-A: work-item schema — status 5값 enum" \
+  "jq -e '.properties.status.enum | length == 5' '$ROOT_DIR/docs/templates/schema/work-item.schema.json'"
+assert "1-A: work-item schema — invariant 3종 (allOf if/then) 존재" \
+  "jq -e '(.allOf | length) >= 3' '$ROOT_DIR/docs/templates/schema/work-item.schema.json'"
+assert "1-A: id pattern — 정규(4자리) OR UUID fallback(8 hex) oneOf" \
+  "jq -e '.properties.id.oneOf | length == 2' '$ROOT_DIR/docs/templates/schema/work-item.schema.json'"
+assert "1-A: index schema — 5필드 (id, status, review_required, priority, updated_at)" \
+  "jq -e '.properties.work_items.items.required | length == 5' '$ROOT_DIR/docs/templates/schema/index.schema.json'"
+
+# Sprint 1-B: registry-write.sh
+assert "1-B: scripts/registry-write.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/registry-write.sh' ]"
+assert "1-B: registry-write.sh — bash syntax 통과" \
+  "bash -n '$ROOT_DIR/scripts/registry-write.sh'"
+assert "1-B: registry-write.sh — 5 sub-command 정의 (create/update/transition/evaluator-pass/require-review)" \
+  "grep -q 'cmd_create' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'cmd_update' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'cmd_transition' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'cmd_evaluator_pass' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'cmd_require_review' '$ROOT_DIR/scripts/registry-write.sh'"
+assert "1-B: registry-write.sh — lock 메커니즘 (flock + mkdir + PID stale)" \
+  "grep -q 'acquire_lock' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'NOVA_LOCK_MODE' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'kill -0' '$ROOT_DIR/scripts/registry-write.sh'"
+assert "1-B: registry-write.sh — pending transition 마커 (SIGINT 안전)" \
+  "grep -q 'mark_pending' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q 'clear_pending' '$ROOT_DIR/scripts/registry-write.sh' && \
+   grep -q '.pending-transition-' '$ROOT_DIR/scripts/registry-write.sh'"
+
+# Sprint 1-C: setup.sh + reindex-work-items.sh
+assert "1-C: scripts/setup.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/setup.sh' ]"
+assert "1-C: scripts/reindex-work-items.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/scripts/reindex-work-items.sh' ]"
+assert "1-C: setup.sh — bash syntax 통과" \
+  "bash -n '$ROOT_DIR/scripts/setup.sh'"
+assert "1-C: reindex-work-items.sh — bash syntax 통과" \
+  "bash -n '$ROOT_DIR/scripts/reindex-work-items.sh'"
+assert "1-C: setup.sh — gitignore marker 블록 관리" \
+  "grep -q 'GITIGNORE_MARK_BEGIN' '$ROOT_DIR/scripts/setup.sh' && \
+   grep -q '!.nova/work-items/' '$ROOT_DIR/scripts/setup.sh'"
+assert "1-C: setup.sh — --upgrade + --dry-run 모드" \
+  "grep -q '\\-\\-upgrade' '$ROOT_DIR/scripts/setup.sh' && \
+   grep -q '\\-\\-dry-run' '$ROOT_DIR/scripts/setup.sh'"
+assert "1-C: reindex — UUID fallback 패턴 + bash 3.2 호환 (associative array 미사용)" \
+  "grep -q 'UUID_RE' '$ROOT_DIR/scripts/reindex-work-items.sh' && \
+   ! grep -q 'declare -A' '$ROOT_DIR/scripts/reindex-work-items.sh'"
+
+# Sprint 1-D: race + stale + perf 테스트
+assert "1-D: tests/test-channel-race.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/tests/test-channel-race.sh' ]"
+assert "1-D: tests/test-stale-lock.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/tests/test-stale-lock.sh' ]"
+assert "1-D: tests/perf/500-items-bench.sh 존재 + 실행 가능" \
+  "[ -x '$ROOT_DIR/tests/perf/500-items-bench.sh' ]"
+assert "1-D: 3 테스트 모두 bash syntax 통과" \
+  "bash -n '$ROOT_DIR/tests/test-channel-race.sh' && \
+   bash -n '$ROOT_DIR/tests/test-stale-lock.sh' && \
+   bash -n '$ROOT_DIR/tests/perf/500-items-bench.sh'"
+
+# Sprint 1-E: commands/setup.md + nova-state.md marker
+assert "1-E: commands/setup.md — v3 work-item registry 부트스트랩 안내 추가" \
+  "grep -q 'Nova v3 work-item registry 부트스트랩' '$ROOT_DIR/.claude/commands/setup.md' && \
+   grep -q 'scripts/setup.sh' '$ROOT_DIR/.claude/commands/setup.md'"
+assert "1-E: docs/templates/nova-state.md — registry-rendered marker 추가" \
+  "grep -q 'nova:registry-rendered:start' '$ROOT_DIR/docs/templates/nova-state.md' && \
+   grep -q 'nova:registry-rendered:end' '$ROOT_DIR/docs/templates/nova-state.md'"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

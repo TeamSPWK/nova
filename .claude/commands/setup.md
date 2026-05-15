@@ -177,6 +177,24 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
    *accessKeys*
    ```
 
+6. **Nova v3 work-item registry 부트스트랩** (Sprint 1, v5.42.0+):
+
+   ```bash
+   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh"            # 신규 부트스트랩
+   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh" --upgrade  # 기존 .nova/ idempotent 동기화
+   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh" --dry-run  # 변경 미리보기
+   ```
+
+   생성/동기화 항목:
+   - `.nova/schema/{work-item,index}.schema.json` — JSON Schema (v3.0, plugin 관리)
+   - `.nova/work-items/index.json` — 빈 매니페스트 (next_seq=1)
+   - `.nova/README.md` — 사용자 안내 (DO NOT EDIT 정책 + drift 18 룰)
+   - `.gitignore` Nova marker 블록 — `.nova/*` + git-tracked 예외 (`work-items/`·`schema/`·`README.md`)
+
+   **idempotent 보장**: 두 번 실행해도 동일 상태 (git diff exit 0). 기존 `work-items/*.json`·`README.md`·`index.json`는 절대 덮어쓰기 X (사용자 데이터 보존).
+
+   **단일 쓰기 경로**: 이후 work-item CRUD는 모두 `bash $NOVA_PLUGIN_PATH/scripts/registry-write.sh <명령>` 경유. 9개 슬래시 커맨드(`/nova:plan`·`/nova:run`·`/nova:review` 등)가 자동 호출.
+
 ## Phase 2.5: Agent Teams 환경 확인
 
 6. 에이전트를 설계하기 전에 **Agent Teams 설정**을 확인한다.

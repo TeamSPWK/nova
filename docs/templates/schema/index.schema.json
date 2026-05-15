@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nova.engineering/schema/work-items-index-v3.json",
+  "title": "Nova Work Items Index v3",
+  "description": "Lightweight manifest of all work-items in .nova/work-items/. Single write path for /nova:next candidate selection. The 5 fields per entry (id, status, review_required, priority, updated_at) are the minimum needed by /nova:next; full data is lazy-loaded from individual WI files. See docs/designs/work-item-registry-v3.md §데이터 모델.",
+  "type": "object",
+  "required": ["schema_version", "next_seq", "work_items", "generated_at"],
+  "properties": {
+    "schema_version": {
+      "description": "Semver string. major=3 enforced via pattern; minor flexible (forgiving reader).",
+      "type": "string",
+      "pattern": "^3\\.[0-9]+$"
+    },
+    "next_seq": {
+      "description": "Next sequential ID to allocate. Atomically incremented via flock (or mkdir lock fallback). Must be ≥1.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "work_items": {
+      "description": "Lightweight projection of all work-items. Sorted order is not guaranteed; consumers must sort.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "review_required", "priority", "updated_at"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "oneOf": [
+              { "pattern": "^WI-[0-9]{4}-[a-z0-9가-힣-]+$" },
+              { "pattern": "^WI-[a-f0-9]{8}-[a-z0-9가-힣-]+$" }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["proposed", "active", "blocked", "done", "superseded"]
+          },
+          "review_required": { "type": "boolean" },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "generated_at": {
+      "description": "ISO 8601 UTC. Set on every index.json write.",
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "3.0",
+      "next_seq": 1,
+      "work_items": [],
+      "generated_at": "2026-05-15T00:00:00Z"
+    },
+    {
+      "schema_version": "3.0",
+      "next_seq": 43,
+      "work_items": [
+        {
+          "id": "WI-0042-add-search-filter",
+          "status": "active",
+          "review_required": false,
+          "priority": "high",
+          "updated_at": "2026-05-15T11:30:00Z"
+        },
+        {
+          "id": "WI-0043-fix-search-race",
+          "status": "done",
+          "review_required": false,
+          "priority": "critical",
+          "updated_at": "2026-05-15T12:00:00Z"
+        }
+      ],
+      "generated_at": "2026-05-15T12:00:00Z"
+    }
+  ]
+}

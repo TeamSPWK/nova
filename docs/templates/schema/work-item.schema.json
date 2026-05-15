@@ -1,0 +1,250 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nova.engineering/schema/work-item-v3.json",
+  "title": "Nova Work Item v3",
+  "description": "Single work-item record in the Nova v3 registry. Schema is loose at the top level (forgiving reader — Postel's law) to allow minor schema evolution (v3.x), but evidence sub-fields are strict to protect the DORA evidence contract. See docs/designs/work-item-registry-v3.md §데이터 모델 / §데이터 계약.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "status",
+    "review_required",
+    "archived_at",
+    "priority",
+    "depends_on",
+    "source_docs",
+    "evidence",
+    "created_at",
+    "updated_at",
+    "blocked_reason",
+    "superseded_by",
+    "last_verified_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Semver string. major=3 enforced via pattern; minor flexible (forgiving reader). Hard-coded const at write time, validated lazily at read time.",
+      "type": "string",
+      "pattern": "^3\\.[0-9]+$"
+    },
+    "id": {
+      "description": "Primary key. Canonical form: WI-NNNN-slug (4-digit sequential). UUID fallback form: WI-XXXXXXXX-slug (8-hex, when lock acquisition fails). slug allows lowercase ASCII, digits, Korean syllables (가-힣), and hyphens.",
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^WI-[0-9]{4}-[a-z0-9가-힣-]+$" },
+        { "pattern": "^WI-[a-f0-9]{8}-[a-z0-9가-힣-]+$" }
+      ]
+    },
+    "title": {
+      "description": "Human-readable title. UTF-8, max 200 chars. Free-text (not a stable contract).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "status": {
+      "description": "Lifecycle state. 5-value enum is frozen — never extended (per GPT consensus).",
+      "type": "string",
+      "enum": ["proposed", "active", "blocked", "done", "superseded"]
+    },
+    "review_required": {
+      "description": "Evaluator gate signal. Set true by /nova:review·check·ux-audit; reset false by Evaluator PASS (atomic with status=done). Invariant: status=done ⟹ review_required=false.",
+      "type": "boolean"
+    },
+    "archived_at": {
+      "description": "ISO 8601 UTC timestamp recorded when transitioning to superseded. Invariant: status=superseded ⟹ archived_at non-null.",
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "priority": {
+      "description": "Sort key for /nova:next. critical > high > medium > low.",
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "depends_on": {
+      "description": "Other work-item IDs this depends on. Missing IDs raise drift H7 (existence). Cycles raise drift Hard (Sprint 4).",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "oneOf": [
+          { "pattern": "^WI-[0-9]{4}-[a-z0-9가-힣-]+$" },
+          { "pattern": "^WI-[a-f0-9]{8}-[a-z0-9가-힣-]+$" }
+        ]
+      }
+    },
+    "source_docs": {
+      "description": "Repo-relative document paths (plans/designs/specs). Leading slash or ./ prefix prohibited (portability). Missing paths raise drift Warn.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!\\./).+"
+      }
+    },
+    "evidence": {
+      "description": "DORA-aligned evidence bundle. commit_sha is the primary key. Strict: no additional sub-fields allowed (additionalProperties:false) to protect the contract — minor evolution requires schema bump.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit_sha"],
+      "properties": {
+        "commit_sha": {
+          "description": "Git SHA values (40-char hex or short form ≥7). Required ≥1 entry when status=done. Empty array allowed for other statuses.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{7,40}$"
+          }
+        },
+        "test_output": {
+          "description": "Repo-relative path to test output, or null. Optional.",
+          "type": ["string", "null"]
+        },
+        "files_changed": {
+          "description": "Repo-relative file paths from `git diff --name-only`, or null. Optional.",
+          "type": ["array", "null"],
+          "items": { "type": "string" }
+        },
+        "pr_url": {
+          "description": "https URL of the related PR, or null. Schema validates https only; domain (github.com) is enforced by drift rule (Sprint 4).",
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^https://" }
+          ]
+        }
+      }
+    },
+    "created_at": {
+      "description": "ISO 8601 UTC. Immutable.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "description": "ISO 8601 UTC. Auto-set on every write. Must stay in sync with index.json work_items[*].updated_at.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "owner": {
+      "description": "Optional owner identifier.",
+      "type": ["string", "null"]
+    },
+    "notes": {
+      "description": "Optional free-text. Not a stable contract.",
+      "type": "string"
+    },
+    "superseded_by": {
+      "description": "When status=superseded, recommended (warn-only if missing). Separate from enum to avoid MADR's collapsed-status pattern.",
+      "type": ["string", "null"]
+    },
+    "blocked_reason": {
+      "description": "Required and non-empty when status=blocked. Empty string is a violation.",
+      "type": ["string", "null"]
+    },
+    "last_verified_at": {
+      "description": "ISO 8601 UTC. Auto-set when /nova:review or /nova:check PASS. Only status=active items are stale-checked (W4, 30d+).",
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "title": "Invariant: status=done ⟹ review_required=false AND evidence.commit_sha non-empty",
+      "if": {
+        "properties": { "status": { "const": "done" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "review_required": { "const": false },
+          "evidence": {
+            "type": "object",
+            "required": ["commit_sha"],
+            "properties": {
+              "commit_sha": { "type": "array", "minItems": 1 }
+            }
+          }
+        },
+        "required": ["evidence"]
+      }
+    },
+    {
+      "title": "Invariant: status=blocked ⟹ blocked_reason non-null and non-empty",
+      "if": {
+        "properties": { "status": { "const": "blocked" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "blocked_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["blocked_reason"]
+      }
+    },
+    {
+      "title": "Invariant: status=superseded ⟹ archived_at non-null",
+      "if": {
+        "properties": { "status": { "const": "superseded" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "archived_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["archived_at"]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "schema_version": "3.0",
+      "id": "WI-0042-add-search-filter",
+      "title": "검색 필터 추가",
+      "status": "active",
+      "review_required": false,
+      "archived_at": null,
+      "priority": "high",
+      "depends_on": ["WI-0040-database-index"],
+      "source_docs": ["docs/plans/search-redesign.md"],
+      "evidence": {
+        "commit_sha": [],
+        "test_output": null,
+        "files_changed": null,
+        "pr_url": null
+      },
+      "created_at": "2026-05-15T10:00:00Z",
+      "updated_at": "2026-05-15T11:30:00Z",
+      "owner": "jay",
+      "notes": "",
+      "superseded_by": null,
+      "blocked_reason": null,
+      "last_verified_at": "2026-05-15T11:30:00Z"
+    },
+    {
+      "schema_version": "3.0",
+      "id": "WI-0043-fix-search-race",
+      "title": "검색 race condition 수정",
+      "status": "done",
+      "review_required": false,
+      "archived_at": null,
+      "priority": "critical",
+      "depends_on": [],
+      "source_docs": ["docs/plans/search-race.md"],
+      "evidence": {
+        "commit_sha": ["abc1234def5678"],
+        "test_output": "tests/test-search-race.sh",
+        "files_changed": ["src/search.ts", "tests/test-search-race.sh"],
+        "pr_url": "https://github.com/jay-swk/example/pull/42"
+      },
+      "created_at": "2026-05-15T10:00:00Z",
+      "updated_at": "2026-05-15T12:00:00Z",
+      "owner": null,
+      "notes": "",
+      "superseded_by": null,
+      "blocked_reason": null,
+      "last_verified_at": "2026-05-15T12:00:00Z"
+    }
+  ]
+}

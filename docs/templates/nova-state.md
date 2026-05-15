@@ -10,6 +10,14 @@
 |------|--------|---------|------|
 <!-- In Progress + Next Actions 통합. Status: todo / doing / done -->
 
+## Active Tree (Nova v3 registry 자동 렌더)
+
+<!-- nova:registry-rendered:start -->
+<!-- 이 marker 안쪽은 /nova:next, /nova:run, /nova:check 실행 시 .nova/work-items/index.json을 투영하여 자동 갱신됩니다. -->
+<!-- 직접 편집 금지 — 다음 렌더 시 덮어쓰기. work-item CRUD는 bash scripts/registry-write.sh 경유. -->
+<!-- 자세히: .nova/README.md -->
+<!-- nova:registry-rendered:end -->
+
 ## Recently Done (최근 3개만)
 | Task | Completed | Verdict | Ref |
 |------|-----------|---------|-----|
