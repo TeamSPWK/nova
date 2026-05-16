@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nova v3 — 5분 시작 가이드</title>
+<style>
+  :root {
+    --bg: #0d0d15;
+    --fg: #e8e8f0;
+    --muted: #8888aa;
+    --accent: #7dd3fc;
+    --accent-2: #c084fc;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --err: #f87171;
+    --card: #1a1a25;
+    --border: #2a2a3a;
+    --code: #0a0a12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Pretendard", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    padding: 0;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 60px 32px; }
+  header { text-align: center; padding: 80px 32px 60px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 56px; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header .subtitle { font-size: 20px; color: var(--muted); max-width: 600px; margin: 0 auto; }
+  header .badge { display: inline-block; padding: 4px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; font-size: 13px; color: var(--accent); margin-top: 24px; }
+  h2 { font-size: 32px; font-weight: 700; margin: 60px 0 24px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 22px; font-weight: 600; margin: 32px 0 16px; color: var(--accent); }
+  p { margin-bottom: 16px; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; background: var(--code); padding: 2px 8px; border-radius: 4px; font-size: 0.9em; color: var(--accent); }
+  pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; font-size: 14px; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: var(--fg); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 24px 0; }
+  .grid { display: grid; gap: 16px; margin: 24px 0; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 720px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .step { display: flex; align-items: flex-start; gap: 20px; padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin: 16px 0; }
+  .step-num { flex-shrink: 0; width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--bg); font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .step-body h4 { font-size: 18px; margin-bottom: 8px; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .tag-ok { background: rgba(74, 222, 128, 0.15); color: var(--ok); }
+  .tag-warn { background: rgba(251, 191, 36, 0.15); color: var(--warn); }
+  .tag-err { background: rgba(248, 113, 113, 0.15); color: var(--err); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--accent); font-weight: 600; font-size: 14px; }
+  td { font-size: 14px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+  .compare > div { padding: 24px; border-radius: 12px; }
+  .compare .before { background: rgba(248, 113, 113, 0.05); border: 1px solid rgba(248, 113, 113, 0.3); }
+  .compare .after { background: rgba(74, 222, 128, 0.05); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .compare h4 { font-size: 18px; margin-bottom: 12px; }
+  .compare .before h4 { color: var(--err); }
+  .compare .after h4 { color: var(--ok); }
+  .compare ul { padding-left: 20px; }
+  .compare li { margin-bottom: 8px; font-size: 14px; }
+  .diagram { background: var(--code); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin: 24px 0; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.4; overflow-x: auto; white-space: pre; color: var(--muted); }
+  .diagram .hi { color: var(--accent); font-weight: 600; }
+  .diagram .hi2 { color: var(--accent-2); font-weight: 600; }
+  .diagram .ok { color: var(--ok); }
+  .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
+  .faq-item h4 { font-size: 16px; color: var(--accent); margin-bottom: 8px; }
+  footer { padding: 60px 32px; text-align: center; color: var(--muted); border-top: 1px solid var(--border); font-size: 14px; }
+  footer a { color: var(--accent); text-decoration: none; margin: 0 12px; }
+  footer a:hover { text-decoration: underline; }
+  .toc { position: sticky; top: 20px; }
+  .highlight { background: linear-gradient(135deg, rgba(125, 211, 252, 0.1), rgba(192, 132, 252, 0.1)); border: 1px solid var(--accent); border-radius: 12px; padding: 24px; margin: 24px 0; }
+  .icon { display: inline-block; width: 24px; height: 24px; vertical-align: middle; margin-right: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Nova v3</h1>
+  <p class="subtitle">AI 에이전트의 "오늘 뭐 했는지 · 다음 뭐 할지"를 기계가 읽을 수 있게 정리한 시스템</p>
+  <span class="badge">v5.43.2+ · 5분 시작 가이드</span>
+</header>
+
+<div class="container">
+
+<section>
+<h2>🎯 한 줄 요약</h2>
+<div class="highlight">
+<p style="font-size: 18px; margin: 0;">
+사용자는 <strong style="color: var(--accent);">NOVA-STATE.md</strong> 한 파일만 보면 충분. 슬래시 커맨드 (<code>/nova:plan</code>, <code>/nova:run</code> 등)가 work-item을 자동 관리합니다.
+</p>
+</div>
+
+<div class="diagram">
+<span class="hi">🧑 사람용 cursor</span>:   NOVA-STATE.md          ← 매일 한 번 보는 곳
+<span class="hi2">🤖 기계용 진실원</span>:   .nova/work-items/      ← AI가 자동 관리</div>
+</section>
+
+<section>
+<h2>📉 왜 필요한가?</h2>
+
+<div class="compare">
+  <div class="before">
+    <h4>❌ Before (v1/v2)</h4>
+    <ul>
+      <li>NOVA-STATE.md가 wiki처럼 커짐</li>
+      <li>AI가 stale 정보로 같은 작업 반복 추천</li>
+      <li>사용자가 매번 손으로 정리</li>
+      <li>진척 측정 불가 (DORA 지표 없음)</li>
+      <li>commit_sha 추적 없음</li>
+    </ul>
+  </div>
+  <div class="after">
+    <h4>✅ After (v3)</h4>
+    <ul>
+      <li>AI가 자동으로 work-item 발급·전이</li>
+      <li>사람은 marker 외 영역만 손편집</li>
+      <li><code>.nova/work-items/</code>가 단일 진실원</li>
+      <li>drift 18 룰로 무결성 자동 보장</li>
+      <li>DORA 표준 evidence (commit_sha)</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>⚡ 5분 시작</h2>
+
+<div class="step">
+  <div class="step-num">A</div>
+  <div class="step-body">
+    <h4>새 프로젝트</h4>
+    <pre><code>cd ~/my-project
+/nova:setup</code></pre>
+    <p style="font-size: 14px; color: var(--muted);">자동으로 <code>.nova/{schema,work-items,README.md}</code> 생성 + <code>.gitignore</code> marker 블록 추가. 이후 슬래시 커맨드 사용 시 AI가 자동 work-item 발급.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">B</div>
+  <div class="step-body">
+    <h4>기존 v1/v2 STATE 프로젝트 마이그레이션</h4>
+    <pre><code>cd ~/existing-project
+/nova:migrate-state</code></pre>
+    <p style="font-size: 14px; color: var(--muted);">target 옵션 없이! v1/v2 모두 자동 감지 → v3 직행. <span class="tag tag-ok">dry-run</span> 보존율 보고 → 사용자 검수 → <span class="tag tag-ok">apply</span> + drift-check 자동.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">C</div>
+  <div class="step-body">
+    <h4>평상시 사용</h4>
+    <pre><code>/nova:plan "검색 기능 추가"     # → WI-0042 생성 (status=proposed)
+/nova:run                       # → 구현 + Evaluator → status=done + commit_sha
+/nova:review                    # → review_required=true
+/nova:check                     # → drift 18 룰 자동 검증</code></pre>
+    <p style="font-size: 14px; color: var(--muted);">사용자는 평소 그대로 슬래시 커맨드 사용. 내부에서 work-item 자동 관리. <strong>NOVA-STATE.md marker 영역</strong>만 봐도 진척 파악 OK.</p>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>🔄 5 상태 enum (외울 필요 X)</h2>
+
+<div class="diagram">
+                <span class="hi">/nova:plan</span>
+   [   ] ──────────────────▶ <span class="hi">proposed</span>
+                                  │
+                                  │ <span class="hi">/nova:run</span> 시작
+                                  ▼
+                              <span class="hi2">active</span> ──────▶ <span class="ok">done</span>     (Evaluator PASS)
+                                ▲   │            ─────────
+                                │   │           commit_sha 필수
+              블로커 해소        │   │           review_required=false
+                                │   ▼           원자적 전이
+                            <span class="hi">blocked</span>
+                            (blocked_reason 필수)
+                                  │
+                                  ▼
+                            <span class="hi2">superseded</span> ────▶ [폐기]
+</div>
+
+<table>
+<thead><tr><th>status</th><th>의미</th><th>자동 트리거</th></tr></thead>
+<tbody>
+<tr><td><code>proposed</code></td><td>계획만 잡힘</td><td><code>/nova:plan</code></td></tr>
+<tr><td><code>active</code></td><td>진행 중</td><td><code>/nova:run</code> 시작</td></tr>
+<tr><td><code>blocked</code></td><td>막힘 (reason 필수)</td><td><code>/nova:run</code> 도중 블로커</td></tr>
+<tr><td><code>done</code></td><td>완료 + commit</td><td>Evaluator PASS</td></tr>
+<tr><td><code>superseded</code></td><td>폐기</td><td><code>/nova:plan</code>으로 대체</td></tr>
+</tbody>
+</table>
+
+<p style="font-size: 14px; color: var(--muted); margin-top: 16px;">
+<strong style="color: var(--accent);">원자적 보장</strong>: <code>done</code> 전이 시 <code>review_required=false</code> + <code>evidence.commit_sha</code> 동시 set. 부분 갱신 불가능 (SIGINT 안전).
+</p>
+</section>
+
+<section>
+<h2>👀 사용자가 매일 보는 NOVA-STATE.md</h2>
+
+<pre><code>## Active Tree (Nova v3 registry 자동 렌더)
+
+&lt;!-- nova:registry-rendered:start --&gt;
+<span style="color: var(--muted);">// 이 안쪽은 .nova/work-items/index.json을 자동 투영</span>
+<span style="color: var(--muted);">// 사람이 손으로 편집 X — 다음 렌더 시 덮어쓰기</span>
+
+**Active Tree** (registry: 3 work-items, 갱신: 2026-05-16T10:00:00Z):
+
+- 🔄 [WI-0042-add-search](.nova/work-items/WI-0042-add-search.json) — high
+- ⬜ [WI-0043-fix-payment](.nova/work-items/WI-0043-fix-payment.json) — medium · review_required ⚠️
+- ⬜ [WI-0044-doc-update](.nova/work-items/WI-0044-doc-update.json) — low
+
+**Recent Activity** (last 7d):
+
+- 2026-05-16: WI-0042 — proposed → active
+- 2026-05-15: WI-0041 — proposed → done (commit abc1234)
+&lt;!-- nova:registry-rendered:end --&gt;</code></pre>
+
+<div class="highlight">
+<p style="margin: 0;">
+✨ <strong>marker 영역 외 영역</strong> (Current Goal, Tasks 표, Known Risks 등)은 <strong style="color: var(--accent);">사람 손편집 영역</strong>으로 그대로 보존됩니다. v3는 <strong>분리 + 단방향 투영</strong>이 핵심.
+</p>
+</div>
+</section>
+
+<section>
+<h2>🛡️ drift 18 룰 — 자동 무결성 검사</h2>
+
+<p><code>/nova:check</code> 실행 시 자동으로 18 룰 검증:</p>
+
+<div class="grid grid-3">
+  <div class="card">
+    <h4 style="color: var(--ok);">✅ exit 0 = PASS</h4>
+    <p style="font-size: 14px; color: var(--muted); margin: 0;">위반 없음, 보고만</p>
+  </div>
+  <div class="card">
+    <h4 style="color: var(--warn);">⚠️ exit 1 = Warn</h4>
+    <p style="font-size: 14px; color: var(--muted); margin: 0;">9 Warn 룰 — 안내 + 후속 작업</p>
+  </div>
+  <div class="card">
+    <h4 style="color: var(--err);">❌ exit 2 = Hard</h4>
+    <p style="font-size: 14px; color: var(--muted); margin: 0;">9 Hard 룰 — check FAIL + require-review</p>
+  </div>
+</div>
+
+<table>
+<thead><tr><th>분류</th><th>룰</th><th>예시</th></tr></thead>
+<tbody>
+<tr><td><span class="tag tag-err">Hard 9</span></td><td>schema·id 중복·done evidence·부분 전이·blocked_reason·...</td><td><code>done</code>인데 commit_sha 비어있음 → 차단</td></tr>
+<tr><td><span class="tag tag-warn">Warn 9</span></td><td>stale STATE·git 미커밋·UUID fallback·source_docs 빈·...</td><td>마이그레이션 직후 정상 발화</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>💬 FAQ</h2>
+
+<div class="faq-item">
+  <h4>Q1. 기존 NOVA-STATE.md 내용 사라지나요?</h4>
+  <p>아니요. 마이그레이션 시 <code>NOVA-STATE.md.v2.bak</code>로 자동 백업. marker 외 영역도 그대로 보존. 변환된 work-item은 <code>.nova/work-items/</code>로 <em>추가</em>되는 것이지 <em>대체</em>가 아닙니다.</p>
+</div>
+
+<div class="faq-item">
+  <h4>Q2. team 공유는?</h4>
+  <p><code>.nova/work-items/</code>, <code>.nova/schema/</code>, <code>.nova/README.md</code>는 <strong>git-tracked</strong>. clone 즉시 진실원 복원. <code>.nova/events.jsonl</code>, <code>.nova/local/</code>는 git-ignored (사용자별 로컬).</p>
+</div>
+
+<div class="faq-item">
+  <h4>Q3. 다른 AI 도구(Cursor, Copilot)와 호환?</h4>
+  <p>work-item은 JSON Schema(v3.0) 기반. 다른 도구도 <code>.nova/work-items/*.json</code> 직접 읽기 가능. <code>registry-write.sh</code> API를 따르는 한 어떤 AI든 호환.</p>
+</div>
+
+<div class="faq-item">
+  <h4>Q4. UI/대시보드는?</h4>
+  <p><code>/nova:status</code> — HTML dashboard 자동 생성 (Phase·Sprint 진행률 + drift 알람). 브라우저로 열기.</p>
+</div>
+
+<div class="faq-item">
+  <h4>Q5. 마이그레이션 실패 시 복구?</h4>
+<pre><code>mv NOVA-STATE.md NOVA-STATE.md.v3.failed
+mv NOVA-STATE.md.v2.bak NOVA-STATE.md
+rm -rf .nova/work-items .nova/schema .nova/README.md
+# .gitignore의 Nova marker 블록도 제거</code></pre>
+</div>
+</section>
+
+<section>
+<h2>🚀 다음 단계</h2>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>일상 사용</h3>
+    <p><code>/nova:next</code> — registry 기반 다음 작업 추천</p>
+    <p style="font-size: 13px; color: var(--muted);">priority desc + status active/proposed top-5</p>
+  </div>
+  <div class="card">
+    <h3>시각화</h3>
+    <p><code>/nova:status</code> — HTML dashboard</p>
+    <p style="font-size: 13px; color: var(--muted);">Phase · Sprint · 그룹 진행률 + drift 알람</p>
+  </div>
+  <div class="card">
+    <h3>깊이 이해</h3>
+    <p><a href="../designs/work-item-registry-v3.md" style="color: var(--accent);">설계 문서</a></p>
+    <p style="font-size: 13px; color: var(--muted);">17 properties, 18 drift rules, 36 Sprint Contract 조건</p>
+  </div>
+  <div class="card">
+    <h3>마이그레이션</h3>
+    <p><a href="./sibling-migration-v3.md" style="color: var(--accent);">sibling-migration-v3.md</a></p>
+    <p style="font-size: 13px; color: var(--muted);">형제 7개 프로젝트 순차 마이그 가이드</p>
+  </div>
+</div>
+</section>
+
+</div>
+
+<footer>
+<p><strong>Nova v5.43.2+</strong> — AI Agent Ops 프레임워크</p>
+<p style="margin-top: 12px;">
+<a href="https://github.com/jay-swk/nova">GitHub</a> ·
+<a href="../designs/work-item-registry-v3.md">설계</a> ·
+<a href="../templates/nova-readme.md">README 템플릿</a> ·
+<a href="./v3-slides.html">슬라이드</a>
+</p>
+</footer>
+
+</body>
+</html>

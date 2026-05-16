@@ -3682,6 +3682,24 @@ assert "6-I: commands/setup.md — 기존 v1/v2 STATE 감지 시 /nova:migrate-s
   "grep -q '기존 v1/v2 STATE' '$ROOT_DIR/.claude/commands/setup.md' && \
    grep -q '/nova:migrate-state' '$ROOT_DIR/.claude/commands/setup.md'"
 
+# 7: v3 quickstart 가이드 3종 (마크다운 + HTML + reveal.js 슬라이드)
+assert "7-A: docs/guides/v3-quickstart.md 존재 (마크다운, mermaid 다이어그램)" \
+  "[ -f '$ROOT_DIR/docs/guides/v3-quickstart.md' ] && \
+   grep -q 'mermaid' '$ROOT_DIR/docs/guides/v3-quickstart.md' && \
+   grep -q '5분 시작' '$ROOT_DIR/docs/guides/v3-quickstart.md'"
+assert "7-B: docs/guides/v3-quickstart.html 존재 (정적 랜딩 페이지)" \
+  "[ -f '$ROOT_DIR/docs/guides/v3-quickstart.html' ] && \
+   grep -q '<title>Nova v3' '$ROOT_DIR/docs/guides/v3-quickstart.html' && \
+   grep -q '/nova:migrate-state' '$ROOT_DIR/docs/guides/v3-quickstart.html'"
+assert "7-C: docs/guides/v3-slides.html 존재 (reveal.js 슬라이드)" \
+  "[ -f '$ROOT_DIR/docs/guides/v3-slides.html' ] && \
+   grep -q 'reveal.js' '$ROOT_DIR/docs/guides/v3-slides.html' && \
+   grep -q 'class=\"slides\"' '$ROOT_DIR/docs/guides/v3-slides.html'"
+assert "7-D: 3 산출물 공통 키워드 — /nova:setup, /nova:migrate-state, drift" \
+  "for f in '$ROOT_DIR/docs/guides/v3-quickstart.md' '$ROOT_DIR/docs/guides/v3-quickstart.html' '$ROOT_DIR/docs/guides/v3-slides.html'; do
+     grep -q '/nova:setup' \"\$f\" && grep -q '/nova:migrate-state' \"\$f\" && grep -q 'drift' \"\$f\" || exit 1
+   done"
+
 echo ""
 
 # ═══════════════════════════════════════════
