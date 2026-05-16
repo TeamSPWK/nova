@@ -22,7 +22,7 @@
 set -u
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
-NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-$(dirname "$SCRIPT_DIR")}"
+NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-${NOVA_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}}"
 
 INPUT="NOVA-STATE.md"
 PROJECT_ROOT="$PWD"

@@ -3623,6 +3623,43 @@ assert "6-A: 가이드 — 7 형제 프로젝트 순차 권장 (Architect #11)" 
   "grep -q '7 형제 프로젝트' '$ROOT_DIR/docs/guides/sibling-migration-v3.md' && \
    grep -q '순차' '$ROOT_DIR/docs/guides/sibling-migration-v3.md'"
 
+# ───────────────────────────────────────────────
+# v5.44 patch — 사용자 직접 호출 갭 제거
+# ───────────────────────────────────────────────
+
+# 6-B: 신규 스크립트 NOVA_PLUGIN_ROOT fallback (4 파일)
+for s in registry-write setup migrate-state-v3 reindex-work-items; do
+  assert "6-B: scripts/$s.sh — NOVA_PLUGIN_ROOT fallback 통합" \
+    "grep -q 'NOVA_PLUGIN_PATH:-\${NOVA_PLUGIN_ROOT:-' '$ROOT_DIR/scripts/$s.sh'"
+done
+
+# 6-C: commands/migrate-state.md — --target=v3 분기
+assert "6-C: commands/migrate-state.md — --target=v3 옵션" \
+  "grep -q '\\-\\-target=v3' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+assert "6-C: commands/migrate-state.md — migrate-state-v3.sh 자동 호출 안내" \
+  "grep -q 'migrate-state-v3.sh' '$ROOT_DIR/.claude/commands/migrate-state.md' && \
+   grep -q 'registry-drift-check.sh' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+assert "6-C: commands/migrate-state.md — v2 감지 시 v3 권고 안내" \
+  "grep -qE 'v3.*변환.*권고|v3 work-item registry로 변환' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+
+# 6-D: commands/check.md — drift-check 자동 호출 통합
+assert "6-D: commands/check.md — registry-drift-check.sh 자동 호출" \
+  "grep -q 'registry-drift-check.sh' '$ROOT_DIR/.claude/commands/check.md'"
+assert "6-D: commands/check.md — drift exit code 분기 (0/1/2)" \
+  "grep -qE 'exit (0|1|2)' '$ROOT_DIR/.claude/commands/check.md' && \
+   grep -q 'PASS' '$ROOT_DIR/.claude/commands/check.md'"
+
+# 6-E: commands/next.md — v3 marker 감지 + 권고
+assert "6-E: commands/next.md — v3 registry 감지 + /nova:migrate-state 권고" \
+  "grep -q 'nova:registry-rendered' '$ROOT_DIR/.claude/commands/next.md' && \
+   grep -q 'migrate-state.*target=v3' '$ROOT_DIR/.claude/commands/next.md'"
+assert "6-E: commands/next.md — registry 기반 priority 추천 jq 쿼리" \
+  "grep -q 'critical:3,high:2,medium:1,low:0' '$ROOT_DIR/.claude/commands/next.md'"
+
+# 6-F: 가이드 슬래시 커맨드 우선 안내
+assert "6-F: 가이드 — 슬래시 커맨드 (/nova:migrate-state --target=v3) 우선 안내" \
+  "grep -qE '/nova:migrate-state.*\\-\\-target=v3' '$ROOT_DIR/docs/guides/sibling-migration-v3.md'"
+
 echo ""
 
 # ═══════════════════════════════════════════

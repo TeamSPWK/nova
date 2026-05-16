@@ -157,6 +157,29 @@ NOVA-STATE.md에 `## Quality Metrics` 섹션이 있으면 추세를 분석하여
 - **Coverage 하락 추세** → "테스트 커버리지가 하락 중입니다. 테스트 보강을 권장합니다."
 - **Learned Rules 현황**: `.claude/rules/` 파일 수를 진단에 표시한다.
 
+## v3 work-item registry 감지 (Sprint 2)
+
+NOVA-STATE.md 확인 단계에서 schema_version 감지:
+
+- **schema_version=2 + `<!-- nova:registry-rendered:start -->` marker 없음** → 사용자에게 v3 변환 권고:
+  > "현재 v2 STATE이지만 v3 work-item registry 미적용입니다. `/nova:migrate-state --target=v3`로 변환하면 단일 진실원 + 자동 렌더 + drift 검출이 활성화됩니다."
+- **`.nova/work-items/index.json` 존재** → registry 기반 추천 (priority desc + status ∈ {active, proposed})
+- **v3 marker stale** → `bash "$NOVA_PLUGIN_ROOT/scripts/registry-render-state.sh"` 실행 권고
+
+registry 기반 다음 작업 추천 (`.nova/work-items/index.json` 존재 시):
+
+```bash
+# top-5 후보 (priority desc, updated_at desc)
+jq -r '
+  .work_items
+  | map(select(.status == "active" or .status == "proposed"))
+  | sort_by(({critical:3,high:2,medium:1,low:0}[.priority] // -1), .updated_at)
+  | reverse | .[0:5] | .[].id
+' .nova/work-items/index.json
+```
+
+`review_required=true`인 WI가 있으면 `/nova:review` 또는 `/nova:check` 우선 추천.
+
 # Notes
 - 워크플로우 전체 흐름:
   - 수동 (일반): `/nova:plan` → `/ask` (필요시) → `/design` → 구현 → `/check` → `/review`

@@ -20,7 +20,7 @@
 set -u
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
-NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-$(dirname "$SCRIPT_DIR")}"
+NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-${NOVA_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}}"
 REGISTRY_ROOT="${NOVA_REGISTRY_ROOT:-$PWD}"
 WI_DIR="$REGISTRY_ROOT/.nova/work-items"
 INDEX_FILE="$WI_DIR/index.json"

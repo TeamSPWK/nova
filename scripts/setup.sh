@@ -19,7 +19,7 @@
 set -u
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
-NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-$(dirname "$SCRIPT_DIR")}"
+NOVA_PLUGIN_PATH="${NOVA_PLUGIN_PATH:-${NOVA_PLUGIN_ROOT:-$(dirname "$SCRIPT_DIR")}}"
 REGISTRY_ROOT="${NOVA_REGISTRY_ROOT:-$PWD}"
 
 UPGRADE=0

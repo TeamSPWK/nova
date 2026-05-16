@@ -238,17 +238,34 @@ Before/After 코드 + 변경 요약
 - 사소한 스타일은 린터에 위임, 구조적 문제만 지적
 - PASS라도 발견한 모든 이슈를 빠짐없이 보고한다
 
-## v3 work-item registry 갱신 (Sprint 2)
+## v3 work-item registry 갱신 (Sprint 2 + Sprint 4 통합)
 
-`/nova:check`에서 Critical 이슈를 발견한 경우, 영향받는 work-item에 대해 메인 에이전트가 **registry-write.sh require-review**를 호출한다.
+`/nova:check` Phase 마지막에 메인 에이전트가 **drift 18 룰 검증**을 자동 실행:
 
 ```bash
-bash "$NOVA_PLUGIN_PATH/scripts/registry-write.sh" require-review "$WI_ID"
+# .nova/work-items/ 존재 시 자동 호출
+if [ -f .nova/work-items/index.json ]; then
+  bash "$NOVA_PLUGIN_ROOT/scripts/registry-drift-check.sh"
+  drift_exit=$?
+  # exit 0: PASS, exit 1: Warn only, exit 2: Hard error
+fi
 ```
 
-- Critical 없음 (PASS): registry 호출 불요.
-- registry-drift-check.sh의 Hard 9 룰 위반(H1~H9)도 require-review 트리거 — Sprint 4에서 통합.
-- 호출 권한: 메인만.
+**exit code 분기**:
+- `0` = PASS — registry 무결 확인, 보고만
+- `1` = Warn only — W1~W9 발화 (예: W5 git 미커밋, W7 source_docs 빈) → 사용자에게 경고 + 후속 작업 안내
+- `2` = Hard error — H1~H9 발화 (예: H6 done evidence 부재) → **/nova:check 자체 FAIL** + 영향받는 WI에 require-review
+
+**Critical 발견 시 require-review 호출**:
+
+```bash
+bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" require-review "$WI_ID"
+```
+
+- Critical 없음 (PASS): registry-write 호출 불요.
+- 호출 권한: 메인만. sub-agent 직접 호출 금지.
+
+**v3 미적용 프로젝트**: `.nova/work-items/` 부재 시 drift-check skip. NOVA-STATE.md frontmatter `schema_version: 2`이면 사용자에게 v3 변환 권고 (`/nova:migrate-state --target=v3`).
 
 # Input
 $ARGUMENTS

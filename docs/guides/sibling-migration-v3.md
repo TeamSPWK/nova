@@ -4,20 +4,34 @@
 > 대상: Nova 플러그인을 사용하는 ~/develop/* 사용자 프로젝트
 > 본 가이드는 **사용자가 직접 실행**한다. Nova 자동화 없음 (외부 레포라 PR 분리).
 
-## TL;DR
+## TL;DR — 슬래시 커맨드 한 줄로 진입 (v5.44.0+, 권장)
 
-각 프로젝트에서 순차 실행 (병렬 X — Architect #11 worktree race 회피):
+```
+cd ~/develop/<project>
+/nova:migrate-state --target=v3   # dry-run → 사용자 검수 → apply + drift-check 자동
+```
+
+`/nova:migrate-state --target=v3`가 자동 처리:
+1. v2 STATE 감지 → migrate-state-v3.sh `--dry-run`
+2. 보존율 + WI 분포 보고 → 사용자 4지선다 검수 (A=apply / B=v2 유지 / C=중단 / D=가이드)
+3. A 선택 시 `--apply` 실행 + drift-check 자동 검증
+4. exit code 분기 (PASS / Warn / Hard error) 안내
+
+## TL;DR — 수동 bash (v5.43.0 호환)
 
 ```bash
 cd ~/develop/<project>
+# Nova SessionStart hook이 $NOVA_PLUGIN_ROOT 자동 export. 미설정 환경에서만 명시:
+# export NOVA_PLUGIN_ROOT=~/.claude/plugins/cache/nova-marketplace/nova
+
 # 1. dry-run으로 변환 결과 미리보기
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh --dry-run
+bash "$NOVA_PLUGIN_ROOT/scripts/migrate-state-v3.sh" --dry-run
 
 # 2. 보존율 + 변환 미리보기 확인 후 실제 적용
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh --apply
+bash "$NOVA_PLUGIN_ROOT/scripts/migrate-state-v3.sh" --apply
 
 # 3. drift-check로 변환 결과 검증
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/registry-drift-check.sh
+bash "$NOVA_PLUGIN_ROOT/scripts/registry-drift-check.sh"
 
 # 4. git status / diff 확인 후 commit + PR
 git status
@@ -55,7 +69,7 @@ cp NOVA-STATE.md NOVA-STATE.md.manual-bak
 ### 단계 3: dry-run으로 변환 미리보기
 
 ```bash
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh --dry-run
+bash "$NOVA_PLUGIN_ROOT/scripts/migrate-state-v3.sh" --dry-run
 ```
 
 **확인 사항**:
@@ -70,7 +84,7 @@ NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh 
 ### 단계 4: 실제 적용
 
 ```bash
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh --apply
+bash "$NOVA_PLUGIN_ROOT/scripts/migrate-state-v3.sh" --apply
 ```
 
 **자동 수행**:
@@ -85,7 +99,7 @@ NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/migrate-state-v3.sh 
 
 ```bash
 # drift-check로 H1~H9 + W1~W9 룰 통과 확인
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/registry-drift-check.sh
+bash "$NOVA_PLUGIN_ROOT/scripts/registry-drift-check.sh"
 
 # exit code:
 #   0 = PASS
@@ -130,11 +144,11 @@ migrate-v3는 다음을 **자동 추가하지 않는다** (PoC 5 규칙 #3·#4):
 
 ```bash
 # 예: WI-0001에 source_docs 추가
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/registry-write.sh update WI-0001-... \
+bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" update WI-0001-... \
   source_docs="docs/plans/feature.md,docs/designs/feature.md"
 
 # WI-0001이 WI-0003에 의존 (post-migration)
-NOVA_PLUGIN_PATH=~/develop/nova bash ~/develop/nova/scripts/registry-write.sh update WI-0001-... \
+bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" update WI-0001-... \
   depends_on="WI-0003-prereq"
 ```
 
