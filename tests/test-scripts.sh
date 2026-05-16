@@ -3633,14 +3633,14 @@ for s in registry-write setup migrate-state-v3 reindex-work-items; do
     "grep -q 'NOVA_PLUGIN_PATH:-\${NOVA_PLUGIN_ROOT:-' '$ROOT_DIR/scripts/$s.sh'"
 done
 
-# 6-C: commands/migrate-state.md — --target=v3 분기
-assert "6-C: commands/migrate-state.md — --target=v3 옵션" \
-  "grep -q '\\-\\-target=v3' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+# 6-C: commands/migrate-state.md — 기본 v3 (target 옵션 없이 동작)
+assert "6-C: commands/migrate-state.md — 기본 동작 v3 (target 없이)" \
+  "grep -qE '\\(기본\\).*v3 work-item registry로 변환' '$ROOT_DIR/.claude/commands/migrate-state.md'"
 assert "6-C: commands/migrate-state.md — migrate-state-v3.sh 자동 호출 안내" \
   "grep -q 'migrate-state-v3.sh' '$ROOT_DIR/.claude/commands/migrate-state.md' && \
    grep -q 'registry-drift-check.sh' '$ROOT_DIR/.claude/commands/migrate-state.md'"
-assert "6-C: commands/migrate-state.md — v2 감지 시 v3 권고 안내" \
-  "grep -qE 'v3.*변환.*권고|v3 work-item registry로 변환' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+assert "6-C: commands/migrate-state.md — v1/v2 직접 v3 명시" \
+  "grep -qE 'v1/v2 입력 모두 직접 v3|multi-hop' '$ROOT_DIR/.claude/commands/migrate-state.md'"
 
 # 6-D: commands/check.md — drift-check 자동 호출 통합
 assert "6-D: commands/check.md — registry-drift-check.sh 자동 호출" \
@@ -3659,6 +3659,28 @@ assert "6-E: commands/next.md — registry 기반 priority 추천 jq 쿼리" \
 # 6-F: 가이드 슬래시 커맨드 우선 안내
 assert "6-F: 가이드 — 슬래시 커맨드 (/nova:migrate-state --target=v3) 우선 안내" \
   "grep -qE '/nova:migrate-state.*\\-\\-target=v3' '$ROOT_DIR/docs/guides/sibling-migration-v3.md'"
+
+# 6-G: /nova:migrate-state 기본 동작이 v3 (옵션 없이 한 줄)
+assert "6-G: commands/migrate-state.md — 기본(옵션 없음) 동작이 v3 (frontmatter)" \
+  "head -3 '$ROOT_DIR/.claude/commands/migrate-state.md' | grep -q 'v3 work-item registry로 변환' && \
+   head -3 '$ROOT_DIR/.claude/commands/migrate-state.md' | grep -q 'v1/v2 입력 모두 직접 v3'"
+assert "6-G: commands/migrate-state.md — v1/v2 직접 v3 multi-hop 불필요 명시" \
+  "grep -qE '(multi-hop.*(불필요|불요|아님)|v1.*직접 v3)' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+assert "6-G: commands/migrate-state.md — --target=v2 legacy 호환 옵션 명시" \
+  "grep -q '\\-\\-target=v2' '$ROOT_DIR/.claude/commands/migrate-state.md' && \
+   grep -qE '(legacy|deprecated|구버전)' '$ROOT_DIR/.claude/commands/migrate-state.md'"
+
+# 6-H: session-start.sh v2 + v3 marker 부재 시 권고
+assert "6-H: session-start.sh — v2 STATE 감지 + v3 marker 부재 시 권고" \
+  "grep -q 'v3 work-item registry 미적용' '$ROOT_DIR/hooks/session-start.sh' && \
+   grep -q 'nova:registry-rendered:start' '$ROOT_DIR/hooks/session-start.sh'"
+assert "6-H: session-start.sh — v1 hint도 v3 변환으로 갱신" \
+  "grep -q 'v3 work-item registry 변환' '$ROOT_DIR/hooks/session-start.sh'"
+
+# 6-I: commands/setup.md — 기존 STATE 감지 시 migrate 권고
+assert "6-I: commands/setup.md — 기존 v1/v2 STATE 감지 시 /nova:migrate-state 권고" \
+  "grep -q '기존 v1/v2 STATE' '$ROOT_DIR/.claude/commands/setup.md' && \
+   grep -q '/nova:migrate-state' '$ROOT_DIR/.claude/commands/setup.md'"
 
 echo ""
 

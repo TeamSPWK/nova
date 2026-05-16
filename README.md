@@ -286,7 +286,7 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:deepplan` | Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline. |
 | `/nova:design` | Write a Design document using the CPS (Context-Problem-Solution) framework. |
 | `/nova:evolve` | Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf. |
-| `/nova:migrate-state` | Migrate NOVA-STATE.md from v1 schema to v2. Flow: dry-run preview → user review → apply. |
+| `/nova:migrate-state` | Migrate NOVA-STATE.md to v3 work-item registry (latest). Accepts v1/v2 input directly — no multi-hop needed. Flow: dry-run → user review → apply + drift-check auto. |
 | `/nova:next` | Diagnose current project state and recommend the next Nova command to run. |
 | `/nova:plan` | Write a Plan document using the CPS (Context-Problem-Solution) framework. |
 | `/nova:review` | Review code adversarially and surface hidden issues. |

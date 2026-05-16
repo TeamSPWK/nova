@@ -177,12 +177,19 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
    *accessKeys*
    ```
 
-6. **Nova v3 work-item registry 부트스트랩** (Sprint 1, v5.42.0+):
+6. **Nova v3 work-item registry 부트스트랩** (v5.42.0+, **기본 구조**):
 
    ```bash
-   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh"            # 신규 부트스트랩
-   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh" --upgrade  # 기존 .nova/ idempotent 동기화
-   bash "$NOVA_PLUGIN_PATH/scripts/setup.sh" --dry-run  # 변경 미리보기
+   bash "$NOVA_PLUGIN_ROOT/scripts/setup.sh"            # 신규 부트스트랩 (또는 부분 업그레이드 자동 감지)
+   bash "$NOVA_PLUGIN_ROOT/scripts/setup.sh" --upgrade  # 명시적 idempotent 동기화
+   bash "$NOVA_PLUGIN_ROOT/scripts/setup.sh" --dry-run  # 변경 미리보기
+   ```
+
+   **🔁 기존 v1/v2 STATE 감지 시 추가 단계**: 메인 에이전트가 자동으로:
+   ```bash
+   # NOVA-STATE.md 존재 + (.nova/work-items/ 부재 OR v3 marker 부재):
+   #   사용자에게 안내: "기존 STATE 발견. /nova:migrate-state로 v3 변환 권장"
+   #   /nova:migrate-state 실행 권장 (한 줄: v1/v2 모두 v3로 자동 multi-hop)
    ```
 
    생성/동기화 항목:
@@ -193,7 +200,7 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
 
    **idempotent 보장**: 두 번 실행해도 동일 상태 (git diff exit 0). 기존 `work-items/*.json`·`README.md`·`index.json`는 절대 덮어쓰기 X (사용자 데이터 보존).
 
-   **단일 쓰기 경로**: 이후 work-item CRUD는 모두 `bash $NOVA_PLUGIN_PATH/scripts/registry-write.sh <명령>` 경유. 9개 슬래시 커맨드(`/nova:plan`·`/nova:run`·`/nova:review` 등)가 자동 호출.
+   **단일 쓰기 경로**: 이후 work-item CRUD는 모두 `bash $NOVA_PLUGIN_ROOT/scripts/registry-write.sh <명령>` 경유. 9개 슬래시 커맨드(`/nova:plan`·`/nova:run`·`/nova:review` 등)가 자동 호출.
 
 ## Phase 2.5: Agent Teams 환경 확인
 
