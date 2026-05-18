@@ -33,5 +33,26 @@ bash "${BASH_SOURCE%/*}/record-event.sh" session_end "$EXTRA" 2>/dev/null || tru
 # stderr 리다이렉션 제거 — audit 경고가 사용자에게 전달되도록 함
 bash "${BASH_SOURCE%/*}/audit-orchestration.sh" || true
 
+# ── Desktop notification (M-2, CC v2.1.141+ terminalSequence) ──
+# NOVA_DESKTOP_NOTIFY=1일 때만 동작. 최근 5 이벤트에 commit_blocked 또는
+# evaluator_verdict=FAIL이 있으면 bell + xterm/iTerm window title을 stdout JSON으로 emit.
+# CC가 terminalSequence 필드를 읽어 controlling terminal 없이도 알림 전송.
+# Escape 시퀀스: BEL(0x07) + ESC(0x1B)]0;<title>BEL  (xterm OSC 0)
+if [[ "${NOVA_DESKTOP_NOTIFY:-0}" == "1" ]]; then
+  EVENTS_FILE=".nova/events.jsonl"
+  if [[ -f "$EVENTS_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    TRIGGER=$(tail -n 5 "$EVENTS_FILE" 2>/dev/null \
+      | jq -sr '[.[] | select(
+          .event_type == "commit_blocked" or
+          (.event_type == "evaluator_verdict" and (.extra.result // .extra.verdict // "") == "FAIL")
+        )] | length' 2>/dev/null || echo 0)
+    if [[ "$TRIGGER" =~ ^[0-9]+$ ]] && (( TRIGGER > 0 )); then
+      # 명시적 byte 구성으로 견고성 확보 — 소스 파일에 control char 미포함
+      NOTIFY_SEQ=$(printf '\007\033]0;Nova: BLOCKED\007')
+      jq -cn --arg seq "$NOTIFY_SEQ" '{terminalSequence: $seq}' 2>/dev/null || true
+    fi
+  fi
+fi
+
 rm -f "$START_FILE" 2>/dev/null || true
 exit 0

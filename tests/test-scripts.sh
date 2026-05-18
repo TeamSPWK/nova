@@ -1359,6 +1359,36 @@ assert "Sprint 1: hooks.json Stop → stop-event.sh 참조" \
 assert "Nova §17: stop-event.sh는 exit 2 / block decision 금지" \
   "! grep -E '^[[:space:]]*exit[[:space:]]+2|\"decision\"[[:space:]]*:[[:space:]]*\"block\"' '$ROOT_DIR/hooks/stop-event.sh'"
 
+# M-1 (v5.43.5+): record-event.sh가 agent_id / parent_agent_id top-level 필드를 기록한다
+# CLAUDE_AGENT_ID 미설정 시 null, 설정 시 값. 기본은 null 확인.
+assert "M-1: record-event.sh — agent_id 필드 (env 미설정 시 null)" \
+  "(TMPD=\$(mktemp -d) && cd \"\$TMPD\" && unset CLAUDE_AGENT_ID CLAUDE_PARENT_AGENT_ID && \
+    bash '$ROOT_DIR/hooks/record-event.sh' session_start '{}' >/dev/null 2>&1 && \
+    jq -e '.agent_id == null and .parent_agent_id == null' .nova/events.jsonl > /dev/null && \
+    rm -rf \"\$TMPD\")"
+
+assert "M-1: record-event.sh — agent_id 필드 (env 설정 시 값 캡처)" \
+  "(TMPD=\$(mktemp -d) && cd \"\$TMPD\" && \
+    CLAUDE_AGENT_ID=agent-abc CLAUDE_PARENT_AGENT_ID=agent-parent \
+    bash '$ROOT_DIR/hooks/record-event.sh' session_start '{}' >/dev/null 2>&1 && \
+    jq -e '.agent_id == \"agent-abc\" and .parent_agent_id == \"agent-parent\"' .nova/events.jsonl > /dev/null && \
+    rm -rf \"\$TMPD\")"
+
+# M-2 (v5.43.5+): stop-event.sh가 NOVA_DESKTOP_NOTIFY=1 + 트리거 시 terminalSequence emit
+# 기본(env 미설정): stdout 비어있음
+assert "M-2: stop-event.sh — NOVA_DESKTOP_NOTIFY 미설정 시 stdout 비어있음" \
+  "(TMPD=\$(mktemp -d) && cd \"\$TMPD\" && unset NOVA_DESKTOP_NOTIFY && \
+    OUT=\$(bash '$ROOT_DIR/hooks/stop-event.sh' 2>/dev/null) && [[ -z \"\$OUT\" ]] && \
+    rm -rf \"\$TMPD\")"
+
+# NOVA_DESKTOP_NOTIFY=1 + 트리거 이벤트 있음 → terminalSequence 포함된 JSON emit
+assert "M-2: stop-event.sh — DESKTOP_NOTIFY=1 + commit_blocked 시 terminalSequence emit" \
+  "(TMPD=\$(mktemp -d) && cd \"\$TMPD\" && mkdir -p .nova && \
+    echo '{\"event_type\":\"commit_blocked\",\"extra\":{\"state\":\"CONFLICT\"}}' > .nova/events.jsonl && \
+    OUT=\$(NOVA_DESKTOP_NOTIFY=1 bash '$ROOT_DIR/hooks/stop-event.sh' 2>/dev/null) && \
+    printf '%s\n' \"\$OUT\" | jq -e '.terminalSequence | type == \"string\" and length > 0' >/dev/null && \
+    rm -rf \"\$TMPD\")"
+
 # session-start.sh에 record-event.sh 호출 포함
 assert "Sprint 1: session-start.sh에 record-event 호출 포함" \
   "grep -q 'record-event.sh' '$ROOT_DIR/hooks/session-start.sh'"

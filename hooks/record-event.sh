@@ -26,6 +26,8 @@
 #   CI=true                    → ${CI_ARTIFACTS:-.}/nova-events/events.jsonl로 자동 치환
 #   NOVA_EVENTS_MAX_SIZE=<bytes>  → rotation 크기 (기본 10MB)
 #   NOVA_EVENTS_MAX_FILES=<int>   → rotation 보관 파일 수 (기본 5)
+#   CLAUDE_AGENT_ID            → 서브에이전트 ID (CC v2.1.139+). 노출 시 top-level agent_id 캡처
+#   CLAUDE_PARENT_AGENT_ID     → 부모 에이전트 ID (CC v2.1.139+). 노출 시 top-level parent_agent_id 캡처
 #
 # Safe-default: 모든 에러 → stderr WARN + exit 0
 # 관찰성 실패가 상위 skill을 마비시키지 않는다.
@@ -126,6 +128,11 @@ else
   EXTRA_CLEAN=$(echo "$FILTERED" | jq -c '._extra')
 fi
 
+# ── Agent ID 캡처 (CC v2.1.139+, M-1) ──
+# 환경변수 미설정 또는 빈 문자열이면 null. 분석기는 forgiving reader로 무시 가능.
+AGENT_ID="${CLAUDE_AGENT_ID:-}"
+PARENT_AGENT_ID="${CLAUDE_PARENT_AGENT_ID:-}"
+
 # ── JSON 라인 조립 ──
 LINE=$(jq -cn \
   --arg ts "$TS_ISO" \
@@ -138,6 +145,8 @@ LINE=$(jq -cn \
   --argjson reasons "$REASONS" \
   --argjson extra "$EXTRA_CLEAN" \
   --arg cwdh "$CWD_HASH" \
+  --arg aid "$AGENT_ID" \
+  --arg paid "$PARENT_AGENT_ID" \
   '{
     schema_version: 3,
     timestamp: $ts,
@@ -149,6 +158,8 @@ LINE=$(jq -cn \
     redacted: $red,
     redaction_reasons: $reasons,
     cwd_hash: $cwdh,
+    agent_id: (if $aid == "" then null else $aid end),
+    parent_agent_id: (if $paid == "" then null else $paid end),
     extra: $extra
   }' 2>/dev/null || true)
 
