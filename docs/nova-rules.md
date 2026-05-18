@@ -442,6 +442,7 @@ UI 변경 감지 + intent.json 존재 시, `bash scripts/visual-self-verify.sh` 
 
 **폴백 체인 (4단계 — 모든 사용자 동작 보장)**:
 1. Playwright MCP 가동 → 자동 스크린샷 → Agent verdict
+   - 1차 대안 (v5.43.6+, MA-1): Playwright 미감지 시 Puppeteer MCP fallback (`NOVA_PUPPETEER_MCP` 또는 mcp_servers.json `puppeteer` 항목). ux-audit이 이미 `--screenshot`으로 puppeteer 사용 — 동등 트랙.
 2. 사용자 수동 스크린샷 (interactive 환경만) → Agent verdict
 3. ux-audit Lite (코드 분석) → 차단 X, 안내만
 4. 안내만

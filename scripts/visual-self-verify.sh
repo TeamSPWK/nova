@@ -28,7 +28,7 @@
 #     "ready_for_judge": bool,
 #     "intent_path": str,
 #     "screenshot_paths": [str],
-#     "screenshot_source": "playwright-mcp | user-manual | code-only-fallback",
+#     "screenshot_source": "playwright-mcp | puppeteer-mcp | user-manual | code-only-fallback",
 #     "evaluator_prompt": str,
 #     "cache_hit": bool,
 #     "hash": str,
@@ -227,6 +227,17 @@ playwright_mcp_available() {
   return 1
 }
 
+# Helper: detect Puppeteer MCP availability (v5.43.6+, MA-1)
+# Playwright와 동등한 fallback. ux-audit이 이미 --screenshot으로 puppeteer 사용 중이므로
+# G3 폴백 체인에도 동등 트랙 제공. NOVA_DISABLE_PUPPETEER_MCP=1 시 강제 비활성화.
+puppeteer_mcp_available() {
+  [ "${NOVA_DISABLE_PUPPETEER_MCP:-0}" = "1" ] && return 1
+  [ -n "${NOVA_PUPPETEER_MCP:-}" ] && return 0
+  [ -f "$HOME/.claude/mcp_servers.json" ] && grep -q "puppeteer" "$HOME/.claude/mcp_servers.json" 2>/dev/null && return 0
+  [ -f ".claude/mcp_servers.json" ] && grep -q "puppeteer" .claude/mcp_servers.json 2>/dev/null && return 0
+  return 1
+}
+
 # 1차: explicit screenshots provided?
 if [ -n "$SCREENSHOTS_GLOB" ]; then
   # Expand glob
@@ -239,7 +250,7 @@ if [ -n "$SCREENSHOTS_GLOB" ]; then
   fi
 fi
 
-# 1차: auto + Playwright MCP available
+# 1차: auto + Playwright MCP available (우선)
 if [ "$FALLBACK_LEVEL" -eq 0 ] && [ "$MODE" = "auto" ]; then
   if playwright_mcp_available; then
     SCREENSHOT_SOURCE="playwright-mcp"
@@ -247,6 +258,15 @@ if [ "$FALLBACK_LEVEL" -eq 0 ] && [ "$MODE" = "auto" ]; then
     # Note: actual screenshot capture is delegated to caller (Claude Code with MCP).
     # Script outputs intent for Agent that will request MCP screenshot via tool calls.
     # Provide marker that caller should use Playwright MCP first.
+  fi
+fi
+
+# 1차 대안: auto + Puppeteer MCP available (Playwright 미감지 시, v5.43.6+ MA-1)
+if [ "$FALLBACK_LEVEL" -eq 0 ] && [ "$MODE" = "auto" ]; then
+  if puppeteer_mcp_available; then
+    SCREENSHOT_SOURCE="puppeteer-mcp"
+    FALLBACK_LEVEL=1
+    # ux-audit이 이미 --screenshot으로 puppeteer 사용 — G3 폴백 체인 동등 처리.
   fi
 fi
 

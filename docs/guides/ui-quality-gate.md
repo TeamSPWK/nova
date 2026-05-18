@@ -202,8 +202,14 @@ echo '{"auto":{"visualVerify":false}}' > nova-config.json
 | 의존성 | 필요? | 미보유 시 |
 |--------|------|---------|
 | **Anthropic API 키** | ❌ 불필요 | Agent 서브에이전트가 Claude Code 세션 모델 자동 사용 |
-| **Playwright MCP** | 선택 | 사용자 수동 캡처 (2차) → 코드 분석 (3차) → 안내 (4차) |
-| **dev server** | Playwright 사용 시만 | 폴백 시 무관 |
+| **Playwright MCP** | 선택 | Puppeteer MCP 1차 대안 → 사용자 수동 캡처 (2차) → 코드 분석 (3차) → 안내 (4차) |
+| **Puppeteer MCP** (v5.43.6+, MA-1) | 선택 | Playwright 미감지 시 1차 대안. 둘 다 미감지 시 2차로 진행 |
+| **dev server** | Playwright/Puppeteer 사용 시만 | 폴백 시 무관 |
+
+**환경변수 (선택)**:
+- `NOVA_PLAYWRIGHT_MCP=1` — Playwright MCP 강제 활성화 (감지 우회)
+- `NOVA_PUPPETEER_MCP=1` — Puppeteer MCP 강제 활성화 (감지 우회, v5.43.6+)
+- `NOVA_DISABLE_PLAYWRIGHT_MCP=1` / `NOVA_DISABLE_PUPPETEER_MCP=1` — 강제 비활성화 (테스트 결정론)
 
 **원칙**: Nova는 모든 Claude Code 사용자가 추가 설정 없이 핵심 가치를 받는 범용 플러그인. 유료 서비스 의존성을 필수로 강제하지 않는다.
 

@@ -1187,6 +1187,19 @@ assert "A2: --strict-vlm → agent_model_hint == opus" \
 assert "A2: --mode code-only → fallback_level=3 즉시 진입" \
   "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --mode code-only --non-interactive < /dev/null | jq -e '.fallback_level == 3' > /dev/null"
 
+# MA-1 (v5.43.6+): visual-self-verify.sh에 puppeteer_mcp_available 함수 추가 (Playwright 동등 fallback)
+assert "MA-1: visual-self-verify.sh — puppeteer_mcp_available 함수 정의" \
+  "grep -q 'puppeteer_mcp_available()' '$ROOT_DIR/scripts/visual-self-verify.sh'"
+
+# MA-1: NOVA_PUPPETEER_MCP=1 강제 활성화 시 fallback_level=1 + screenshot_source=puppeteer-mcp
+assert "MA-1: visual-self-verify.sh — Puppeteer MCP 가용 시 fallback 1차 진입" \
+  "NOVA_DISABLE_PLAYWRIGHT_MCP=1 NOVA_PUPPETEER_MCP=1 bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -e '.fallback_level == 1 and .screenshot_source == \"puppeteer-mcp\"' > /dev/null"
+
+# MA-1: commands/ux-audit.md — URL 형식 검증 명시 (예시 URL이 아닌 검증 문구를 정확히 매치)
+assert "MA-1: commands/ux-audit.md — --live URL 형식 검증 명시" \
+  "grep -q 'URL 형식 검증' '$ROOT_DIR/.claude/commands/ux-audit.md' && \
+   grep -q 'NOVA_PUPPETEER_MCP' '$ROOT_DIR/.claude/commands/ux-audit.md'"
+
 # A2-7: evaluator_prompt에 사용자 raw_phrase 인용 (사이드 사례 차단의 핵심)
 assert "A2: evaluator_prompt에 사용자 원본 표현 인용 (raw_phrase 패스스루)" \
   "bash '$ROOT_DIR/scripts/visual-self-verify.sh' --intent '$ROOT_DIR/tests/.cache/side-case-intent.json' --non-interactive < /dev/null | jq -r '.evaluator_prompt' | grep -q '최신 트렌드'"

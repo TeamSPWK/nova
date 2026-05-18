@@ -32,8 +32,9 @@ description_en: "Deep UI/UX evaluation via 5 adversarial reviewers — accessibi
 3. i18n 파일, 테마/디자인 토큰, 라우트 구조, 컴포넌트 디렉토리 파악
 4. `--screenshot` 시: dev 서버 기동 확인 → Puppeteer로 주요 화면 5장 캡처
    - 메인 페이지 / 빈 상태 / 리스트 뷰 / 폼 화면 / 에러 상태
-   - Puppeteer MCP 미연결 시 경고 후 코드 분석만 수행
+   - **Puppeteer MCP 가용성 감지** (v5.43.6+): 환경변수 `NOVA_PUPPETEER_MCP` 또는 `~/.claude/mcp_servers.json` / `.claude/mcp_servers.json`에 `puppeteer` 항목 존재 시 가용. 미감지 시 경고 후 코드 분석만 수행 (graceful skip).
 5. `--live <URL>` 시: Computer Use로 실제 브라우저에서 앱을 열고 인터랙션하며 평가
+   - **URL 형식 검증 (v5.43.6+)**: 인자가 `^https?://` 정규식과 일치하지 않으면 즉시 오류 + 사용자 알림 ("`--live`는 `http://` 또는 `https://`로 시작하는 URL 필요"). path traversal·shell injection 차단.
    - 코드 분석 + 실제 렌더링 결과 + 인터랙션 결과를 종합
    - Computer Use 미지원 환경 시 경고 후 `--screenshot` 폴백, 그것도 불가 시 코드 분석만 수행
 6. **디자인 시스템 자동 감지** (평가자 3 Cognitive Load 디자인 항목 평가용):

@@ -57,12 +57,14 @@ API 키 제공 여부도 다르다.
 ### 3.1 단계 정의
 | 단계 | 키워드 | 진입 조건 | 결과 |
 |---|---|---|---|
-| 1 | `playwright-mcp` | auto 모드 + MCP 감지 | 자동 스크린샷 우선 |
+| 1 | `playwright-mcp` | auto 모드 + Playwright MCP 감지 | 자동 스크린샷 우선 |
+| 1' | `puppeteer-mcp` (v5.43.6+, MA-1) | auto 모드 + Playwright 미감지 + Puppeteer MCP 감지 | 자동 스크린샷 대안 |
 | 2 | `user-manual` | interactive TTY + 사용자 경로 입력 | 수동 스크린샷 사용 |
 | 3 | `code-only-fallback` | 스크린샷 미확보 | 코드 기반 분석 |
 | 4 | degraded 보고 | 3단계 결과 | 차단 X, 사용자 안내 |
 테스트 키워드:
 - `playwright-mcp`
+- `puppeteer-mcp`
 - `user-manual`
 - `code-only-fallback`
 코드 근거:
@@ -165,6 +167,7 @@ run/check/orchestrator는 이 결과를 Agent judge 입력으로 사용한다.
 ### 5.2 screenshot_source enum
 실행 호환 값:
 - `playwright-mcp`
+- `puppeteer-mcp` (v5.43.6+, MA-1 — Playwright 미감지 시 1차 대안)
 - `provided`
 - `user-manual`
 - `code-only-fallback`
