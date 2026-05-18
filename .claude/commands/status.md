@@ -211,3 +211,9 @@ CLAUDE.md 룰 1줄로 AI(Claude/Codex/Cursor) 자동 동참 가능.
 
 사용자에게 "어떻게 할까요?" 또는 "다른 도구도 있어요" 묻지 않는다.
 **무조건 Step 1 실행 → 결과 보고**.
+
+---
+
+# 관련
+
+- 단일 Claude Code 세션 fleet(running/blocked/done) 통합 뷰는 Anthropic 공식 `claude agents` 커맨드(CC v2.1.139+, Research Preview). Nova `/nova:status`는 프로젝트 Phase/Sprint/그룹 진행률 대시보드로 직교 영역 — 둘 다 활용 권장.

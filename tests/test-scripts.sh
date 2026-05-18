@@ -1354,6 +1354,11 @@ assert "Sprint 1: hooks.json에 Stop 엔트리 존재" \
 assert "Sprint 1: hooks.json Stop → stop-event.sh 참조" \
   "jq -r '.hooks.Stop[0].hooks[0].command' '$ROOT_DIR/hooks/hooks.json' | grep -q 'stop-event.sh'"
 
+# Nova §17 Hook Safety: Stop hook은 절대 블록 금지 (CC v2.1.143 cap=8 회귀 방지)
+# stop-event.sh에 exit 2 또는 block decision 패턴이 등장하면 FAIL
+assert "Nova §17: stop-event.sh는 exit 2 / block decision 금지" \
+  "! grep -E '^[[:space:]]*exit[[:space:]]+2|\"decision\"[[:space:]]*:[[:space:]]*\"block\"' '$ROOT_DIR/hooks/stop-event.sh'"
+
 # session-start.sh에 record-event.sh 호출 포함
 assert "Sprint 1: session-start.sh에 record-event 호출 포함" \
   "grep -q 'record-event.sh' '$ROOT_DIR/hooks/session-start.sh'"
