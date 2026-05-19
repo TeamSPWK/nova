@@ -65,6 +65,11 @@ tests/.cache/
 __pycache__/
 *.pyc
 NOVA-STATE.md.v1.bak
+NOVA-STATE.md.v2.bak
+NOVA-STATE.md.v*.bak
+
+# OS junk in nested dirs (root .DS_Store covered above)
+**/.DS_Store
 
 # Nova v3 work-item registry
 # === Nova v3 registry (managed by /nova:setup) — start ===
