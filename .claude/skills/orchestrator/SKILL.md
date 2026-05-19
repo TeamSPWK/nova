@@ -562,7 +562,7 @@ NOVA-STATE.md가 있으면 Last Activity를 갱신한다:
 - /nova:auto → UI 감지 → ux-audit Lite PASS — Critical N / High N / Medium N / Low N | {ISO 8601 타임스탬프}
 ```
 
-**갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
+**시계열은 events.jsonl 단일 진실원 (v5.44.0+)**: NOVA-STATE.md의 Recent Activity / Recently Done 표에 행 추가 X. 활동 기록은 `hooks/record-event.sh`(자동 호출)가 `.nova/events.jsonl`에, v3 marker 영역은 Stop hook이 `scripts/registry-render-state.sh`로 자동 갱신. AI는 Current/Phase/Refs/Risks 본문 스냅샷만 손편집 — 트림 의무 없음. (상세: skills/context-chain/SKILL.md)
 
 ### v3 work-item registry 갱신 (Sprint 2)
 

@@ -33,6 +33,17 @@ bash "${BASH_SOURCE%/*}/record-event.sh" session_end "$EXTRA" 2>/dev/null || tru
 # stderr 리다이렉션 제거 — audit 경고가 사용자에게 전달되도록 함
 bash "${BASH_SOURCE%/*}/audit-orchestration.sh" || true
 
+# ── v3 marker 자동 렌더 (v5.44.0+) ──
+# NOVA-STATE.md에 v3 marker가 있으면 registry-render-state.sh가 marker 영역을 자동 갱신.
+# marker 부재(v2/v1 STATE)는 silent skip — 사용자 변경 없음. 실패해도 hook은 exit 0.
+# AI 트림 의무 면제의 마지막 한 조각 — 시계열은 events.jsonl + 이 자동 렌더로 통합.
+if [[ -f "NOVA-STATE.md" ]] && grep -qF "<!-- nova:registry-rendered:start -->" NOVA-STATE.md 2>/dev/null; then
+  NOVA_ROOT_FOR_RENDER="${CLAUDE_PLUGIN_ROOT:-$(cd "${BASH_SOURCE%/*}/.." && pwd)}"
+  if [[ -x "${NOVA_ROOT_FOR_RENDER}/scripts/registry-render-state.sh" ]]; then
+    bash "${NOVA_ROOT_FOR_RENDER}/scripts/registry-render-state.sh" >/dev/null 2>&1 || true
+  fi
+fi
+
 # ── Desktop notification (M-2, CC v2.1.141+ terminalSequence) ──
 # NOVA_DESKTOP_NOTIFY=1일 때만 동작. 최근 5 이벤트에 commit_blocked 또는
 # evaluator_verdict=FAIL이 있으면 bell + xterm/iTerm window title을 stdout JSON으로 emit.

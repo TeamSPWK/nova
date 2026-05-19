@@ -45,9 +45,7 @@ description_en: "Diagnose current project state and recommend the next Nova comm
        |------|--------|---------|------|
        | {추천 액션} | todo | - | - |
 
-       ## Recently Done (최근 3개만)
-       | Task | Completed | Verdict | Ref |
-       |------|-----------|---------|-----|
+       <!-- v5.44.0+: 시계열(Recent Activity/Recently Done)은 .nova/events.jsonl + v3 marker 자동 렌더가 진실원. AI/사용자 손편집 X. -->
 
        ## Refs
        - Plan: {docs/plans/xxx.md 또는 none}

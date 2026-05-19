@@ -65,3 +65,17 @@ tests/.cache/
 __pycache__/
 *.pyc
 NOVA-STATE.md.v1.bak
+
+# Nova v3 work-item registry
+# === Nova v3 registry (managed by /nova:setup) — start ===
+.nova/*
+!.nova/work-items/
+!.nova/work-items/**
+!.nova/schema/
+!.nova/schema/**
+!.nova/README.md
+.nova/work-items/.lock/
+.nova/events.jsonl
+.nova/local/
+.nova/tmp/
+# === Nova v3 registry — end ===

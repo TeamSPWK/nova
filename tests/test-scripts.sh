@@ -346,19 +346,42 @@ assert "/review: 다음 도구 호출로 갱신 지시" \
 assert "/check: 다음 도구 호출로 갱신 지시" \
   "grep -q '다음 도구 호출로' '$ROOT_DIR/.claude/commands/check.md'"
 
-# State Prune Symmetry — 갱신/정리 트리거 비대칭 회귀 가드 (v5.19.6+)
-# 6개 갱신 트리거 커맨드 모두에 "갱신 후 정리" 지시문이 존재해야 한다.
-# 갱신만 강제하고 정리를 강제하지 않으면 NOVA-STATE.md가 단조 증가한다.
+# events.jsonl 단일 진실원 모델 회귀 가드 (v5.44.0+, replaces State Prune Symmetry v5.19.6)
+# 9개 갱신 트리거 커맨드 모두에 "시계열은 events.jsonl 단일 진실원" 지시문이 존재해야 한다.
+# AI가 NOVA-STATE.md 시계열 영역에 직접 행 추가를 못 하도록 명시하는 규약.
 for _cmd in plan design check review ux-audit run evolve; do
-  assert "/$_cmd: 갱신 후 정리 트리거 존재 (50줄 초과 시 트림)" \
-    "grep -qE '갱신 후 정리|50줄 초과' '$ROOT_DIR/.claude/commands/$_cmd.md'"
+  assert "/$_cmd: events.jsonl 단일 진실원 모델 명시 (v5.44.0+)" \
+    "grep -q 'events.jsonl 단일 진실원' '$ROOT_DIR/.claude/commands/$_cmd.md'"
 done
 
-# session-start.sh 3개 프로파일에 STATE 사이즈 룰 키워드 ("50줄") 노출
-# 매 세션 자동 주입되는 글로벌 룰이 룰 자체를 인지시켜야 한다.
+# session-start.sh 3개 프로파일에 v5.44.0+ 모델 키워드 노출
+# 매 세션 자동 주입되는 글로벌 룰이 새 모델("본문 스냅샷만 손편집")을 인지시켜야 한다.
 for _profile in lean standard strict; do
-  assert "session-start.sh ($_profile): NOVA-STATE 사이즈 룰 노출 (50줄)" \
-    "NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q '50줄'"
+  assert "session-start.sh ($_profile): NOVA-STATE 본문 스냅샷 모델 노출 (v5.44.0+)" \
+    "NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q '본문 스냅샷'"
+done
+
+# Stop hook v3 marker 자동 렌더 회귀 가드 (v5.44.0+)
+# AI 트림 의무 면제의 마지막 한 조각 — marker 있는 STATE는 stop-event.sh가 자동 렌더.
+assert "hooks/stop-event.sh: v3 marker 자동 렌더 통합 (v5.44.0+)" \
+  "grep -q 'registry-render-state.sh' '$ROOT_DIR/hooks/stop-event.sh'"
+assert "hooks/stop-event.sh: marker 부재 시 silent skip 조건" \
+  "grep -qE 'registry-rendered:start' '$ROOT_DIR/hooks/stop-event.sh'"
+
+# Negative regression guard (v5.44.0+) — 옛 트림 룰 키워드가 재등장하지 않아야 함
+# events.jsonl 단일 진실원 모델 도입 후 "50줄 트림", "Recently Done.*3개", "Recently Done 테이블에 작업 추가"
+# 같은 옛 패턴이 재추가되면 AI에게 다시 트림 의무를 부과한다.
+for _cmd in plan design check review ux-audit run evolve audit-self; do
+  assert "/$_cmd: 옛 50줄 트림 룰 재등장 차단 (negative)" \
+    "! grep -qE '50줄.*트림|트림.*50줄' '$ROOT_DIR/.claude/commands/$_cmd.md'"
+done
+for _skill in context-chain deepplan orchestrator ux-audit strategic-compact; do
+  assert "skills/$_skill: 옛 50줄 트림 룰 재등장 차단 (negative)" \
+    "! grep -qE '50줄.*트림|트림.*50줄' '$ROOT_DIR/.claude/skills/$_skill/SKILL.md'"
+done
+for _profile in lean standard strict; do
+  assert "session-start.sh ($_profile): 옛 '50줄' 키워드 재등장 차단 (negative)" \
+    "! NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q '50줄'"
 done
 
 # §15 Memory Routing — standard/strict는 라우팅 룰 노출 의무 (개인 memory ≠ 프로젝트 canonical)
@@ -374,11 +397,11 @@ assert "skills/claude-md: Memory ↔ Canonical 진단 + 보존 가드 명시" \
    grep -q '기존 산출물 보존 가드' '$ROOT_DIR/.claude/skills/claude-md/SKILL.md' && \
    grep -q 'FROM_USER_MEMORY' '$ROOT_DIR/.claude/skills/claude-md/SKILL.md'"
 
-# NOVA-STATE 갱신 지점이 있는 스킬도 정리 트리거 의무를 진다 (orchestrator/deepplan/ux-audit).
+# NOVA-STATE 갱신 지점이 있는 스킬도 v5.44.0+ 단일 진실원 모델 명시 의무 (orchestrator/deepplan/ux-audit).
 # context-chain SKILL은 자동 갱신 트리거 표에 evolve 행을 포함해야 한다.
 for _skill in orchestrator deepplan ux-audit; do
-  assert "skills/$_skill: 갱신 후 정리 트리거 존재 (50줄)" \
-    "grep -q '50줄' '$ROOT_DIR/.claude/skills/$_skill/SKILL.md'"
+  assert "skills/$_skill: events.jsonl 단일 진실원 모델 명시 (v5.44.0+)" \
+    "grep -q 'events.jsonl 단일 진실원' '$ROOT_DIR/.claude/skills/$_skill/SKILL.md'"
 done
 assert "skills/context-chain: 자동 갱신 트리거 표에 evolve 행 존재" \
   "grep -q 'nova:evolve.*완료' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
@@ -3579,8 +3602,8 @@ assert "2-D: skills/orchestrator/SKILL.md — registry-write evaluator-pass/tran
   "grep -qE 'registry-write.sh.*(evaluator-pass|transition)' '$ROOT_DIR/.claude/skills/orchestrator/SKILL.md'"
 assert "2-D: skills/deepplan/SKILL.md — registry-write create" \
   "grep -q 'registry-write.sh.*create' '$ROOT_DIR/.claude/skills/deepplan/SKILL.md'"
-assert "2-D: skills/context-chain/SKILL.md — marker 영역 카운트 제외 룰" \
-  "grep -qE '(marker.*제외|registry-rendered.*카운트)' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
+assert "2-D: skills/context-chain/SKILL.md — v3 marker 영역 손편집 금지 + 자동 렌더 (v5.44.0+)" \
+  "grep -qE 'marker.*손편집 금지|registry-render-state\\.sh.*자동 갱신' '$ROOT_DIR/.claude/skills/context-chain/SKILL.md'"
 assert "2-D: skills/evaluator/SKILL.md — registry-write 미언급 (sub-agent 정책)" \
   "! grep -q 'registry-write.sh' '$ROOT_DIR/.claude/skills/evaluator/SKILL.md'"
 assert "2-D: skills/ux-audit/SKILL.md — registry-write 미언급" \

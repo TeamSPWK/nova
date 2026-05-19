@@ -240,9 +240,8 @@ Safe-default — 기록 실패 시 파이프라인 영향 없음.
 
 audit-self 종료 시:
 
-- `Last Activity` 1줄 추가: `/nova:audit-self → {verdict} — Critical {C} Warning {W} Info {I} | {ISO 8601}`
 - Critical 발견 시 `Known Risks` 행 자동 추가 (Critical 1건당 1행, 사용자 검토 의무)
-- 50줄 초과 시 가장 오래된 항목부터 트림 (skills/context-chain/SKILL.md 룰)
+- **시계열은 events.jsonl 단일 진실원 (v5.44.0+)**: 시계열 표(Recent Activity/Recently Done)에 행 추가 X. 활동 기록은 `hooks/record-event.sh`(자동)가 `.nova/events.jsonl`에, v3 marker 영역은 Stop hook이 `scripts/registry-render-state.sh`로 자동 갱신. AI는 Risks/Refs 본문 스냅샷만 손편집 — 트림 의무 없음. (상세: skills/context-chain/SKILL.md)
 
 ---
 

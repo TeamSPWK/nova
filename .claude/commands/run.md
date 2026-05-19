@@ -293,12 +293,10 @@ Generator 서브에이전트 spawn (이슈 목록 + 수정 범위 전달)
 
 ## Phase 6: State Update
 
-`NOVA-STATE.md`가 프로젝트 루트에 있으면 검증 결과를 자동 반영한다:
-- Recently Done 테이블에 작업 추가 (판정 결과 + 검증 문서 링크)
+`NOVA-STATE.md`가 프로젝트 루트에 있으면 검증 결과를 본문 스냅샷에 자동 반영한다:
 - Tasks 테이블에서 해당 작업 제거
-- Recently Done이 3개 초과 시 가장 오래된 항목 제거
 - Phase를 검증 결과에 따라 갱신 (PASS → done, FAIL → building)
-- **갱신 후 정리 (필수)**: NOVA-STATE.md가 50줄 초과 시 가장 오래된 Last Activity / Recently Done부터 제거하여 50줄 이내로 트림. Recently Done은 3개, Last Activity 항목은 각 1줄을 유지한다. 정리 단계 없이 종료 금지. (상세: skills/context-chain/SKILL.md)
+- **시계열은 events.jsonl 단일 진실원 (v5.44.0+)**: NOVA-STATE.md의 Recent Activity / Recently Done 표에 행 추가 X. 활동 기록은 `hooks/record-event.sh`(자동 호출)가 `.nova/events.jsonl`에, v3 marker 영역은 Stop hook이 `scripts/registry-render-state.sh`로 자동 갱신. AI는 Current/Phase/Refs/Risks 본문 스냅샷만 손편집 — 트림 의무 없음. (상세: skills/context-chain/SKILL.md)
 
 ## v3 work-item registry 갱신 (Sprint 2)
 
