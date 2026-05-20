@@ -1,0 +1,10 @@
+{
+  "id": "WI-0002",
+  "title": "database-schema-v3",
+  "status": "proposed",
+  "priority": "medium",
+  "created_at": "2026-05-01T00:00:00Z",
+  "updated_at": "2026-05-01T00:00:00Z",
+  "source_docs": [],
+  "notes": "v3 fixture proposed WI"
+}

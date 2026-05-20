@@ -558,6 +558,7 @@ Prompt engineering shapes *what* the model says. Harness engineering shapes *whe
 - [Usage Guide](docs/usage-guide.md) — Detailed command and agent reference
 - [Agent Instruction Guide](docs/guides/claude-md.md) — How `/nova:claude-md` splits CLAUDE.md, AGENTS.md, rules, settings, and hooks
 - [Skill Governance Guide](docs/guides/skill-governance.md) — Selectively disable Nova skills via `skillOverrides` (CC v2.1.126+)
+- [State Drift Reconciliation Guide](docs/guides/state-drift-reconciliation.md) — Detect and resolve drift between NOVA-STATE.md prose, git log, and work-item registry
 - [Nova Engineering](docs/nova-engineering.md) — Full methodology (4 Pillars, CPS, security)
 - [Tutorial: Todo API](examples/tutorial-todo-api.md) — End-to-end workflow walkthrough
 

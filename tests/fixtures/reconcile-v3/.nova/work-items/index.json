@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "work_items": [
+    {
+      "id": "WI-0001",
+      "title": "api-endpoint-v2",
+      "status": "active",
+      "priority": "high",
+      "updated_at": "2026-05-01T00:00:00Z",
+      "source_docs": []
+    },
+    {
+      "id": "WI-0002",
+      "title": "database-schema-v3",
+      "status": "proposed",
+      "priority": "medium",
+      "updated_at": "2026-05-01T00:00:00Z",
+      "source_docs": []
+    }
+  ]
+}

@@ -155,6 +155,23 @@ NOVA-STATE.md에 `## Quality Metrics` 섹션이 있으면 추세를 분석하여
 - **Coverage 하락 추세** → "테스트 커버리지가 하락 중입니다. 테스트 보강을 권장합니다."
 - **Learned Rules 현황**: `.claude/rules/` 파일 수를 진단에 표시한다.
 
+## 드리프트 사전 점검 (reconcile-state — S1)
+
+추천 로직(Step 2) 실행 전, `scripts/reconcile-state.sh --jsonl` 을 실행한다:
+
+```bash
+RECONCILE_JSON=$(bash "$NOVA_PLUGIN_ROOT/scripts/reconcile-state.sh" --jsonl 2>/dev/null || true)
+```
+
+- 실패/타임아웃 시 `RECONCILE_JSON` 이 비어있음 → **graceful skip** (기존 진단 그대로 계속).
+- 성공 시: `⚠️ suspect_explicit`, `⚠️ suspect_fuzzy`, `❓ untracked` 항목을 추출한다.
+  - 해당 WI ID 또는 prose 텍스트를 "다음 작업" 추천 후보에서 **제외하거나 ⚠️ 플래그**를 붙인다.
+  - 사용자에게 "STATE 드리프트 N건 — `bash scripts/reconcile-state.sh` 권장" 1줄 표시.
+
+**신뢰도 순위** (다음 작업 추천 우선순위): `git log > registry > prose`.
+- registry status가 `done`이고 evidence_sha reachable → 해당 WI는 완료로 처리, 추천 제외.
+- prose에만 있는 "진행 중" 항목은 registry·git과 교차 확인 후 추천 여부 판단.
+
 ## v3 work-item registry 감지 (Sprint 2)
 
 NOVA-STATE.md 확인 단계에서 schema_version 감지:

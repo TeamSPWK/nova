@@ -3774,6 +3774,116 @@ assert "7-D: 3 산출물 공통 키워드 — /nova:setup, /nova:migrate-state, 
 echo ""
 
 # ═══════════════════════════════════════════
+# Sprint S1: reconcile-state 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint S1: reconcile-state 드리프트 차단]${NC}"
+
+RECONCILE_SCRIPT="$ROOT_DIR/scripts/reconcile-state.sh"
+RECONCILE_GUIDE="$ROOT_DIR/docs/guides/state-drift-reconciliation.md"
+
+# (a) 스크립트 존재 + 실행 가능
+assert "reconcile-state.sh 존재 + 실행 가능" \
+  "[ -f '$RECONCILE_SCRIPT' ] && [ -x '$RECONCILE_SCRIPT' ]"
+
+# (b) -h가 가이드 경로 출력
+assert "reconcile-state.sh -h가 가이드 경로 안내" \
+  "bash '$RECONCILE_SCRIPT' -h | grep -q 'docs/guides/state-drift-reconciliation.md'"
+
+# (c) 가이드 파일 존재 + 핵심 키워드
+assert "docs/guides/state-drift-reconciliation.md 존재" \
+  "[ -f '$RECONCILE_GUIDE' ]"
+assert "가이드: TL;DR 섹션 존재" \
+  "grep -q 'TL;DR' '$RECONCILE_GUIDE'"
+assert "가이드: Cheatsheet 섹션 존재" \
+  "grep -q 'Cheatsheet' '$RECONCILE_GUIDE'"
+assert "가이드: reconcile-state.sh 명령 예시 포함" \
+  "grep -q 'reconcile-state.sh' '$RECONCILE_GUIDE'"
+assert "가이드: FAIL 시 해결법 포함" \
+  "grep -q 'FAIL' '$RECONCILE_GUIDE'"
+
+# (d) v2-only fixture: state_class=v2-only, mode=2-way
+# fixture 디렉토리는 git 레포가 아님 → 임시 git 레포에 복사해서 테스트 (.git 생성 금지)
+V2_FIX="$ROOT_DIR/tests/fixtures/reconcile-v2-only"
+assert "fixture reconcile-v2-only: NOVA-STATE.md 존재" \
+  "[ -f '$V2_FIX/NOVA-STATE.md' ]"
+assert "v2-only fixture: state_class 정확 판정" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$V2_FIX/NOVA-STATE.md' NOVA-STATE.md && OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && echo \"\$OUT\" | jq -e '.state_class == \"v2-only\"' > /dev/null); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+assert "v2-only fixture: mode=2-way" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$V2_FIX/NOVA-STATE.md' NOVA-STATE.md && OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && echo \"\$OUT\" | jq -e '.mode == \"2-way\"' > /dev/null); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (e) hybrid fixture: state_class=hybrid
+HYBRID_FIX="$ROOT_DIR/tests/fixtures/reconcile-hybrid"
+assert "fixture reconcile-hybrid: NOVA-STATE.md 존재" \
+  "[ -f '$HYBRID_FIX/NOVA-STATE.md' ]"
+assert "hybrid fixture: state_class 정확 판정" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$HYBRID_FIX/NOVA-STATE.md' NOVA-STATE.md && cp -r '$HYBRID_FIX/.nova' .nova && OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && echo \"\$OUT\" | jq -e '.state_class == \"hybrid\"' > /dev/null); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+assert "hybrid fixture: marker 내부를 prose로 오인 안 함" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$HYBRID_FIX/NOVA-STATE.md' NOVA-STATE.md && cp -r '$HYBRID_FIX/.nova' .nova && OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && echo \"\$OUT\" | jq -e '[.items[] | select(.source==\"prose\")] | map(select(.text | contains(\"active\") or contains(\"WI-0001\"))) | length == 0' > /dev/null); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (f) v3 fixture: state_class=v3
+V3_FIX="$ROOT_DIR/tests/fixtures/reconcile-v3"
+assert "fixture reconcile-v3: NOVA-STATE.md 존재" \
+  "[ -f '$V3_FIX/NOVA-STATE.md' ]"
+assert "v3 fixture: state_class 정확 판정" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$V3_FIX/NOVA-STATE.md' NOVA-STATE.md && cp -r '$V3_FIX/.nova' .nova && OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && echo \"\$OUT\" | jq -e '.state_class == \"v3\"' > /dev/null); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (g) read-only 불변식: 실행 전후 git status 동일
+assert "reconcile-state: read-only — 실행 후 STATE·registry 무변경" \
+  "(cd '$ROOT_DIR' && git status --porcelain > /tmp/_recon_before.txt && bash '$RECONCILE_SCRIPT' >/dev/null 2>&1 || true; git status --porcelain > /tmp/_recon_after.txt; diff /tmp/_recon_before.txt /tmp/_recon_after.txt > /dev/null)"
+
+# (h) exit code 계약: clean=0
+assert "exit code 계약: v3 fixture clean=0" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$V3_FIX/NOVA-STATE.md' NOVA-STATE.md && cp -r '$V3_FIX/.nova' .nova && bash '$RECONCILE_SCRIPT' > /dev/null 2>&1; RC=\$?; rm -rf \"\$TMPD\"; [ \$RC -eq 0 ])"
+assert "exit code 계약: v3 fixture exit 0 (clean)" \
+  "TMPD=\$(mktemp -d) && (cd \"\$TMPD\" && git init -q && cp '$V3_FIX/NOVA-STATE.md' NOVA-STATE.md && cp -r '$V3_FIX/.nova' .nova && bash '$RECONCILE_SCRIPT' > /dev/null 2>&1; RC=\$?; rm -rf \"\$TMPD\"; [ \$RC -eq 0 ])"
+
+# (i) nova-rules.md §8 계약 동기화
+assert "nova-rules.md §8: 상태 진실원 계약 명문화" \
+  "grep -q '상태 진실원 계약' '$ROOT_DIR/docs/nova-rules.md'"
+assert "nova-rules.md §8: registry=status 단일 진실 명시" \
+  "grep -q 'registry.*status 단일 진실' '$ROOT_DIR/docs/nova-rules.md'"
+assert "nova-rules.md §8: prose=비공식 스냅샷 명시" \
+  "grep -q 'prose.*비공식 스냅샷' '$ROOT_DIR/docs/nova-rules.md'"
+assert "nova-rules.md §8: reconcile-state.sh 드리프트 점검 명시" \
+  "grep -q 'reconcile-state.sh' '$ROOT_DIR/docs/nova-rules.md'"
+
+# (j) session-start.sh 동기화 + JSON 유효
+assert "session-start.sh: §8 계약 work-item 문구 포함" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | grep -q 'work-item'"
+assert "session-start.sh: JSON 유효 (§8 추가 후)" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null 2>&1"
+
+# (k) next.md: reconcile 선행 실행 언급 + 신뢰도 순위
+assert "next.md: reconcile-state.sh 선행 실행 언급" \
+  "grep -q 'reconcile-state.sh' '$ROOT_DIR/.claude/commands/next.md'"
+assert "next.md: 신뢰도 순위 git log > registry > prose 명시" \
+  "grep -q 'git log.*registry.*prose\|git log > registry > prose' '$ROOT_DIR/.claude/commands/next.md'"
+
+# (l) 진양성 분류 테스트: suspect_fuzzy + suspect_explicit 실제 감지
+# 부모 레포 밖 /tmp 에 임시 git 레포 생성 (.git submodule 사고 방지)
+assert "S1-C5 회귀 가드: suspect_fuzzy ≥ 1 (토큰 매칭) + suspect_explicit ≥ 1 (Nova-WI trailer)" \
+  "TMPD=\$(mktemp -d /tmp/nova-s1-XXXXXX); (\
+    cd \"\$TMPD\" && git init -q && \
+    git config user.email 'nova@example.com' && git config user.name 'Nova Test' && \
+    echo 'x' > f && git add f && \
+    git commit -q -m 'fix: gc-cost-jump --cron-window 버그 수정' && \
+    echo 'y' > g && git add g && \
+    git commit -q -m 'feat: WI-0001 완료' --trailer 'Nova-WI: WI-0001' && \
+    mkdir -p .nova/work-items && \
+    echo '{\"schema_version\":3,\"work_items\":[{\"id\":\"WI-0001\",\"title\":\"cron-window\",\"status\":\"active\",\"priority\":\"high\",\"updated_at\":\"2026-01-01T00:00:00Z\"},{\"id\":\"WI-0002\",\"title\":\"gc-cost-jump\",\"status\":\"proposed\",\"priority\":\"medium\",\"updated_at\":\"2026-01-01T00:00:00Z\"}]}' > .nova/work-items/index.json && \
+    echo '{\"id\":\"WI-0001\",\"title\":\"cron-window\",\"status\":\"active\",\"notes\":\"\"}' > .nova/work-items/WI-0001.json && \
+    echo '{\"id\":\"WI-0002\",\"title\":\"gc-cost-jump\",\"status\":\"proposed\",\"notes\":\"\"}' > .nova/work-items/WI-0002.json && \
+    printf -- '---\nschema_version: 3\ngoal: test\nphase: building\n---\n# State\n' > NOVA-STATE.md && \
+    OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && \
+    EXPLICIT=\$(echo \"\$OUT\" | jq '.counts.suspect_explicit // 0') && \
+    FUZZY=\$(echo \"\$OUT\" | jq '.counts.suspect_fuzzy // 0') && \
+    [ \"\$EXPLICIT\" -ge 1 ] && [ \"\$FUZZY\" -ge 1 ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

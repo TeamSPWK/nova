@@ -1,0 +1,10 @@
+{
+  "id": "WI-0001",
+  "title": "feature-auth-flow",
+  "status": "active",
+  "priority": "high",
+  "created_at": "2026-05-01T00:00:00Z",
+  "updated_at": "2026-05-01T00:00:00Z",
+  "source_docs": [],
+  "notes": "hybrid fixture WI"
+}
