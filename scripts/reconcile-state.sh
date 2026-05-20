@@ -216,7 +216,7 @@ def extract_tokens(text):
     return tokens
 
 def check_sha(sha):
-    if not sha:
+    if not sha or not isinstance(sha, str):
         return False
     try:
         r = subprocess.run(["git", "cat-file", "-e", sha],
@@ -283,8 +283,11 @@ if STATE_CLASS in ("v3", "hybrid"):
         title = wi.get("title", "") or ""
         detail = wi_details.get(wid, wi)
         ev = detail.get("evidence") or {}
-        ev_sha = (ev.get("commit_sha", "") if isinstance(ev, dict) else "") or \
-                  detail.get("evidence_commit", "") or detail.get("evidence_sha", "") or ""
+        # commit_sha는 registry-write가 배열로 저장(다중 evidence 허용) — 문자열/배열 모두 수용
+        _ev_sha_raw = ev.get("commit_sha", "") if isinstance(ev, dict) else ""
+        if isinstance(_ev_sha_raw, list):
+            _ev_sha_raw = next((s for s in _ev_sha_raw if s), "")
+        ev_sha = _ev_sha_raw or detail.get("evidence_commit", "") or detail.get("evidence_sha", "") or ""
 
         if status == "done":
             if ev_sha and check_sha(ev_sha):

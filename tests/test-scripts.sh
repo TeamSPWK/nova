@@ -3933,6 +3933,22 @@ assert "S1-C5 회귀 가드: suspect_fuzzy ≥ 1 (토큰 매칭) + suspect_expli
     [ \"\$EXPLICIT\" -ge 1 ] && [ \"\$FUZZY\" -ge 1 ] \
   ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
 
+# 회귀: registry-write transition done은 evidence.commit_sha를 배열로 저장 → verified 분류돼야
+assert "S1 회귀: evidence.commit_sha 배열 형식 → verified (registry-write 실제 포맷)" \
+  "TMPD=\$(mktemp -d /tmp/nova-s1ev-XXXXXX); (\
+    cd \"\$TMPD\" && git init -q && \
+    git config user.email 'nova@example.com' && git config user.name 'Nova Test' && \
+    echo 'x' > f && git add f && git commit -q -m 'done work' && \
+    SHA=\$(git rev-parse HEAD) && \
+    mkdir -p .nova/work-items && \
+    echo '{\"schema_version\":3,\"work_items\":[{\"id\":\"WI-0001\",\"title\":\"t\",\"status\":\"done\",\"priority\":\"high\",\"updated_at\":\"2026-01-01T00:00:00Z\"}]}' > .nova/work-items/index.json && \
+    jq -n --arg sha \"\$SHA\" '{id:\"WI-0001\",title:\"t\",status:\"done\",evidence:{commit_sha:[\$sha]}}' > .nova/work-items/WI-0001.json && \
+    printf -- '---\nschema_version: 3\ngoal: test\n---\n# State\n' > NOVA-STATE.md && \
+    OUT=\$(bash '$RECONCILE_SCRIPT' --jsonl 2>/dev/null || true) && \
+    V=\$(echo \"\$OUT\" | jq '.counts.verified // 0') && \
+    [ \"\$V\" -ge 1 ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════
