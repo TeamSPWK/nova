@@ -3884,6 +3884,82 @@ assert "S1-C5 회귀 가드: suspect_fuzzy ≥ 1 (토큰 매칭) + suspect_expli
 echo ""
 
 # ═══════════════════════════════════════════
+# Sprint S2: pre-commit DRIFT_NUDGE 회귀 가드
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[Sprint S2: pre-commit DRIFT_NUDGE]${NC}"
+
+S2_HOOK="$ROOT_DIR/hooks/pre-commit-reminder.sh"
+S2_RECONCILE="$ROOT_DIR/scripts/reconcile-state.sh"
+S2_FIXTURE_PASS="$ROOT_DIR/tests/fixtures/nova-state-pass.md"
+S2_V3_FIX="$ROOT_DIR/tests/fixtures/reconcile-v3"
+S2_TODAY=$(date +%Y-%m-%d)
+
+# (a) drift 0 fixture(reconcile-v3 clean) → additionalContext에 "드리프트" 미출력 (침묵)
+# /tmp에 임시 git 레포 생성 (.git submodule 사고 방지)
+assert "S2-C10: drift 0(clean) → 드리프트 문구 미출력(침묵)" \
+  "TMPD=\$(mktemp -d /tmp/nova-s2-clean-XXXXXX); (\
+    cd \"\$TMPD\" && \
+    git init -q && \
+    git config user.email 'nova@example.com' && git config user.name 'Nova Test' && \
+    echo 'x' > f && git add f && git commit -q -m 'init' && \
+    sed 's/TODAY_PLACEHOLDER/$S2_TODAY/g' '$S2_FIXTURE_PASS' > NOVA-STATE.md && \
+    cp -r '$S2_V3_FIX/.nova' .nova && \
+    OUT=\$(echo '{\"tool_input\":{\"command\":\"git commit -m test\"}}' | bash '$S2_HOOK' 2>/dev/null) && \
+    ! ( printf '%s' \"\$OUT\" | jq -r '.hookSpecificOutput.additionalContext // \"\"' | grep -q '드리프트' ) \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (b) drift ≥1 → 드리프트 문구가 단일 블록(additionalContext)에 정확히 1회 포함
+# v3 fixture WI는 active/proposed + 커밋에 Nova-WI trailer → suspect_explicit 발생
+assert "S2-C11: drift≥1 → 드리프트 문구 단일 additionalContext 블록에 1회 포함" \
+  "TMPD=\$(mktemp -d /tmp/nova-s2-drift-XXXXXX); (\
+    cd \"\$TMPD\" && \
+    git init -q && \
+    git config user.email 'nova@example.com' && git config user.name 'Nova Test' && \
+    echo 'x' > f && git add f && \
+    git commit -q -m 'feat: WI-0001 완료' --trailer 'Nova-WI: WI-0001' && \
+    sed 's/TODAY_PLACEHOLDER/$S2_TODAY/g' '$S2_FIXTURE_PASS' > NOVA-STATE.md && \
+    cp -r '$S2_V3_FIX/.nova' .nova && \
+    OUT=\$(echo '{\"tool_input\":{\"command\":\"git commit -m test\"}}' | bash '$S2_HOOK' 2>/dev/null) && \
+    COUNT=\$(printf '%s' \"\$OUT\" | jq -r '.hookSpecificOutput.additionalContext // \"\"' | grep -c '드리프트' || true) && \
+    BLOCKS=\$(printf '%s\\n' \"\$OUT\" | grep -c 'hookSpecificOutput' || true) && \
+    [ \"\$COUNT\" -eq 1 ] && [ \"\$BLOCKS\" -eq 1 ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (c) 기존 7상태 Hard Gate 회귀 — PASS fixture exit 0, NO_PASS fixture exit 2
+assert "S2 회귀: PASS fixture → exit 0 (Hard Gate 무손상)" \
+  "TMPD=\$(mktemp -d /tmp/nova-s2-pass-XXXXXX); (\
+    cd \"\$TMPD\" && \
+    git init -q && git config user.email 'nova@example.com' && git config user.name 'Nova Test' && \
+    echo 'x' > f && git add f && git commit -q -m init && \
+    sed 's/TODAY_PLACEHOLDER/$S2_TODAY/g' '$S2_FIXTURE_PASS' > NOVA-STATE.md && \
+    echo '{\"tool_input\":{\"command\":\"git commit -m test\"}}' | bash '$S2_HOOK' >/dev/null 2>&1 \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+assert "S2 회귀: NO_PASS fixture → exit 2 (Hard Gate 무손상)" \
+  "TMPD=\$(mktemp -d /tmp/nova-s2-nopass-XXXXXX); (\
+    cd \"\$TMPD\" && \
+    cp '$ROOT_DIR/tests/fixtures/nova-state-no_pass.md' NOVA-STATE.md && \
+    echo '{\"tool_input\":{\"command\":\"git commit -m test\"}}' | bash '$S2_HOOK' >/dev/null 2>&1; [ \$? -eq 2 ] \
+  ); STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ]"
+
+# (d) commit↔WI 섹션: 가이드에 존재
+assert "S2-C12: 가이드에 'commit ↔ work-item 연결' 섹션 존재" \
+  "grep -q 'commit.*work-item.*연결\|work-item.*연결\|## commit' '$ROOT_DIR/docs/guides/state-drift-reconciliation.md'"
+
+assert "S2-C12: 가이드에 Nova-WI trailer 컨벤션 명시" \
+  "grep -q 'Nova-WI:' '$ROOT_DIR/docs/guides/state-drift-reconciliation.md'"
+
+assert "S2-C12: 가이드에 evidence-commit 전이 명령 명시" \
+  "grep -q 'evidence-commit' '$ROOT_DIR/docs/guides/state-drift-reconciliation.md'"
+
+# (e) state_reconciled 이벤트 타입 문서화 (record-event.sh 주석)
+assert "S2-C13: record-event.sh 주석에 state_reconciled 이벤트 타입 명시" \
+  "grep -q 'state_reconciled' '$ROOT_DIR/hooks/record-event.sh'"
+
+echo ""
+
+# ═══════════════════════════════════════════
 # 결과
 # ═══════════════════════════════════════════
 

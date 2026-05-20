@@ -199,6 +199,42 @@ if [ -f "docs/nova-meta.json" ] && [ -f "scripts/generate-meta.sh" ]; then
   fi
 fi
 
+# STATE 드리프트 NUDGE (S2 — reconcile-state.sh 호출, graceful)
+# 제약: 차단 경로(Hard Gate FAIL)는 이 지점에 도달 안 함. 실패가 커밋을 막으면 안 됨.
+DRIFT_NUDGE=""
+_plugin_root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+_reconcile_bin="$_plugin_root/scripts/reconcile-state.sh"
+if [ -x "$_reconcile_bin" ]; then
+  # timeout 3초 — 폴백 체인: timeout → gtimeout → perl alarm → 무제한(최후)
+  # macOS 기본 환경엔 timeout/gtimeout 둘 다 없음 → perl alarm이 3초 상한 보장
+  if command -v timeout >/dev/null 2>&1; then
+    _recon_out=$(timeout 3 bash "$_reconcile_bin" --jsonl 2>/dev/null) || true
+  elif command -v gtimeout >/dev/null 2>&1; then
+    _recon_out=$(gtimeout 3 bash "$_reconcile_bin" --jsonl 2>/dev/null) || true
+  elif command -v perl >/dev/null 2>&1; then
+    _recon_out=$(perl -e 'alarm 3; exec @ARGV' bash "$_reconcile_bin" --jsonl 2>/dev/null) || true
+  else
+    _recon_out=$(bash "$_reconcile_bin" --jsonl 2>/dev/null) || true
+  fi
+  if [ -n "$_recon_out" ] && echo "$_recon_out" | jq -e . >/dev/null 2>&1; then
+    _suspect=$(echo "$_recon_out" | jq '(.counts.suspect_explicit // 0) + (.counts.suspect_fuzzy // 0)' 2>/dev/null || echo "0")
+    _untracked=$(echo "$_recon_out" | jq '(.counts.untracked // 0)' 2>/dev/null || echo "0")
+    _total=$(( _suspect + _untracked ))
+    if [ "$_total" -ge 1 ]; then
+      _explicit=$(echo "$_recon_out" | jq '(.counts.suspect_explicit // 0)' 2>/dev/null || echo "0")
+      _fuzzy=$(echo "$_recon_out" | jq '(.counts.suspect_fuzzy // 0)' 2>/dev/null || echo "0")
+      DRIFT_NUDGE="⚠️ STATE 드리프트: 완료의심 ${_suspect}(explicit:${_explicit}/fuzzy:${_fuzzy}) · 추적불가 ${_untracked} — \`bash scripts/reconcile-state.sh\`로 확인"
+      if [ "$_explicit" -ge 1 ]; then
+        DRIFT_NUDGE="${DRIFT_NUDGE}\n커밋 후: bash scripts/registry-write.sh transition <wi> done --evidence-commit=\$(git rev-parse HEAD)"
+      fi
+      # state_reconciled 이벤트 기록 (safe-default: 실패해도 커밋·훅 영향 0)
+      _state_class=$(echo "$_recon_out" | jq -r '.state_class // "unknown"' 2>/dev/null || echo "unknown")
+      _counts_json=$(echo "$_recon_out" | jq -c '.counts // {}' 2>/dev/null || echo "{}")
+      record_gate_event state_reconciled "$(printf '{"state_class":"%s","counts":%s,"trigger":"pre-commit"}' "$_state_class" "$_counts_json")"
+    fi
+  fi
+fi
+
 # 변경 파일 수
 CHANGED_FILES=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
 
@@ -207,7 +243,7 @@ if [ "$CHANGED_FILES" -ge 3 ]; then
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "additionalContext": "[Nova Quality Gate] git commit 감지 — 변경 파일 ${CHANGED_FILES}개.\n\n${STATE_STALE}\n${META_STALE}\n\n3파일 이상 변경입니다. Nova Always-On 규칙에 따라:\n1. NOVA-STATE.md를 갱신했는가? (필수)\n2. /nova:review --fast 를 실행했는가? (필수)\n3. 검증 결과가 PASS인가?\n\n💡 릴리스 시 bash scripts/release.sh <patch|minor|major> \"메시지\" 를 사용하면 전체 절차가 자동 실행됩니다."
+    "additionalContext": "[Nova Quality Gate] git commit 감지 — 변경 파일 ${CHANGED_FILES}개.\n\n${STATE_STALE}\n${META_STALE}\n${DRIFT_NUDGE}\n\n3파일 이상 변경입니다. Nova Always-On 규칙에 따라:\n1. NOVA-STATE.md를 갱신했는가? (필수)\n2. /nova:review --fast 를 실행했는가? (필수)\n3. 검증 결과가 PASS인가?\n\n💡 릴리스 시 bash scripts/release.sh <patch|minor|major> \"메시지\" 를 사용하면 전체 절차가 자동 실행됩니다."
   }
 }
 NOVA_EOF
@@ -216,7 +252,7 @@ else
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "additionalContext": "[Nova Quality Gate] git commit 감지 — 변경 파일 ${CHANGED_FILES}개.\n\n${STATE_STALE}\n${META_STALE}\n\n소규모 변경입니다. 로직 변경이 포함되어 있다면 /nova:review --fast를 권장합니다.\n💡 릴리스 시 bash scripts/release.sh <patch|minor|major> \"메시지\" 를 사용하세요."
+    "additionalContext": "[Nova Quality Gate] git commit 감지 — 변경 파일 ${CHANGED_FILES}개.\n\n${STATE_STALE}\n${META_STALE}\n${DRIFT_NUDGE}\n\n소규모 변경입니다. 로직 변경이 포함되어 있다면 /nova:review --fast를 권장합니다.\n💡 릴리스 시 bash scripts/release.sh <patch|minor|major> \"메시지\" 를 사용하세요."
   }
 }
 NOVA_EOF

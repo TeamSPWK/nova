@@ -147,6 +147,46 @@ bash scripts/reconcile-state.sh --jsonl | jq .counts.suspect_explicit
 
 ---
 
+## commit ↔ work-item 연결
+
+커밋과 work-item을 명시적으로 연결하면 reconcile가 ⚠️-fuzzy 대신 ⚠️-explicit(결정적)으로 분류한다.
+
+### 1. 커밋 메시지 footer에 trailer 추가
+
+```bash
+git commit -m "feat: WI-0013 auth-refactor 완료
+
+Nova-WI: WI-0013"
+```
+
+- 형식: `Nova-WI: WI-xxxx` (커밋 footer)
+- 다중 WI: 반복 라인 추가
+
+```
+Nova-WI: WI-0013
+Nova-WI: WI-0014
+```
+
+### 2. 커밋 직후 registry 전이
+
+```bash
+bash scripts/registry-write.sh transition WI-0013 done \
+  --evidence-commit=$(git rev-parse HEAD)
+```
+
+pre-commit nudge가 이 명령을 상기시켜 준다.
+
+### 3. trailer 누락 시 동작
+
+trailer 없으면 reconcile가 fuzzy 경로로 처리(⚠️-fuzzy). 분류는 되지만 결정적이지 않다.
+
+| trailer 있음 | ⚠️-explicit — 결정적 분류, `transition done` 명령 제시 |
+| trailer 없음 | ⚠️-fuzzy — 키워드 매칭, 확인 필요 |
+
+> **후속 검토**: Stop hook 자동 전이(trailer 감지 → registry 자동 갱신)는 v1 제외. nudge 무시율 측정 후 v2에서 재검토.
+
+---
+
 ## 관련 문서
 
 - [Design: state-drift-reconciliation.md](../designs/state-drift-reconciliation.md) — 알고리즘 상세

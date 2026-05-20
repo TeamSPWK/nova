@@ -17,6 +17,7 @@
 #   - work_item_created      : registry-write.sh create 호출 시
 #   - work_item_transitioned : registry-write.sh transition / evaluator-pass 호출 시
 #   - registry_rendered      : registry-render-state.sh가 NOVA-STATE.md marker 갱신 시
+#   - state_reconciled       : reconcile-state.sh가 drift 탐지 시 (extra: {state_class, counts, trigger})
 #
 # Forgiving Reader (Postel): v2 line(schema_version:2)도 분석기가 그대로 처리 — top-level 필드 동일.
 #
