@@ -282,6 +282,7 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | Auto-run a natural-language request through the full design → implement → verify → fix cycle. |
 | `/nova:check` | Combined code review + design-implementation gap verification in one pass. |
+| `/nova:checkpoint` | Before ending a session, checks STATE drift and honestly reports classification of suspected-done items. Does not misrepresent untracked items as complete. |
 | `/nova:claude-md` | Show a guided intro, audit CLAUDE.md/AGENTS.md instructions, and propose a new/existing project reorganization. |
 | `/nova:deepplan` | Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline. |
 | `/nova:design` | Write a Design document using the CPS (Context-Problem-Solution) framework. |

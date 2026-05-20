@@ -277,6 +277,7 @@ Nova 자동 판단:
 | `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다. |
 | `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
+| `/nova:checkpoint` | 세션 종료 전 STATE 드리프트를 점검하고, 완료 의심 항목을 정직하게 분류·보고한다. 검증 불가 항목을 완료로 포장하지 않는다. |
 | `/nova:claude-md` | 안내와 함께 CLAUDE.md/AGENTS.md 에이전트 지침을 감사하고 신규/기존 프로젝트 기준으로 재구성안을 만든다. |
 | `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |
 | `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |

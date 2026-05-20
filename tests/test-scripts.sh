@@ -68,6 +68,7 @@ EXPECTED_COMMANDS=(
   run design scan evolve setup next status
   auto plan deepplan review check ask ux-audit
   worktree-setup audit-self claude-md migrate-state
+  checkpoint
 )
 CMD_COUNT=$(ls "$ROOT_DIR/.claude/commands/"*.md 2>/dev/null | wc -l | tr -d ' ')
 assert "커맨드 파일 존재" "[ '$CMD_COUNT' -ge 15 ]"
@@ -448,6 +449,57 @@ assert "scan: NOVA-STATE.md 브리핑 언급" \
 
 assert "scan: lockfile 자동 감지 언급" \
   "grep -q 'lockfile' '$ROOT_DIR/.claude/commands/scan.md'"
+echo ""
+
+# ═══════════════════════════════════════════
+# 8-1-1. /nova:checkpoint 커맨드 검증 (S3)
+# ═══════════════════════════════════════════
+
+echo -e "${YELLOW}[커맨드: checkpoint (S3)]${NC}"
+
+CHECKPOINT_FILE="$ROOT_DIR/.claude/commands/checkpoint.md"
+
+assert "checkpoint.md 존재" \
+  "[ -f '$CHECKPOINT_FILE' ]"
+
+assert "checkpoint.md: description frontmatter" \
+  "head -3 '$CHECKPOINT_FILE' | grep -q 'description:'"
+
+assert "checkpoint.md: reconcile-state.sh 호출 명시" \
+  "grep -q 'reconcile-state.sh' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: ❓ 추적불가 별도 블록 원칙" \
+  "grep -q '검증 불가' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: ✅와 ❓ 합산 금지 원칙 명시" \
+  "grep -qE '합산.*금지|절대.*(합산|묶)' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: 단일 PASS/FAIL verdict 금지 명시" \
+  "grep -q 'verdict' '$CHECKPOINT_FILE' || grep -q 'PASS/FAIL' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: 거짓 안심 금지 명시" \
+  "grep -q '거짓 안심 금지' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: exit 2(엔진 오류) graceful 처리 명시" \
+  "grep -q 'exit 2' '$CHECKPOINT_FILE'"
+
+assert "checkpoint.md: 가이드 경로 언급" \
+  "grep -q 'docs/guides/state-drift-reconciliation.md' '$CHECKPOINT_FILE'"
+
+# session-start advisory 회귀 가드
+assert "session-start.sh: S3 advisory 코드 존재 (_DRIFT_ADVISORY)" \
+  "grep -q '_DRIFT_ADVISORY' '$ROOT_DIR/hooks/session-start.sh'"
+
+assert "session-start.sh: advisory /nova:checkpoint 언급" \
+  "grep -q '/nova:checkpoint' '$ROOT_DIR/hooks/session-start.sh'"
+
+assert "session-start.sh JSON 유효 (advisory 추가 후 재확인)" \
+  "bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null 2>&1"
+
+# next.md: 세션 종료 시 /nova:checkpoint 크로스 레퍼런스
+assert "next.md: 세션 종료 시 /nova:checkpoint 크로스 레퍼런스" \
+  "grep -q '/nova:checkpoint' '$ROOT_DIR/.claude/commands/next.md'"
+
 echo ""
 
 # ═══════════════════════════════════════════

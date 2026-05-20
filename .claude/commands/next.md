@@ -202,6 +202,7 @@ jq -r '
   - 자동: `/nova:auto [--deep]` → (Plan→Design→구현→검증→완료)
   - 하네스: CLAUDE.md 자동 적용 규칙에 따라 복잡도별 자동 워크플로우 진입
   - 점검 도구: 언제든 `/nova:status` (frontmatter v1.0 작성된 plan 기준) — Phase·Sprint·그룹 진행률 + drift 알람 HTML
+  - **세션 종료 시**: `/nova:checkpoint` — STATE 드리프트 최종 점검 + 완료 의심 항목 정리 후 안전 종료
 - "이후 흐름"에는 추천 커맨드 이후 남은 단계를 보여준다
 - 디렉토리가 존재하지 않으면 0개로 처리한다
 - 판단이 애매할 때는 여러 선택지를 제시하고 사용자가 결정하게 한다
