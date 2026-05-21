@@ -174,12 +174,13 @@ RECONCILE_JSON=$(bash "$NOVA_PLUGIN_ROOT/scripts/reconcile-state.sh" --jsonl 2>/
 
 ## v3 work-item registry 감지 (Sprint 2)
 
-NOVA-STATE.md 확인 단계에서 schema_version 감지:
+NOVA-STATE.md 확인 단계에서 v3 registry 상태 감지 (marker 영역 + `index.json` 기준 — frontmatter `schema_version`은 보지 않는다. v3 변환은 frontmatter를 건드리지 않으므로):
 
-- **schema_version=2 + `<!-- nova:registry-rendered:start -->` marker 없음** → 사용자에게 v3 변환 권고:
-  > "현재 v2 STATE이지만 v3 work-item registry 미적용입니다. `/nova:migrate-state --target=v3`로 변환하면 단일 진실원 + 자동 렌더 + drift 검출이 활성화됩니다."
-- **`.nova/work-items/index.json` 존재** → registry 기반 추천 (priority desc + status ∈ {active, proposed})
-- **v3 marker stale** → `bash "$NOVA_PLUGIN_ROOT/scripts/registry-render-state.sh"` 실행 권고
+- **`.nova/work-items/index.json` 없음** → v2-only. 사용자에게 v3 변환 권고:
+  > "v3 work-item registry 미적용입니다. `/nova:migrate-state --target=v3`로 변환하면 단일 진실원 + 자동 렌더 + drift 검출이 활성화됩니다."
+- **`index.json` 존재 + `<!-- nova:registry-rendered:start -->` marker 없음** → hybrid. marker 렌더 권고:
+  > "registry는 v3이나 NOVA-STATE.md에 marker 영역이 없습니다. `bash "$NOVA_PLUGIN_ROOT/scripts/registry-render-state.sh"`로 렌더하세요."
+- **`index.json` 존재 + marker 존재** → v3. registry 기반 추천 (priority desc + status ∈ {active, proposed})
 
 registry 기반 다음 작업 추천 (`.nova/work-items/index.json` 존재 시):
 

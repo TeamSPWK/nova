@@ -43,7 +43,7 @@ bash scripts/reconcile-state.sh
 출력 예시:
 ```
 Nova State Reconcile — hybrid STATE · registry 13 WI · git 90d
-⚠️ hybrid: STATE 본문이 v2 형식 — /nova:migrate-state로 완전 v3 권고
+⚠️ hybrid: registry는 있으나 marker 영역 없음 — registry-render-state.sh로 STATE 렌더 권고
 
 ⚠️ 완료의심 — 확인 필요 (2)
   [explicit] WI-0013  registry=proposed ↔ 커밋 a1b2c3d Nova-WI:WI-0013
@@ -104,8 +104,8 @@ bash scripts/registry-write.sh transition WI-0013 done --evidence-commit=$(git r
 
 | state_class | 의미 | 모드 |
 |-------------|------|------|
-| `v3` | schema_version=3 + registry 있음 | 3-way (prose↔git↔registry) |
-| `hybrid` | registry 있음 + schema 2 | 3-way + migrate 권고 배너 |
+| `v3` | registry + marker 영역 있음 | 3-way (prose↔git↔registry) |
+| `hybrid` | registry 있음 + marker 영역 없음 | 3-way + 렌더 권고 배너 |
 | `v2-only` | registry 없음 | 2-way (prose↔git) + migrate 권고 |
 
 ### fuzzy 매칭 정확도 (캘리브레이션)

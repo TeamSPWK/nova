@@ -98,14 +98,15 @@ bash scripts/reconcile-state.sh [--jsonl] [--since=<N>d] [-h|--help]
 ```
 has_registry = .nova/work-items/index.json 존재 && work_items 비어있지 않음
 has_marker   = NOVA-STATE.md에 "<!-- nova:registry-rendered:start -->" 포함
-schema_v     = frontmatter "schema_version:" 값
 
 state_class:
-  v3       = has_registry && schema_v == 3
-  hybrid   = has_registry && schema_v != 3        (3-way 가능, migrate 권고 배너)
+  v3       = has_registry && has_marker           (registry + marker 완비)
+  hybrid   = has_registry && !has_marker          (3-way 가능, marker 렌더 권고 배너)
   v2-only  = !has_registry                        (2-way 축소 모드, migrate 권고 배너)
 ```
 → v3·hybrid = **3-way 모드**, v2-only = **2-way 모드**.
+
+> frontmatter `schema_version`은 판정에 쓰지 않는다 — v3 변환(`migrate-state-v3.sh`)은 frontmatter를 건드리지 않으므로 v3 STATE도 frontmatter는 `schema_version: 2`로 남는다 (`work-item-registry-v3` 설계). marker 영역 존재 여부가 v3 완비의 지표다.
 
 **STEP 2 — 3개 소스 수집:**
 
@@ -145,7 +146,7 @@ state_class:
 사람용 출력:
 ```
 Nova State Reconcile — hybrid STATE · registry 13 WI · git 90d
-⚠️ hybrid: STATE 본문이 v2 형식 — /nova:migrate-state로 완전 v3 권고
+⚠️ hybrid: registry는 있으나 marker 영역 없음 — registry-render-state.sh로 STATE 렌더 권고
 
 ✅ 완료검증 (N)
 ⚠️ 완료의심 — 확인 필요 (N)

@@ -22,14 +22,6 @@ phase: building
 |------|-------|------|
 | 2026-05-01 | session_start | 세션 시작 |
 
-<!-- nova:registry-rendered:start -->
-## Work Items
-
-| ID | Title | Status |
-|----|-------|--------|
-| WI-0001 | feature-auth-flow | active |
-<!-- nova:registry-rendered:end -->
-
 ## Notes
 
-hybrid STATE: v2 schema + v3 marker 모두 존재.
+hybrid STATE: registry(.nova/work-items)는 있으나 NOVA-STATE.md에 marker 영역 없음 (registry-render 미실행).

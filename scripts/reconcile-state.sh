@@ -81,18 +81,15 @@ if [ -f "$INDEX_FILE" ]; then
   [ "$_WI_COUNT" -gt 0 ] && has_registry=1
 fi
 
-schema_v=$(python3 -c "
-import re
-text = open('NOVA-STATE.md', encoding='utf-8').read()
-m = re.match(r'^---\n(.*?)\n---', text, re.DOTALL)
-if m:
-    sv = re.search(r'schema_version:\s*(\d+)', m.group(1))
-    if sv:
-        print(sv.group(1)); exit()
-print('0')
-" 2>/dev/null || echo "0")
+has_marker=0
+if grep -qF "<!-- nova:registry-rendered:start -->" NOVA-STATE.md 2>/dev/null; then
+  has_marker=1
+fi
 
-if [ "$has_registry" -eq 1 ] && [ "$schema_v" = "3" ]; then
+# state_class: v3 = registry + marker 완비 / hybrid = registry 있으나 marker 미렌더 / v2-only = registry 없음.
+# frontmatter schema_version은 판정에 쓰지 않는다 — v3 변환(migrate-state-v3.sh)은 frontmatter를
+# 건드리지 않으므로(work-item-registry-v3 설계) v3 STATE도 frontmatter는 schema_version: 2로 남는다.
+if [ "$has_registry" -eq 1 ] && [ "$has_marker" -eq 1 ]; then
   state_class="v3"
 elif [ "$has_registry" -eq 1 ]; then
   state_class="hybrid"
@@ -370,7 +367,7 @@ result = {
     "counts": counts, "items": items,
 }
 if STATE_CLASS == "hybrid":
-    result["banner"] = "⚠️ hybrid: STATE 본문이 v2 형식 — /nova:migrate-state로 완전 v3 권고"
+    result["banner"] = "⚠️ hybrid: registry는 있으나 marker 영역 없음 — registry-render-state.sh로 STATE 렌더 권고"
 elif STATE_CLASS == "v2-only":
     result["banner"] = "⚠️ v2-only: registry 없음 — 2-way 모드 (prose↔git). /nova:migrate-state로 v3 권고"
 
