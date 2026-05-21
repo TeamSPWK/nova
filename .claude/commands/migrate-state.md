@@ -63,11 +63,14 @@ grep -qF "<!-- nova:registry-rendered:start -->" NOVA-STATE.md && echo "v3-marke
 **분기**:
 - NOVA-STATE.md 부재 → "STATE 없음 — `/nova:setup` 또는 새 세션 시작 시 자동 생성" 안내 후 종료
 - `.nova/work-items/index.json` 존재 + v3 marker 존재 → **이미 v3, 종료**: "이미 v3 registry 적용 상태입니다. `/nova:check`로 drift 검증 가능."
+- `.nova/work-items/index.json` 의 work_items 존재 + v3 marker **부재** → **hybrid 상태** (registry 는 이미 v3, NOVA-STATE.md 포맷만 미정합): Step 6 진입하되, migrate-state-v3.sh 가 idempotency 가드로 STATE 본문 재파싱을 자동 생략하고 v3 marker 삽입만 수행한다 — registry work-item 은 그대로 보존(재생성·강등·append 없음). dry-run 출력이 "registry 는 v3 완비 — marker 만 삽입 예정"이면 보존율(B)·4지선다 없이 결과 확인 후 바로 `--apply`.
 - `--check` 옵션 → 위 정보만 보고 후 종료
 - `--target=v2` 옵션 → Step 2 (legacy v1→v2 흐름) 진입
 - 그 외 (기본) → **Step 6 (v3 변환)** 진입. v1/v2 입력 모두 동일 처리
 
 ## Step 6 — v3 변환 (기본 흐름)
+
+> **이미 v3 registry 보유 시 (hybrid)**: migrate-state-v3.sh 는 idempotency 가드로 STATE 본문 재파싱을 자동 생략하고 v3 marker 삽입만 수행한다. dry-run 출력에 "registry 는 v3 완비" 가 보이면 보존율 임계·4지선다는 적용되지 않는다 — 결과 확인 후 바로 `--apply`.
 
 ```bash
 # Step 6.1: dry-run 미리보기

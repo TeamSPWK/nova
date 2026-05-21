@@ -13,6 +13,12 @@
 #   4. source_docs 자동 추가 금지: 모두 빈 배열
 #   5. commit_sha 부재 시 → status=proposed 강등 (done 추론 금지 — Codex)
 #
+# idempotency 가드:
+#   이미 v3 registry(.nova/work-items/index.json 에 work_items 존재)를 보유한
+#   프로젝트에서 실행하면 STATE 본문 재파싱을 생략하고 v3 marker 삽입만 수행한다.
+#   → 활동 로그·Active Tree 행이 가짜 work-item 으로 둔갑해 registry 를
+#      오염시키던 동작을 차단 (v1/v2 부트스트랩과 재실행을 안전하게 분리).
+#
 # 사용:
 #   bash scripts/migrate-state-v3.sh                       # dry-run
 #   bash scripts/migrate-state-v3.sh --apply               # 실제 적용
@@ -93,6 +99,53 @@ fi
 if [ ! -d "$PROJECT_ROOT/.nova" ] && [ "$APPLY" = "1" ]; then
   log "registry 미초기화 — 'bash scripts/setup.sh' 자동 호출"
   NOVA_REGISTRY_ROOT="$PROJECT_ROOT" bash "$SCRIPT_DIR/setup.sh" > /dev/null
+fi
+
+# ── idempotency 가드: 이미 v3 registry 를 보유한 프로젝트 보호 ──
+# 이 스크립트는 v1/v2 → v3 일회성 부트스트랩 전용이다. STATE 본문의 마크다운 표
+# (Tasks/Recent Activity/Known Gaps/Active Tree)를 work-item 으로 파싱하는데,
+# 이미 v3 인 프로젝트에서 그대로 실행하면 활동 로그·Active Tree 행이 가짜
+# work-item 으로 둔갑하고 index.json 에 누적 append(`.work_items += $items`)되어
+# registry 가 오염된다. → index.json 에 work_items 가 이미 있으면 본문 재파싱을
+# 통째로 생략하고, STATE 포맷 정합화(v3 marker 삽입/갱신)만 수행한다.
+EXISTING_WI=0
+if [ -f "$INDEX_FILE" ]; then
+  EXISTING_WI=$(jq -r '(.work_items | length) // 0' "$INDEX_FILE" 2>/dev/null || echo 0)
+  case "$EXISTING_WI" in ''|*[!0-9]*) EXISTING_WI=0 ;; esac
+fi
+
+if [ "$EXISTING_WI" -gt 0 ]; then
+  log "registry 이미 v3 — work-item ${EXISTING_WI}개 보유. STATE 본문 재파싱 생략 (registry 무손상)."
+
+  if grep -qF "<!-- nova:registry-rendered:start -->" "$STATE_FILE"; then
+    # registry + marker 모두 존재 = 완전한 v3. 변환할 것 없음.
+    if [ "$APPLY" = "1" ]; then
+      NOVA_REGISTRY_ROOT="$PROJECT_ROOT" bash "$SCRIPT_DIR/registry-render-state.sh" \
+        --state-file="$STATE_FILE" > /dev/null 2>&1 || true
+      log "✅ 이미 완전한 v3 (registry ${EXISTING_WI} WI + marker) — render 갱신만 수행, 변환 없음"
+    else
+      log "DRY-RUN: 이미 완전한 v3 — 변환 불필요 (--apply 해도 registry·work-item 변경 없음)"
+    fi
+    exit 0
+  fi
+
+  # hybrid: registry 는 v3 완비, NOVA-STATE.md 에 marker 만 부재 → marker 삽입만.
+  if [ "$APPLY" != "1" ]; then
+    log "DRY-RUN: registry 는 v3 완비 — NOVA-STATE.md 에 v3 marker 만 삽입 예정."
+    log "  registry work-item ${EXISTING_WI}개는 그대로 보존 (재생성·강등·append 없음)."
+    log "  실제 적용: bash scripts/migrate-state-v3.sh --apply"
+    exit 0
+  fi
+
+  [ -f "$BACKUP_FILE" ] || { cp "$STATE_FILE" "$BACKUP_FILE"; log "백업 생성: $(basename "$BACKUP_FILE")"; }
+  NOVA_REGISTRY_ROOT="$PROJECT_ROOT" bash "$SCRIPT_DIR/registry-render-state.sh" \
+    --state-file="$STATE_FILE" --force > /dev/null 2>&1 || true
+  if grep -qF "<!-- nova:registry-rendered:start -->" "$STATE_FILE"; then
+    log "✅ STATE 포맷 v3 정합화 완료 — v3 marker 삽입 + render (registry ${EXISTING_WI} WI 무손상)"
+    exit 0
+  fi
+  err "marker 삽입 실패 — registry-render-state.sh 출력 수동 확인 필요"
+  exit 2
 fi
 
 # ── python 파서: v2 STATE → work-item JSON 배열 + 보존율 ──

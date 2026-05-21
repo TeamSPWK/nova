@@ -3699,6 +3699,28 @@ assert "3-A: migrate-state-v3.sh — 백업 (.v2.bak) + marker 자동 추가" \
   "grep -q 'v2.bak' '$ROOT_DIR/scripts/migrate-state-v3.sh' && \
    grep -q 'nova:registry-rendered:start' '$ROOT_DIR/scripts/migrate-state-v3.sh'"
 
+# 3-B (회귀): 이미 v3 registry 보유 시 본문 재파싱 생략 — registry 오염 차단 (idempotency 가드)
+assert "3-B: migrate-state-v3.sh — populated v3 registry 에 --apply 시 work-item 재생성·오염 없음" \
+  "TMPD=\$(mktemp -d); S=0; \
+   mkdir -p \"\$TMPD/.nova/work-items\"; \
+   printf '%s' '{\"schema_version\":\"3.0\",\"next_seq\":2,\"work_items\":[{\"id\":\"WI-0001-x\",\"status\":\"done\",\"review_required\":false,\"priority\":\"medium\",\"updated_at\":\"2026-01-01T00:00:00Z\"}]}' > \"\$TMPD/.nova/work-items/index.json\"; \
+   printf '%s\n' '---' 'schema_version: 2' '---' '# State' '## Recent Activity' '| 시각 | 작업 | 결과 |' '|---|---|---|' '| 2026-01-01 | WI-X done | done |' > \"\$TMPD/NOVA-STATE.md\"; \
+   NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/migrate-state-v3.sh' --apply --project=\"\$TMPD\" >/dev/null 2>&1; \
+   [ \"\$(jq '.work_items | length' \"\$TMPD/.nova/work-items/index.json\")\" = '1' ] || S=1; \
+   ls \"\$TMPD/.nova/work-items/\"WI-*.json >/dev/null 2>&1 && S=1; \
+   grep -qF 'nova:registry-rendered:start' \"\$TMPD/NOVA-STATE.md\" || S=1; \
+   rm -rf \"\$TMPD\"; [ \"\$S\" -eq 0 ]"
+
+assert "3-B: migrate-state-v3.sh — populated v3 registry 에 --dry-run 시 변환 0건 보고" \
+  "TMPD=\$(mktemp -d); S=0; \
+   mkdir -p \"\$TMPD/.nova/work-items\"; \
+   printf '%s' '{\"schema_version\":\"3.0\",\"next_seq\":2,\"work_items\":[{\"id\":\"WI-0001-x\",\"status\":\"done\",\"review_required\":false,\"priority\":\"medium\",\"updated_at\":\"2026-01-01T00:00:00Z\"}]}' > \"\$TMPD/.nova/work-items/index.json\"; \
+   printf '%s\n' '---' 'schema_version: 2' '---' '# State' '## Recent Activity' '| 시각 | 작업 | 결과 |' '|---|---|---|' '| 2026-01-01 | WI-X done | done |' > \"\$TMPD/NOVA-STATE.md\"; \
+   _OUT=\$(NOVA_PLUGIN_PATH='$ROOT_DIR' bash '$ROOT_DIR/scripts/migrate-state-v3.sh' --dry-run --project=\"\$TMPD\" 2>&1); \
+   echo \"\$_OUT\" | grep -q 'registry 이미 v3' || S=1; \
+   echo \"\$_OUT\" | grep -q '변환 대상 work-item' && S=1; \
+   rm -rf \"\$TMPD\"; [ \"\$S\" -eq 0 ]"
+
 # Sprint 4: registry-drift-check.sh
 assert "4-A: scripts/registry-drift-check.sh 존재 + 실행 가능" \
   "[ -x '$ROOT_DIR/scripts/registry-drift-check.sh' ]"
