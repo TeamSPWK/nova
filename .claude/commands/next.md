@@ -166,7 +166,7 @@ RECONCILE_JSON=$(bash "$NOVA_PLUGIN_ROOT/scripts/reconcile-state.sh" --jsonl 2>/
 - 실패/타임아웃 시 `RECONCILE_JSON` 이 비어있음 → **graceful skip** (기존 진단 그대로 계속).
 - 성공 시: `⚠️ suspect_explicit`, `⚠️ suspect_fuzzy`, `❓ untracked` 항목을 추출한다.
   - 해당 WI ID 또는 prose 텍스트를 "다음 작업" 추천 후보에서 **제외하거나 ⚠️ 플래그**를 붙인다.
-  - 사용자에게 "STATE 드리프트 N건 — `bash scripts/reconcile-state.sh` 권장" 1줄 표시.
+  - 사용자에게 "STATE 드리프트 N건 — `/nova:checkpoint` 권장" 1줄 표시.
 
 **신뢰도 순위** (다음 작업 추천 우선순위): `git log > registry > prose`.
 - registry status가 `done`이고 evidence_sha reachable → 해당 WI는 완료로 처리, 추천 제외.

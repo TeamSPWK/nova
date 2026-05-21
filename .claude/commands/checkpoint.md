@@ -19,9 +19,14 @@ description_en: "Before ending a session, checks STATE drift and honestly report
 
 ## Step 1: reconcile-state.sh 실행
 
+Nova는 플러그인이므로 `reconcile-state.sh`는 **사용자 프로젝트가 아닌 플러그인 경로**에 있다.
+`$NOVA_PLUGIN_ROOT` 절대경로로 호출한다 (cwd는 사용자 프로젝트 유지 — STATE는 cwd 기준 탐색):
+
 ```bash
-bash scripts/reconcile-state.sh
+bash "$NOVA_PLUGIN_ROOT/scripts/reconcile-state.sh"
 ```
+
+(`$NOVA_PLUGIN_ROOT`는 Nova SessionStart hook이 자동 export. 없으면 `~/.claude/plugins/cache/nova-marketplace/nova/*/` 중 최신 버전.)
 
 실행이 실패하거나 exit 2(엔진 오류)가 반환되면:
 - "reconcile 엔진 오류 — 수동 점검 필요" 안내
@@ -59,7 +64,7 @@ suspect_explicit 항목이 있으면:
 
 1. 각 항목에 대해 reconcile가 제시한 명령을 사용자에게 보여준다:
    ```
-   bash scripts/registry-write.sh transition {WI_ID} done --evidence-commit={SHA}
+   bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" transition {WI_ID} done --evidence-commit={SHA}
    ```
 
 2. 사용자에게 실행 여부를 확인한다:
@@ -76,7 +81,7 @@ suspect_fuzzy 항목이 있으면 각 항목에 대해 사용자에게 질문한
 
 > "[{WI_ID 또는 prose 텍스트}] — 이 작업 끝났나요? (y/n/모르겠음)"
 
-- **y(완료)**: `bash scripts/registry-write.sh transition {WI_ID} done --evidence-commit=<SHA>` 명령을 제시하고 실행 여부 확인
+- **y(완료)**: `bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" transition {WI_ID} done --evidence-commit=<SHA>` 명령을 제시하고 실행 여부 확인
 - **n(진행 중)**: 기록만, 자동 전이 없음
 - **모르겠음**: 기록만, 사용자 판단으로 위임
 
@@ -89,7 +94,7 @@ untracked 항목이 있으면:
 다음 선택지를 사용자에게 제시하고 **사용자가 결정**한다 (자동 처리 금지):
 
 > "❓ 추적불가 항목 {N}건 — 아래 중 선택하세요:
-> 1. work-item 등록: `bash scripts/registry-write.sh create --title "..." --priority medium`
+> 1. work-item 등록: `bash "$NOVA_PLUGIN_ROOT/scripts/registry-write.sh" create --title "..." --priority medium`
 > 2. prose에서 상태 키워드 삭제 (완료/무효 항목)
 > 3. 현재 유지 (다음 세션에서 재확인)"
 

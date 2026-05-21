@@ -468,6 +468,12 @@ assert "checkpoint.md: description frontmatter" \
 assert "checkpoint.md: reconcile-state.sh 호출 명시" \
   "grep -q 'reconcile-state.sh' '$CHECKPOINT_FILE'"
 
+# 경로 회귀 가드 — Nova는 플러그인이므로 스크립트는 cwd가 아닌 $NOVA_PLUGIN_ROOT 경로에 있다.
+# 'bash scripts/...' 상대경로는 사용자 프로젝트에서 exit 127 실패 (v5.47.0~5.47.2 checkpoint 버그).
+assert "checkpoint.md: 스크립트 호출이 \$NOVA_PLUGIN_ROOT 절대경로 (상대경로 'bash scripts/' 금지)" \
+  "grep -q 'NOVA_PLUGIN_ROOT/scripts/reconcile-state.sh' '$CHECKPOINT_FILE' && \
+   ! grep -qE 'bash scripts/(reconcile-state|registry-write)' '$CHECKPOINT_FILE'"
+
 assert "checkpoint.md: ❓ 추적불가 별도 블록 원칙" \
   "grep -q '검증 불가' '$CHECKPOINT_FILE'"
 
