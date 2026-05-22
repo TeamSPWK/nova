@@ -3634,6 +3634,17 @@ assert "2-B: render-state — marker 영역 + priority 정렬 + Active Tree/Rece
   "grep -q 'nova:registry-rendered:start' '$ROOT_DIR/scripts/registry-render-state.sh' && \
    grep -q 'Active Tree' '$ROOT_DIR/scripts/registry-render-state.sh' && \
    grep -q 'Recent Activity' '$ROOT_DIR/scripts/registry-render-state.sh'"
+# 2-B 회귀: 콘텐츠 무변경 시 재렌더 멱등 — 갱신 타임스탬프가 벽시계라 diff를 유발하던 버그 차단
+assert "2-B: render-state — 콘텐츠 무변경 시 재렌더 '변경 없음' (갱신 타임스탬프 diff 노이즈 차단)" \
+  "TMPD=\$(mktemp -d); S=0; \
+   mkdir -p \"\$TMPD/.nova/work-items\"; \
+   touch \"\$TMPD/.nova/events.jsonl\"; \
+   printf '%s' '{\"schema_version\":\"3.0\",\"next_seq\":2,\"generated_at\":\"2026-01-01T00:00:00Z\",\"work_items\":[{\"id\":\"WI-0001-x\",\"status\":\"active\",\"review_required\":false,\"priority\":\"high\",\"updated_at\":\"2026-01-02T00:00:00Z\"}]}' > \"\$TMPD/.nova/work-items/index.json\"; \
+   printf '%s\n' '# State' '<!-- nova:registry-rendered:start -->' '<!-- nova:registry-rendered:end -->' > \"\$TMPD/NOVA-STATE.md\"; \
+   NOVA_REGISTRY_ROOT=\"\$TMPD\" bash '$ROOT_DIR/scripts/registry-render-state.sh' >/dev/null 2>&1; \
+   _OUT=\$(NOVA_REGISTRY_ROOT=\"\$TMPD\" bash '$ROOT_DIR/scripts/registry-render-state.sh' 2>&1); \
+   echo \"\$_OUT\" | grep -q '변경 없음' || S=1; \
+   rm -rf \"\$TMPD\"; [ \"\$S\" -eq 0 ]"
 
 # Sprint 2-C: 8 진입점 매트릭스 (state-call-graph-v3.md §2.1)
 assert "2-C: commands/plan.md — registry-write.sh create 호출 안내" \

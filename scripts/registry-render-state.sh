@@ -145,17 +145,25 @@ render_recent_activity() {
 }
 
 build_rendered_block() {
-  local active recent ts items_count
+  local active recent ts items_count ts_suffix
   active=$(render_active_tree)
   recent=$(render_recent_activity)
-  ts=$(date -u +%FT%TZ)
+  # 갱신 타임스탬프는 registry 콘텐츠에서 파생한다 (work-item 최신 updated_at, 없으면 generated_at).
+  # 렌더 시각(date -u)을 박으면 내용이 byte-identical이어도 매 렌더가 diff를 만들어
+  # 아래 cmp -s 멱등 가드가 영구 무력화된다 (stop-event.sh가 세션마다 호출 → 잦은 변경 노이즈).
+  ts=$(jq -r '
+    ([.work_items[].updated_at] | map(select(. != null)) | sort | last)
+    // .generated_at // empty
+  ' "$INDEX_FILE")
   items_count=$(jq '.work_items | length' "$INDEX_FILE")
+  ts_suffix=""
+  [ -n "$ts" ] && ts_suffix=", 갱신: ${ts}"
   cat <<EOF
 $MARK_BEGIN
 <!-- 자동 생성 영역 — bash scripts/registry-render-state.sh가 갱신. 손편집하지 마세요. -->
 <!-- 손편집 필요 시: NOVA-STATE.md의 marker 바깥 영역에 작성. -->
 
-**Active Tree** (registry: ${items_count} work-items, 갱신: ${ts}):
+**Active Tree** (registry: ${items_count} work-items${ts_suffix}):
 
 ${active}
 
