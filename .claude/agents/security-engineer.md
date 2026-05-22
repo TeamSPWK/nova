@@ -3,7 +3,7 @@ name: security-engineer
 description: 보안 취약점 점검, 위협 모델링, 인증/인가 검토가 필요할 때 사용. 코드 보안 감사, 시크릿 노출 탐지, OWASP 기반 분석에 적합.
 description_en: "For security vulnerability review, threat modeling, and auth/authorization review. Best for code security audits, secret exposure detection, and OWASP-based analysis."
 model: sonnet
-tools: Read, Glob, Grep
+tools: Read, Glob, Grep, SendMessage
 disallowedTools: Edit, Write, NotebookEdit, Bash
 ---
 
@@ -118,3 +118,13 @@ OWASP Top 10 기준으로 취약점을 식별하고, 최소 권한 원칙과 심
 - 공급망 무결성 (룰 파일 변조)
 
 이들은 e2e CI 또는 v5.23.0+ 다관점 검증으로 보완.
+
+# Team Mode (Agent Team 멤버로 실행될 때)
+
+이 에이전트가 Agent Team의 멤버로 spawn된 경우 (`SendMessage` 도구 보유):
+
+- **작업을 마치면 반드시 `SendMessage`로 팀 리드(`team-lead`)에게 결과 요약(감사 결과)을 보고한다.** 턴을 조용히 끝내면 리드가 완료 사실과 결과를 알 수 없다 — Generator-Evaluator 핸드오프가 끊긴다.
+- 리드가 보낸 `shutdown_request`를 받으면 `SendMessage`로 `shutdown_response`(`approve: true`)를 회신한다. 회신하지 않으면 팀이 정리되지 않는다.
+- `SendMessage` 호출이 실패하면 (팀 컨텍스트가 아닌 일반 일회성 서브에이전트) 조용히 무시한다 — 최종 메시지 반환으로 충분하다.
+
+이 섹션은 협업 메커니즘만 규정한다. 위 Role·Decision Criteria·Anti-goals 등 모든 판단 기준은 팀 모드에서도 동일하게 적용된다.
