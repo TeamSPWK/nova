@@ -36,7 +36,8 @@
         "Glob",
         "Grep",
         "Agent",
-        "WebSearch"
+        "WebSearch",
+        "SendMessage"
       ],
       "devops-engineer": [
         "Read",
@@ -44,18 +45,21 @@
         "Grep",
         "Edit",
         "Write",
-        "Bash"
+        "Bash",
+        "SendMessage"
       ],
       "qa-engineer": [
         "Read",
         "Glob",
         "Grep",
-        "Bash"
+        "Bash",
+        "SendMessage"
       ],
       "security-engineer": [
         "Read",
         "Glob",
-        "Grep"
+        "Grep",
+        "SendMessage"
       ],
       "senior-dev": [
         "Read",
@@ -64,12 +68,14 @@
         "Edit",
         "Write",
         "Bash",
-        "Agent"
+        "Agent",
+        "SendMessage"
       ],
       "refiner": [
         "Read",
         "Glob",
-        "Grep"
+        "Grep",
+        "SendMessage"
       ]
     },
     "deferred_allow": [
