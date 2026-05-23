@@ -391,6 +391,17 @@ for _profile in standard strict; do
   assert "session-start.sh ($_profile): §15 Memory 라우팅 룰 노출 (개인 memory 금지)" \
     "NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q 'Memory 라우팅'"
 done
+
+# v5.47.8 §2 teammate shutdown 의무 동기화 가드 — standard/strict 노출 의무
+# (nova-rules.md §2 추가 후 session-start additionalContext에 누락되는 갭 차단)
+for _profile in standard strict; do
+  assert "session-start.sh ($_profile): §2 teammate shutdown_request 의무 노출 (v5.47.8+)" \
+    "NOVA_PROFILE=$_profile bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q 'shutdown_request'"
+done
+assert "docs/nova-rules.md: §2 팀원 종료 의무 (idle ≠ 종료) 명시" \
+  "grep -q '팀원 종료 의무' '$ROOT_DIR/docs/nova-rules.md'"
+assert "docs/nova-rules.md: §2 SendMessage shutdown_request 패턴 명시" \
+  "grep -q 'shutdown_request' '$ROOT_DIR/docs/nova-rules.md'"
 assert "docs/nova-rules.md: §15 Memory Routing 섹션 존재" \
   "grep -q '## §15. Memory Routing' '$ROOT_DIR/docs/nova-rules.md'"
 assert "skills/claude-md: Memory ↔ Canonical 진단 + 보존 가드 명시" \
@@ -1667,6 +1678,21 @@ assert "Sprint 2a: permissions-template.json — defaultMode=ask" \
 # S2a.2: audit 실행 exit 0 (기본 상태)
 assert "S2a.2: audit-agent-tools.sh exit 0 (5/5 일치)" \
   "bash '$ROOT_DIR/scripts/audit-agent-tools.sh' > /dev/null 2>&1"
+
+# v5.47.8 P-2 메타 회귀 가드 — frontmatter 중복 선언 가드 자체의 회귀 차단
+# (audit-agent-tools.sh의 uniq -d 가드를 누가 실수로 제거해도 자동 FAIL)
+assert "v5.47.8: audit-agent-tools.sh — frontmatter 중복 선언 가드 (uniq -d) 보존" \
+  "grep -qE 'uniq -d' '$ROOT_DIR/scripts/audit-agent-tools.sh'"
+assert "v5.47.8: audit-agent-tools.sh — 중복 선언 FAIL 메시지 보존" \
+  "grep -qE '중복 선언' '$ROOT_DIR/scripts/audit-agent-tools.sh'"
+# Positive: fixture로 중복 frontmatter를 만들면 audit이 exit 1 (가드 실제 동작)
+assert "v5.47.8: audit-agent-tools.sh — 중복 fixture → exit 1 (가드 실효성)" \
+  "TMPD=\$(mktemp -d); mkdir -p \"\$TMPD/.claude/agents\" \"\$TMPD/.claude-plugin\"; \
+   cp '$ROOT_DIR/.claude-plugin/plugin.json' \"\$TMPD/.claude-plugin/plugin.json\"; \
+   printf -- '---\nname: dup-test\ndescription: dup\nmodel: sonnet\ntools: Read, Edit, Read\n---\n' > \"\$TMPD/.claude/agents/dup-test.md\"; \
+   ln -s '$ROOT_DIR/scripts' \"\$TMPD/scripts\"; \
+   bash \"\$TMPD/scripts/audit-agent-tools.sh\" > /dev/null 2>&1; RC=\$?; \
+   rm -rf \"\$TMPD\"; [ \"\$RC\" -ne 0 ]"
 
 # S2a.4: fixture 1 — 빈 settings 병합 (path traversal 방어 우회: --allow-outside)
 assert "S2a.4: setup-permissions fixture 1(빈) → Nova deny 10+ 주입" \
