@@ -155,7 +155,7 @@ fi
 
 # lean: §1~§3만, antipatterns 생략, pre-edit CPS 경고 스킵
 if [ "$NOVA_PROFILE" = "lean" ]; then
-  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md · /nova:migrate-state · /nova:checkpoint\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md는 본문 스냅샷만 손편집 — 시계열은 events.jsonl 자동(v5.44.0+).\n3. UI 변경 시 G1+G3 시각 게이트 발화 (lean도 적용 — §14)."
+  ADDITIONAL_CONTEXT="# Nova Engineering (lean)\n\nNova lean 모드 — 핵심 규칙만 적용. antipatterns 체크 스킵. pre-edit CPS 경고 스킵.\n\n## 규칙 (lean 핵심)\n\n1. **복잡도**: 간단(1~2)→바로. 보통(3~7)→Plan. 복잡(8+)→Plan→Design→스프린트. 자가 완화 금지.\n2. **검증 + 하드 게이트**: 검증은 독립 서브에이전트. 커밋 전 Evaluator PASS 필수. PASS 없이 커밋 시 exit 2 차단.\n3. **실행 검증**: 코드 존재 ≠ 동작. 빌드+테스트+curl.\n\n## Nova 커맨드\n\n/nova:plan · /nova:deepplan · /nova:design · /nova:review · /nova:check · /nova:audit-self · /nova:ask · /nova:run · /nova:setup · /nova:next · /nova:status · /nova:scan · /nova:auto · /nova:ux-audit · /nova:worktree-setup · /nova:claude-md · /nova:migrate-state · /nova:checkpoint\n\n## Always-On (MUST)\n\n1. 커밋 전 /nova:review --fast.\n2. NOVA-STATE.md는 본문 스냅샷만 손편집 — 시계열은 events.jsonl 자동(v5.44.0+).\n3. UI 변경 시 G1+G3 시각 게이트 발화 (lean도 적용 — §14).\n4. 팀 spawn → teammate shutdown_request 의무 (idle≠종료, §2)."
 
 # strict: standard + antipatterns 요약 추가
 elif [ "$NOVA_PROFILE" = "strict" ]; then
@@ -250,6 +250,17 @@ if [ -f "$_nova_reconcile_bin" ] && [ "$NOVA_PROFILE" != "lean" ]; then
 fi
 if [ -n "$_DRIFT_ADVISORY" ]; then
   ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}${_DRIFT_ADVISORY}"
+fi
+
+# ── 미정리 teammate 팀 감지 (B7 antipattern, v5.47.9+) ──
+# leader shutdown_request 누락으로 좀비 디렉토리가 누적되면 1줄 advisory.
+# audit-teammates.sh와 동일 로직 — 경량(find만) + safe-default skip.
+_ORPHAN_TEAMS_DIR="${NOVA_TEAMS_DIR:-$HOME/.claude/teams}"
+if [ -d "$_ORPHAN_TEAMS_DIR" ]; then
+  _ORPHAN_COUNT=$(find "$_ORPHAN_TEAMS_DIR" -mindepth 2 -maxdepth 2 -name config.json 2>/dev/null | wc -l | tr -d ' ')
+  if [ -n "$_ORPHAN_COUNT" ] && [ "$_ORPHAN_COUNT" -ge 1 ] 2>/dev/null; then
+    ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT}\n\n⚠️ 이전 세션 미정리 teammate 팀 ${_ORPHAN_COUNT}개 — \`ls ~/.claude/teams/\` 확인 후 TeamDelete 또는 rm 으로 정리 (§2 · B7)"
+  fi
 fi
 
 cat << NOVA_EOF

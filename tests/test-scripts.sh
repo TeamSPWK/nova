@@ -868,7 +868,10 @@ assert "session-start.sh: '자가 완화 금지' 조항" \
 #    - soft target 2400 bytes: 부채 인정 (v5.22.1 MCP 알림 1993 → v5.31.0 §15 Memory routing 2152 → v5.33 /nova:status 2315 정착)
 #      메모리 feedback_session_start_lightweight 기준으로는 1200/2500 양극단이 정합.
 #      1900은 옛 회귀 가드로 SoT 아님 — 후속 트림 작업 시 다시 1200대로 복귀 권장.
-SESSION_SIZE=$(bash "$ROOT_DIR/hooks/session-start.sh" | wc -c | tr -d ' ')
+#    측정은 격리된 환경(NOVA_TEAMS_DIR=빈 디렉토리)에서 수행 — 좀비 inject 노이즈 제거 (v5.47.9+ B7).
+_NOVA_SIZE_TMPDIR=$(mktemp -d /tmp/nova-size-XXXX)
+SESSION_SIZE=$(NOVA_TEAMS_DIR="$_NOVA_SIZE_TMPDIR" bash "$ROOT_DIR/hooks/session-start.sh" | wc -c | tr -d ' ')
+rm -rf "$_NOVA_SIZE_TMPDIR"
 assert "session-start 출력 크기 hard limit 2500 bytes 이하 ($SESSION_SIZE)" \
   "[ $SESSION_SIZE -le 2500 ]"
 assert "session-start 출력 크기 soft target 2400 bytes 이하 ($SESSION_SIZE)" \
@@ -1597,7 +1600,7 @@ assert "Sprint 1: next.md — nova-metrics.sh KPI 요약 포함" \
 
 # session-start.sh 크기 여전히 soft 2400 이하 (회귀, 부채 인정)
 assert "Sprint 1 회귀: session-start 출력 여전히 soft 2400 bytes 이하" \
-  "[ \$(bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' ') -le 2400 ]"
+  "TMPD=\$(mktemp -d /tmp/nova-sz-XXXX); SZ=\$(NOVA_TEAMS_DIR=\"\$TMPD\" bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' '); rm -rf \"\$TMPD\"; [ \$SZ -le 2400 ]"
 
 # S1.6: Rotation 트리거 (MAX_SIZE=512, 10 events → 2+ 파일 + rotation_marker 첫 라인)
 assert "S1.6: rotation MAX_SIZE=512 + 10 events → 2+ 파일 + rotation_marker" \
@@ -1791,7 +1794,7 @@ assert "Sprint 2a: U2 해소 docs/unknowns-resolution.md 기록" \
 
 # session-start 크기 회귀
 assert "Sprint 2a 회귀: session-start 여전히 soft 2400 이하" \
-  "[ \$(bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' ') -le 2400 ]"
+  "TMPD=\$(mktemp -d /tmp/nova-sz-XXXX); SZ=\$(NOVA_TEAMS_DIR=\"\$TMPD\" bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' '); rm -rf \"\$TMPD\"; [ \$SZ -le 2400 ]"
 
 echo ""
 
@@ -1949,7 +1952,7 @@ assert "S2b: evaluator/SKILL.md — HIGH_RISK/BYPASS/SCHEMA_ERRORS jq 쿼리 3�
 
 # session-start 크기 회귀
 assert "Sprint 2b 회귀: session-start 여전히 soft 2400 이하" \
-  "[ \$(bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' ') -le 2400 ]"
+  "TMPD=\$(mktemp -d /tmp/nova-sz-XXXX); SZ=\$(NOVA_TEAMS_DIR=\"\$TMPD\" bash '$ROOT_DIR/hooks/session-start.sh' | wc -c | tr -d ' '); rm -rf \"\$TMPD\"; [ \$SZ -le 2400 ]"
 
 echo ""
 
@@ -4089,6 +4092,35 @@ assert "S2-C12: 가이드에 evidence-commit 전이 명령 명시" \
 # (e) state_reconciled 이벤트 타입 문서화 (record-event.sh 주석)
 assert "S2-C13: record-event.sh 주석에 state_reconciled 이벤트 타입 명시" \
   "grep -q 'state_reconciled' '$ROOT_DIR/hooks/record-event.sh'"
+
+# (f) WI-0014 — audit-teammates.sh: B7 antipattern 가드 (v5.47.9+)
+assert "WI-0014-T1: audit-teammates.sh 존재 + executable" \
+  "[ -x '$ROOT_DIR/hooks/audit-teammates.sh' ]"
+
+assert "WI-0014-T2: audit-teammates.sh — clean state (빈 디렉토리) → silent exit 0" \
+  "TMPD=\$(mktemp -d /tmp/nova-t14-clean-XXXXXX); \
+   OUT=\$(NOVA_TEAMS_DIR=\"\$TMPD\" NOVA_DISABLE_EVENTS= bash '$ROOT_DIR/hooks/audit-teammates.sh' 2>&1); \
+   STATUS=\$?; rm -rf \"\$TMPD\"; [ \$STATUS -eq 0 ] && [ -z \"\$OUT\" ]"
+
+assert "WI-0014-T3: audit-teammates.sh — orphan 시뮬 → WARN 발화" \
+  "TMPD=\$(mktemp -d /tmp/nova-t14-orphan-XXXXXX); \
+   mkdir -p \"\$TMPD/zombie-team\"; \
+   echo '{\"team_name\":\"zombie-team\"}' > \"\$TMPD/zombie-team/config.json\"; \
+   OUT=\$(NOVA_TEAMS_DIR=\"\$TMPD\" NOVA_DISABLE_EVENTS=1 bash '$ROOT_DIR/hooks/audit-teammates.sh' 2>&1); \
+   STATUS=\$?; rm -rf \"\$TMPD\"; \
+   [ \$STATUS -eq 0 ] && echo \"\$OUT\" | grep -q '미정리 teammate'"
+
+assert "WI-0014-T4: session-start.sh lean profile 에 shutdown_request 키워드 존재" \
+  "grep -F 'shutdown_request 의무' '$ROOT_DIR/hooks/session-start.sh' | head -1 | grep -q '.'"
+
+assert "WI-0014-T5: stop-event.sh 가 audit-teammates.sh 호출" \
+  "grep -q 'audit-teammates.sh' '$ROOT_DIR/hooks/stop-event.sh'"
+
+assert "WI-0014-T6: docs/nova-antipatterns.md 에 B7 항목 + 제목 존재" \
+  "grep -q '^### B7' '$ROOT_DIR/docs/nova-antipatterns.md' && grep -qF '팀 spawn 후 shutdown 누락' '$ROOT_DIR/docs/nova-antipatterns.md'"
+
+assert "WI-0014-T7: docs/nova-rules.md §2 인용 블록에 audit-teammates.sh 참조 추가" \
+  "grep -qF 'audit-teammates.sh' '$ROOT_DIR/docs/nova-rules.md'"
 
 echo ""
 

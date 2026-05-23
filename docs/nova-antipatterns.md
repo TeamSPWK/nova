@@ -83,6 +83,12 @@ NOVA_PROFILE=lean 상황(hotfix, 긴급 대응)에서도 전체 규칙 체크를
 
 **차단 규칙**: `NOVA_PROFILE=lean`은 §1~§3만 적용, antipatterns 체크 스킵. `--emergency` 플래그는 lean의 별칭. `hooks/session-start.sh` 프로파일 분기. `docs/nova-rules.md §12`
 
+### B7. "팀 spawn 후 shutdown 누락"
+
+`TeamCreate` / `Agent({team_name, name})` 로 teammate 를 spawn 한 leader 가 작업 완료 보고를 받고도 `SendMessage({type:"shutdown_request"})` 발송을 잊는다. `~/.claude/teams/<team>/config.json` 이 다음 세션까지 잔존하며 tmux pane·디스크를 점유. Claude Code 의 `idle_notification` 을 "종료 신호" 로 오해하는 데서 비롯.
+
+**차단 규칙**: 모든 teammate 의 완료 보고를 받았다면 **같은 turn 안에** `SendMessage({to: name, message: {type: "shutdown_request"}})` 발송 → `shutdown_approved` 응답 확인 → `TeamDelete` 호출. `hooks/audit-teammates.sh` 가 Stop·SessionStart 시 좀비 카운트를 stderr WARN. `docs/nova-rules.md §2` · `skills/orchestrator/SKILL.md Phase 7` · `commands/evolve.md Phase 1`
+
 ---
 
 ## 사용 안내

@@ -33,6 +33,9 @@ bash "${BASH_SOURCE%/*}/record-event.sh" session_end "$EXTRA" 2>/dev/null || tru
 # stderr 리다이렉션 제거 — audit 경고가 사용자에게 전달되도록 함
 bash "${BASH_SOURCE%/*}/audit-orchestration.sh" || true
 
+# 미정리 teammate 팀 감사 (B7 antipattern — leader shutdown_request 누락 감지, v5.47.9+)
+bash "${BASH_SOURCE%/*}/audit-teammates.sh" || true
+
 # ── v3 marker 자동 렌더 (v5.44.0+) ──
 # NOVA-STATE.md에 v3 marker가 있으면 registry-render-state.sh가 marker 영역을 자동 갱신.
 # marker 부재(v2/v1 STATE)는 silent skip — 사용자 변경 없음. 실패해도 hook은 exit 0.
