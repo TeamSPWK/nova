@@ -281,6 +281,16 @@ Phase 3 이후는 실행하지 않는다.
 3개의 전문화된 에이전트가 1개의 범용 에이전트보다 일관되게 더 나은 결과를 낸다.
 에이전트 편성 시 역할별 전문 에이전트(architect, senior-dev, qa-engineer)를 투입한다.
 
+#### 중간 진행 점검 (mid-workflow check-in)
+
+병렬 sub-agent 실행 시 lead는 다음 시점에 진행 점검 `SendMessage`를 **1회** 권장한다 (Anthropic Managed Agents — Multiagent Orchestration 2026-05-06 패턴 흡수):
+
+- **진행률 50% 시점**: 총 N개 sub-agent 중 N/2가 idle/완료 보고를 보낸 시점.
+- **5분 이상 침묵**: 단일 sub-agent가 5분 이상 idle notification 없이 응답이 없을 때.
+- **의존성 변동**: 다른 에이전트의 산출물이 선행 가정과 다를 때 (예: 공유 스키마 변경).
+
+너무 잦은 점검은 sub-agent의 작업 흐름을 방해하므로 위 3 조건 외에는 발송하지 않는다. 점검 메시지는 짧게: "현재 진행 단계와 막힌 부분이 있다면 한 줄로 보고하라"로 충분. 점검 후 응답이 없으면 lead가 hang 가능성을 평가해 작업 분할 또는 회수를 결정한다. (참조: https://claude.com/blog/new-in-claude-managed-agents)
+
 ### 구조화된 핸드오프 프로토콜
 
 에이전트 간 전달 시 구조화된 아티팩트를 사용하여 컨텍스트 손실을 방지한다. (Anthropic 3-Agent Harness 패턴 적용)
@@ -553,6 +563,8 @@ Fix 에이전트에 반드시 포함할 컨텍스트:
 ```
 
 **에이전트 상태 추적**: Claude Code의 `TeammateIdle`/`TaskCompleted` 훅 이벤트가 가용하면, 에이전트 완료를 자동 감지하여 다음 의존 태스크를 트리거한다. 가용하지 않으면 폴링으로 대기한다.
+
+**CRITICAL: 팀원 종료 의무 (idle ≠ shutdown).** TeamCreate 또는 Agent(team_name=...)로 teammate를 spawn 했다면, Phase 7 결과 보고 직후 lead가 **각 teammate에게 명시적으로 `SendMessage({type:"shutdown_request"})` 발송**한다. teammate의 idle notification은 종료 신호가 **아니며**, lead가 shutdown_request를 보내고 teammate가 approve할 때까지 process가 살아 있어 tmux pane·세션 비용을 점유한다. 발송 직후 다음 단계로 진행하고 자동 idle/shutdown_response 알림으로 종료를 확인한다. 모든 teammate가 shutdown 응답한 뒤 필요 시 `TeamDelete`로 팀 디렉토리를 정리한다. (참조: MEMORY `feedback_shutdown_idle_agents.md`. v5.47.x 자기-발견 갭 — orchestrator/evolution skill에 본 의무 부재로 4 스캐너가 idle 점유한 사례)
 
 **CRITICAL: 결과 보고 직후, 반드시 NOVA-STATE.md를 갱신한다. 이 단계를 건너뛰지 마라.**
 

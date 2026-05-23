@@ -54,8 +54,19 @@ for agent_file in "$AGENTS_DIR"/*.md; do
     continue
   fi
 
+  # v5.47.7 P-2: frontmatter tools에 동일 항목 중복 선언 금지
+  # (CC v2.1.146 이하 multi-Agent frontmatter 드롭 버그 대비 — 마지막 항목만 남고 나머지 사라짐.
+  #  v2.1.147에서 수정됐지만 하위 사용자 보호를 위해 audit 게이트에서 사전 차단.)
+  fm_raw=$(printf '%s' "$fm_tools" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$')
+  fm_dup=$(printf '%s\n' "$fm_raw" | sort | uniq -d)
+  if [[ -n "$fm_dup" ]]; then
+    echo "[nova:audit] FAIL: ${agent_name} — frontmatter tools 중복 선언 (CC v2.1.146 이하 드롭 버그 위험): $(printf '%s' "$fm_dup" | tr '\n' ',' | sed 's/,$//')" >&2
+    FAIL=$((FAIL + 1))
+    continue
+  fi
+
   # 쉼표 split + trim + sort + dedup
-  fm_set=$(printf '%s' "$fm_tools" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | sort -u)
+  fm_set=$(printf '%s\n' "$fm_raw" | sort -u)
 
   # plugin.json에서 per_agent 가져오기
   pj_tools=$(jq -r --arg a "$agent_name" '.tool_contract.per_agent[$a] // empty | .[]' "$MANIFEST" 2>/dev/null)

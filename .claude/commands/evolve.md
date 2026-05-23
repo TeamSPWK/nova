@@ -57,6 +57,10 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
   - 외부 소스 다양성: {OK / ⚠ Limited scan}
 ```
 
+### 팀 에이전트 모드의 종료 의무 (필수)
+
+`TeamCreate` 또는 `Agent({team_name: ..., name: ...})`로 스캐너를 병렬 spawn 했다면, **모든 스캐너 보고 수신 직후** lead가 각 스캐너에게 `SendMessage({to: <scanner_name>, message: {type: "shutdown_request", reason: "<scan 완료 사유>"}})`를 발송한다. 스캐너의 idle notification은 종료 신호가 **아니다** — lead가 명시적으로 shutdown_request를 보내고 teammate가 approve할 때까지 process는 살아 있어 tmux pane·세션 비용을 점유한다. 4 스캐너 모두 shutdown 응답 확인 후 필요 시 `TeamDelete`로 팀 디렉토리를 정리한다. (참조: MEMORY `feedback_shutdown_idle_agents.md`, skills/orchestrator/SKILL.md Phase 7 종료 의무 절)
+
 ## Phase 2: Relevance Filter (관련성 필터)
 
 발견한 항목을 Nova 관점에서 필터링한다:
