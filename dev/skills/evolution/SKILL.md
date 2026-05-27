@@ -18,13 +18,21 @@ Scanner → Filter → Proposal → [Builder → Gate Chain → Merge]
 
 ## Scanner 소스 상세
 
-### Anthropic 공식 (최고 우선순위)
+Scanner는 **WebSearch + GitHub Search API (`gh api`)** 두 채널을 병렬 사용한다. `gh api`는 star/topic 같은 정량 시그널을 수집하고, WebSearch는 changelog/블로그 같은 서술 정보를 수집한다.
 
-검색 키워드:
+### Anthropic 공식 (최고 우선순위, 임계값 면제)
+
+WebSearch 키워드:
 - `site:docs.anthropic.com Claude Code`
 - `site:anthropic.com/blog`
 - `Claude Code changelog latest`
 - `Claude Code hooks MCP update`
+
+`gh api` 쿼리:
+```bash
+gh api 'search/repositories?q=org:anthropics+claude-code&sort=updated&per_page=10'
+gh api 'search/repositories?q=org:anthropics+language:TypeScript&sort=updated&per_page=10'
+```
 
 체크 포인트:
 - Claude Code 새 버전/기능
@@ -35,10 +43,18 @@ Scanner → Filter → Proposal → [Builder → Gate Chain → Merge]
 
 ### Claude Code 생태계
 
-검색 키워드:
+WebSearch 키워드:
 - `Claude Code plugin community`
 - `CLAUDE.md best practices 2026`
 - `Claude Code custom agents`
+
+`gh api` 쿼리:
+```bash
+gh api 'search/repositories?q=claude+code+skills+in:name,description&sort=stars&per_page=10'
+gh api 'search/repositories?q=topic:claude-code&sort=stars&per_page=10'
+gh api 'search/repositories?q=awesome-claude-code&sort=stars&per_page=10'
+gh api 'search/repositories?q=claude+code+mcp+in:name,description&sort=stars&per_page=10'
+```
 
 체크 포인트:
 - 인기 있는 플러그인 패턴
@@ -47,20 +63,68 @@ Scanner → Filter → Proposal → [Builder → Gate Chain → Merge]
 
 ### 하네스 도구 (오픈소스)
 
-검색 키워드:
+WebSearch 키워드:
 - `aider changelog latest`
 - `cursor rules update`
 - `AI coding assistant comparison 2026`
 - `LLM harness engineering`
+
+`gh api` 쿼리 (2개 — 다양성 의무 충족 후 노이즈 회피):
+```bash
+gh api 'search/repositories?q=aider-chat+in:name,description&sort=stars&per_page=10'
+gh api 'search/repositories?q=cursor+rules+in:name,description&sort=stars&per_page=10'
+```
+
+> **총 8개 쿼리** (Anthropic 2 + 생태계 4 + 하네스 2). cline/continue.dev/windsurf는 WebSearch 키워드로 커버. 추가 쿼리 필요 시 `--sources` 옵션으로 확장 가능.
 
 체크 포인트:
 - 다른 도구에서 검증된 패턴
 - Nova에 없는 유용한 기능
 - 품질 게이트 관련 새로운 접근법
 
+### Baseline Fallback
+
+WebSearch와 `gh api` 채널을 다음 기준으로 평가한다:
+
+| 채널 결과 | 분류 |
+|---|---|
+| 정상 응답 + 결과 0건 | 0건 |
+| HTTP 200 + 결과 ≥1건 | 정상 |
+| HTTP 403 (rate-limit) | **실패** |
+| HTTP 5xx / network timeout | **실패** |
+| `gh: command not found` / 미인증 | **실패** |
+| WebSearch 도구 호출 실패 | **실패** |
+
+**Baseline fallback 트리거**: (WebSearch == 실패 OR WebSearch == 0건) **AND** (gh api 8개 쿼리 모두 실패 OR 모두 0건). 이 조건 충족 시 `dev/docs/evolve-baseline.md`에서 `nova_applied=false` 항목을 로드해 Phase 2 입력으로 전달. 보고서 헤더에 `⚠ Baseline fallback — Live scan failed (reason: {WebSearch={상태}, gh_api={실패 N건/0건 N건})` 명시.
+
+부분 실패(WebSearch 정상 + gh api 일부만 실패)는 fallback 트리거 X — 사용 가능한 데이터로 계속 진행하되 Phase 1 출력에 skip 카운트 노출.
+
+Baseline 갱신 책임은 [dev/docs/evolve-baseline.md](../../docs/evolve-baseline.md) 참조.
+
 ## Relevance Filter 상세
 
-### MUST 조건 (하나라도 해당해야 통과)
+Filter는 **3단계 직렬**로 동작한다: ① 신호 강도 임계값 → ② Ledger 매칭(중복 흡수 차단) → ③ MUST/MUST NOT 조건.
+
+### ① 신호 강도 임계값
+
+| 조건 | 통과 기준 |
+|---|---|
+| GitHub 레포 | `stars ≥ 100` **OR** `updated_within_180d` |
+| Anthropic 공식 (`docs.anthropic.com`, `github.com/anthropics/*`, `anthropic.com/blog`) | **임계값 면제** (무조건 통과) |
+| `--min-stars N` 오버라이드 | N>0이면 임계값을 N으로 대체 |
+| `--min-stars 0` | 임계값 비활성화 — **모든 GitHub 레포 통과** (노이즈 폭증 주의, 디버그/탐색용) |
+
+낮은 임계값은 노이즈, 너무 높으면 신생 도구 누락 — 100은 시작점이며 측정 후 조정한다.
+
+### ② Ledger 매칭 (중복 흡수 차단)
+
+각 발견 항목에 대해 `dev/docs/proposals/_ABSORBED.md`를 조회:
+
+1. `source_url` substring 매칭 (status≠deprecated 한정) → **이미 흡수** 표기 후 제안 제외
+2. 미매칭 시 `title/description` 키워드 ↔ `pattern_slug` fuzzy 매칭(단어 단위) → **잠재 중복** 표기. 자동 폐기 X — Phase 3 제안서 항목으로 포함하되 `⚠ ledger 잠재 중복: {pattern_slug}` 주석을 제안서 헤더에 명시. 사용자는 다음 사이클에서 별도 응답할 필요 없으며, 제안서를 읽고 직접 채택/폐기 판단 (수락 시 일반 머지 흐름, 폐기 시 제안서 삭제).
+3. 매칭 없음 → ③ MUST 조건으로 진행
+
+### ③ MUST 조건 (하나라도 해당해야 통과)
 
 1. Nova의 commands/, skills/, agents/, hooks/ 에 직접 영향
 2. Generator-Evaluator 분리 패턴 강화 가능
@@ -120,8 +184,18 @@ Scanner → Filter → Proposal → [Builder → Gate Chain → Merge]
 
 3. **Gate 3 (수준별 분기)**:
    - patch + `--auto`: 커밋 메시지 자동 생성, `git add` + `git commit`
-   - minor + `--auto`: 브랜치 생성 + PR
-   - major: 제안서만 유지
+   - minor + `--auto`: 브랜치 생성 + PR + **`_ABSORBED.md` ledger 행 append**
+   - major: 제안서만 유지 (ledger 영향 없음 — 사용자 결재 후 머지 시 append)
+
+### Ledger Append 규칙
+
+minor 머지 또는 major 사용자 결재 직후:
+```
+| {pattern_slug} | {source_url} | v{current_version} | {nova_artifact_path} | active |
+```
+- `pattern_slug` — kebab-case, 외부 도구 일반명 (예: `aider-repo-map`, `cursor-rules-mdc`)
+- `nova_artifact_path` — 흡수 결과물 경로 (예: `skills/new-skill/SKILL.md`)
+- patch는 ledger 영향 없음 (문서 보정 수준이라 중복 제안 차단 가치 낮음)
 
 
 ## Phase 1: Behavior Learning (옵트인)

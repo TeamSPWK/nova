@@ -17,6 +17,7 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 - `--apply` : 제안서 기반 구현 + 품질 게이트 실행
 - `--auto` : scan + apply + 자율 범위 내 자동 머지
 - `--sources` : 스캔 소스를 지정 (기본: 전체). 예: `--sources anthropic,opensource`
+- `--min-stars N` : GitHub 신호 강도 임계값 오버라이드 (기본: 100). Anthropic 공식은 면제. 0으로 설정하면 임계값 비활성화(노이즈 증가 주의).
 - `--from-observations` : 외부 스캔 대신 사용자 행동 패턴에서 CPS Problem 초안 제안. `scripts/analyze-observations.sh --pattern confidence --threshold 0.7`를 호출해 신뢰도 ≥0.7 패턴을 표시한다. **자동 승격 금지, 사용자 승인 필수 — 본 명령은 분석 결과만 표시, Skill 자동 생성/승격 X.**
 - `--accept <pattern_id>` : `--from-observations` 출력의 8자 hex pattern_id를 채택 기록. `hooks/record-event.sh evolve_decision`을 호출해 `decision="accept"` 이벤트를 `.nova/events.jsonl`에 append. **NOVA-STATE.md 갱신 트리거 X** (9 진입점 동결, Plan 결정 v5.20.0). 다음 분석에서 신뢰도 +0.2 반영.
 - `--reject <pattern_id>` : 동일 인터페이스로 거부 기록. `decision="reject"` → 다음 분석에서 신뢰도 -0.3 반영.
@@ -38,24 +39,45 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 
 ### 스캔 절차
 
-1. 각 소스별 최근 변경사항을 WebSearch로 탐색한다
-2. 발견한 항목마다 **출처 URL**을 반드시 기록한다 (환각 방지)
-3. URL이 확인되지 않는 정보는 "미확인"으로 표기하고 제안에서 제외한다
+Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch는 changelog/블로그 같은 서술 정보, `gh api`는 star/topic 같은 정량 시그널을 수집한다.
+
+1. **WebSearch 호출**: 각 소스별 최근 변경사항을 키워드로 탐색 (소스별 키워드는 `skills/evolution/SKILL.md` Scanner 소스 상세 참조)
+2. **`gh api` 호출 (병렬)**: 카테고리별 8개 쿼리를 병렬 실행
+   ```bash
+   # Anthropic 공식
+   gh api 'search/repositories?q=org:anthropics+claude-code&sort=updated&per_page=10'
+   # Claude Code 생태계
+   gh api 'search/repositories?q=claude+code+skills+in:name,description&sort=stars&per_page=10'
+   gh api 'search/repositories?q=topic:claude-code&sort=stars&per_page=10'
+   gh api 'search/repositories?q=awesome-claude-code&sort=stars&per_page=10'
+   gh api 'search/repositories?q=claude+code+mcp+in:name,description&sort=stars&per_page=10'
+   # 하네스 도구
+   gh api 'search/repositories?q=aider-chat+in:name,description&sort=stars&per_page=10'
+   gh api 'search/repositories?q=cursor+rules+in:name,description&sort=stars&per_page=10'
+   gh api 'search/repositories?q=cline+AI+coding+in:name,description&sort=stars&per_page=10'
+   ```
+   각 결과에서 `name/full_name/description/stargazers_count/html_url/topics/updated_at` 컬럼만 추출. rate-limit(403) 시 해당 쿼리만 skip하고 나머지 진행.
+3. 발견한 항목마다 **출처 URL**을 반드시 기록한다 (환각 방지). URL 미확인 항목은 "미확인" 표기 후 제안에서 제외.
 4. **소스 다양성 의무**: Anthropic 공식 외에 최소 **2개 이상의 외부 소스**를 반드시 포함한다.
    외부 소스 후보 (택 2 이상): GitHub awesome-list (예: `VoltAgent/awesome-agent-skills`, `hesreallyhim/awesome-claude-code`),
    외부 코딩 에이전트 공식 가이드 (Cursor / Cline / Aider / Continue.dev / Windsurf 공식 블로그·docs),
    star 상위 보안·품질 skills 컬렉션 (예: `trailofbits/skills`).
 5. **Limited scan 경고**: 외부 소스에서 관련 발견이 0건이면 보고서 헤더에 `⚠ Limited scan — Anthropic-only`를 명시한다.
    self-bias가 의심되는 결과(공식 changelog만 인용)는 사용자에게 신뢰성 저하를 알린다.
+6. **실패 분류**: 각 채널 결과를 다음으로 분류 — `정상`(HTTP 200 + ≥1건) / `0건`(정상 응답 + 0건) / `실패`(HTTP 403/5xx, network timeout, `gh: command not found`, 미인증, WebSearch 호출 실패). 403 단일 쿼리만 실패한 경우 해당 쿼리만 skip하고 나머지 진행.
+7. **Baseline Fallback 트리거**: (WebSearch가 `실패` 또는 `0건`) **AND** (`gh api` 8개 쿼리 모두 `실패` 또는 모두 `0건`) 충족 시 `dev/docs/evolve-baseline.md` 로드해 `nova_applied=false` 항목을 Phase 2 입력으로 전달. 보고서 헤더에 `⚠ Baseline fallback — Live scan failed (WebSearch={상태}, gh_api={실패 N / 0건 N})` 명시. 부분 실패는 fallback 트리거 X — 사용 가능한 데이터로 계속 진행.
 
 ```
 [Nova Evolve] Phase 1/4: 기술 동향 스캔 중...
-  - Anthropic 공식: {N}건 발견
-  - Claude Code 생태계: {N}건 발견
-  - 하네스 도구: {N}건 발견
+  - Anthropic 공식: {N}건 발견 (WebSearch {a} + gh api {b}/{2}, skip {s})
+  - Claude Code 생태계: {N}건 발견 (WebSearch {a} + gh api {b}/{4}, skip {s})
+  - 하네스 도구: {N}건 발견 (WebSearch {a} + gh api {b}/{2}, skip {s})
   - AI 엔지니어링: {N}건 발견
   - 외부 소스 다양성: {OK / ⚠ Limited scan}
+  - Fallback: {Not used / ⚠ Baseline fallback active (reason: ...)}
 ```
+
+`{b}/{N}` 형식은 "성공한 쿼리 수 / 전체 쿼리 수". `skip {s}`는 rate-limit/실패로 skip된 쿼리 수. 8개 쿼리(Anthropic 2 + 생태계 4 + 하네스 2) 전체가 균일하게 시야에 노출되어 조용한 데이터 감소를 차단한다.
 
 ### 팀 에이전트 모드의 종료 의무 (필수)
 
@@ -63,9 +85,26 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 
 ## Phase 2: Relevance Filter (관련성 필터)
 
-발견한 항목을 Nova 관점에서 필터링한다:
+3단계 직렬 필터로 발견 항목을 압축한다. 상세 규칙은 `skills/evolution/SKILL.md` Relevance Filter 절 참조.
 
-### 필터 기준
+### ① 신호 강도 임계값
+
+| 조건 | 통과 기준 |
+|---|---|
+| GitHub 레포 | `stargazers_count ≥ N` (기본 100, `--min-stars`로 오버라이드) **OR** `updated_at ≥ 180d 전` |
+| Anthropic 공식 호스트 | **임계값 면제** (`docs.anthropic.com`, `github.com/anthropics/*`, `anthropic.com/blog`) |
+
+미통과 항목은 "신호 약함" 표기 후 폐기.
+
+### ② Ledger 매칭 (중복 흡수 차단)
+
+각 잔존 항목에 대해 `dev/docs/proposals/_ABSORBED.md` 조회:
+
+1. `source_url` substring 매칭 (status≠deprecated 한정) → **"이미 흡수: {pattern_slug}"** 표기 후 폐기
+2. 미매칭 시 `title/description` 키워드와 ledger `pattern_slug` fuzzy 매칭 → **"잠재 중복: {pattern_slug}"** 표기 후 보고서에 노출 (자동 폐기 X, 사용자 확인)
+3. 매칭 없음 → ③ MUST 조건으로 진행
+
+### ③ MUST/MUST NOT 조건 (Nova 관점)
 
 1. **Nova 4대 Pillar과 관련되는가?**
    - Structured (CPS, 복잡도 판단)
@@ -81,11 +120,11 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
    - Nova에 없는 새로운 패턴/기법인가?
    - 사용자 경험을 개선할 수 있는가?
 
-관련 없는 항목은 버리고, 관련 있는 항목만 제안서로 구조화한다.
+MUST NOT (Nova 철학·구조 위배 시 폐기): 하네스 엔지니어링에 반함, Generator-Evaluator 약화, 출처 URL 부재, `.claude/rules/` 우선순위 침범.
 
 ```
 [Nova Evolve] Phase 2/4: 관련성 필터 중...
-  - 스캔 {N}건 → 관련 {M}건 (필터율: {%})
+  - 스캔 {N}건 → 신호 통과 {S}건 → ledger 차단 {L}건 → MUST 통과 {M}건 (필터율: {%})
 ```
 
 ## Phase 3: Proposal (제안서 생성)
@@ -212,6 +251,16 @@ Gate Chain 통과 후 patch 변경이 1건 이상이면:
 gh issue close {이슈번호} --repo TeamSPWK/nova --comment "v{새버전}에서 적용 완료"
 ```
 
+### Ledger Append (minor/major 머지 직후)
+
+minor PR 머지 또는 major 사용자 결재 + 머지 직후 `dev/docs/proposals/_ABSORBED.md`에 행 추가:
+```
+| {pattern_slug} | {source_url} | v{current_version} | {nova_artifact_path} | active |
+```
+- patch는 ledger 영향 없음 (문서 보정 수준이라 중복 제안 차단 가치 낮음)
+- `pattern_slug`는 kebab-case 외부 도구 일반명 (예: `aider-repo-map`, `cursor-rules-mdc`)
+- 누락된 ledger append는 다음 evolve 사이클에서 동일 제안 재발생 → 중복 제안 차단 실패
+
 ```
 [Nova Evolve] Phase 4/4: 구현 + 품질 게이트 중...
   - {제안 제목}: Gate 1 PASS → Gate 2 PASS → {커밋/PR/제안}
@@ -219,7 +268,9 @@ gh issue close {이슈번호} --repo TeamSPWK/nova --comment "v{새버전}에서
 
 # Output Format
 
-## Phase 5: `--from-observations` / `--accept` / `--reject` 모드 (v5.20.0+)
+## 별도 모드: `--from-observations` / `--accept` / `--reject` (v5.20.0+)
+
+> 본 모드는 Phase 1~4 파이프라인과 독립적으로 동작한다. 외부 스캔이 아닌 내부 관찰 데이터(`.nova/events.jsonl`)를 사용한다.
 
 ### `--from-observations` 동작
 
@@ -261,15 +312,17 @@ bash hooks/record-event.sh evolve_decision \
 ━━━ Nova Evolve — Scan Report ━━━━━━━━━━━━━
   스캔 일시: {ISO 8601}
   소스: {스캔한 소스 목록}
+  Fallback: {Not used / ⚠ Baseline fallback active}
 
-  발견: {N}건 → 관련: {M}건
+  발견: {N}건 → 신호 통과 {S}건 → ledger 차단 {L}건 → 관련 {M}건
+  ledger 잠재 중복: {P}건 (제안서에 ⚠ 표기 포함)
 
   ── patch ({N}건) ──
   1. {제목} — {한줄 설명} [출처]
   2. ...
 
   ── minor ({N}건) ──
-  1. {제목} — {한줄 설명} [출처]
+  1. {제목} — {한줄 설명} [출처] {⚠ ledger 잠재 중복: pattern_slug — 있을 시}
   2. ...
 
   ── major ({N}건) ──
@@ -277,6 +330,7 @@ bash hooks/record-event.sh evolve_decision \
   2. ...
 
   제안서: docs/proposals/{날짜}-*.md
+  Ledger: dev/docs/proposals/_ABSORBED.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
