@@ -14,6 +14,8 @@ user-invocable: false
 
 세션이 끊겨도 작업 맥락이 유지되도록 한다. `NOVA-STATE.md`를 단일 진입점으로 사용한다.
 
+> 외부 대안 비교: `docs/comparison/context-chain-vs-external.md` — Nova vs claude-mem(vector DB)·Continuous-Claude-v3(ledger+handoffs) 차별점 표.
+
 ## 역할 분담: NOVA-STATE(사람용) × `.nova/events.jsonl`(기계용) — v5.44.0+ 재정의
 
 | 기록 | 용도 | 수명 | 손편집 책임 |

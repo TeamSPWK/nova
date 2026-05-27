@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
+import { resolveProjectDir } from "../util/project-dir.js";
 
 type PhaseStatus = "pending" | "running" | "completed" | "failed" | "skipped";
 
@@ -38,7 +39,7 @@ function normalizeIso(ts: string | undefined): string {
 
 // 쓰기 중단으로 파일이 손상되는 것을 막기 위해 tmp → rename 패턴을 쓴다
 async function saveToDisk(): Promise<void> {
-  const filePath = path.join(process.cwd(), ".nova-orchestration.json");
+  const filePath = path.join(resolveProjectDir(), ".nova-orchestration.json");
   const tmpPath = `${filePath}.tmp.${process.pid}`;
   try {
     const data = Object.fromEntries(orchestrations);
@@ -58,7 +59,7 @@ async function saveToDisk(): Promise<void> {
 // 단, 재호출되더라도 메모리의 최신 updatedAt이 디스크 구값에 덮이지 않도록 병합한다.
 async function loadFromDisk(): Promise<void> {
   try {
-    const filePath = path.join(process.cwd(), ".nova-orchestration.json");
+    const filePath = path.join(resolveProjectDir(), ".nova-orchestration.json");
     const content = await fs.readFile(filePath, "utf-8");
     const data = JSON.parse(content) as Record<string, Orchestration>;
     for (const [id, diskOrch] of Object.entries(data)) {

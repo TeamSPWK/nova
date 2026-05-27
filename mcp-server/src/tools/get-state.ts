@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { resolveProjectDir } from "../util/project-dir.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -63,12 +64,12 @@ export function registerGetState(server: McpServer): void {
           .string()
           .optional()
           .describe(
-            "NOVA-STATE.md가 위치한 프로젝트 루트 경로. 미지정 시 현재 디렉토리(process.cwd())"
+            "NOVA-STATE.md가 위치한 프로젝트 루트 경로. 미지정 시 CLAUDE_PROJECT_DIR(CC v2.1.141+) 또는 process.cwd()"
           ),
       }),
     },
     async ({ project_path }) => {
-      const targetDir = path.resolve(project_path ?? process.cwd());
+      const targetDir = path.resolve(resolveProjectDir(project_path));
       const statePath = path.join(targetDir, "NOVA-STATE.md");
 
       // Path Traversal 방어: 최종 경로가 targetDir 내부인지 확인

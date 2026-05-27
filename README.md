@@ -105,6 +105,8 @@ Nova is a **checkpoint inside the AI orchestrator loop**. It verifies that gener
 
 The core principle is **Generator-Evaluator Separation**: the agent that writes code and the agent that verifies it are always different. This prevents the "reviewing your own homework" trap.
 
+> Context chain (session-to-session memory) uses **append-only JSONL + text-based NOVA-STATE.md** — zero external dependencies (no vector DB, no embedding API). See [Nova vs claude-mem vs Continuous-Claude-v3](docs/comparison/context-chain-vs-external.md) for trade-offs.
+
 ## Architecture: Harness Engineering
 
 Nova works by engineering Claude Code's **harness layer** — the hooks, commands, agents, and skills system that wraps around the LLM. Instead of changing what the model knows, Nova controls **when, how, and under what rules** the model operates.

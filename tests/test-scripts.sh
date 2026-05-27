@@ -523,6 +523,53 @@ assert "session-start.sh: advisory /nova:checkpoint 언급" \
 assert "session-start.sh JSON 유효 (advisory 추가 후 재확인)" \
   "bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null 2>&1"
 
+# v5.49.0 P-1: SessionStart reloadSkills opt-in (CC v2.1.152+)
+assert "session-start.sh: NOVA_AUTO_RELOAD_SKILLS 미설정 시 reloadSkills 미포함 (default off)" \
+  "! bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q 'reloadSkills'"
+
+assert "session-start.sh: NOVA_AUTO_RELOAD_SKILLS=1 시 reloadSkills: true 포함" \
+  "NOVA_AUTO_RELOAD_SKILLS=1 bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q '\"reloadSkills\": true'"
+
+assert "session-start.sh: NOVA_AUTO_RELOAD_SKILLS=1 시에도 JSON 유효" \
+  "NOVA_AUTO_RELOAD_SKILLS=1 bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null 2>&1"
+
+# v5.49.0 P-1 QA 권고: 서브에이전트 분기에서 reloadSkills 절대 미포함 (subagent early-exit)
+# 서브에이전트는 메인 컨텍스트에서 이미 규칙을 받으므로 reloadSkills 불필요 — 의도된 dead code
+assert "session-start.sh: NOVA_SUBAGENT=1 + opt-in 조합에서도 reloadSkills 미포함 (intentional)" \
+  "! NOVA_SUBAGENT=1 NOVA_AUTO_RELOAD_SKILLS=1 bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q 'reloadSkills'"
+
+# v5.49.0 P-5: 외부 context-chain 도구 비교 문서 존재
+assert "docs/comparison/context-chain-vs-external.md 존재 (P-5)" \
+  "test -f '$ROOT_DIR/docs/comparison/context-chain-vs-external.md'"
+
+assert "context-chain-vs-external.md: claude-mem 비교 키워드 포함" \
+  "grep -q 'claude-mem' '$ROOT_DIR/docs/comparison/context-chain-vs-external.md'"
+
+assert "context-chain-vs-external.md: Continuous-Claude-v3 비교 키워드 포함" \
+  "grep -q 'Continuous-Claude-v3' '$ROOT_DIR/docs/comparison/context-chain-vs-external.md'"
+
+assert "skills/context-chain/SKILL.md: 외부 대안 비교 문서 링크 포함" \
+  "grep -q 'context-chain-vs-external' '$ROOT_DIR/skills/context-chain/SKILL.md'"
+
+# v5.49.0 P-3: MCP 서버 CLAUDE_PROJECT_DIR 환경변수 활용 (CC v2.1.141+)
+assert "mcp-server/src/util/project-dir.ts 존재 (P-3 helper)" \
+  "test -f '$ROOT_DIR/mcp-server/src/util/project-dir.ts'"
+
+assert "project-dir.ts: CLAUDE_PROJECT_DIR 환경변수 fallback 정의" \
+  "grep -q 'CLAUDE_PROJECT_DIR' '$ROOT_DIR/mcp-server/src/util/project-dir.ts'"
+
+assert "mcp-server: get-state.ts가 resolveProjectDir 사용" \
+  "grep -q 'resolveProjectDir' '$ROOT_DIR/mcp-server/src/tools/get-state.ts'"
+
+assert "mcp-server: repo-preflight.ts가 resolveProjectDir 사용" \
+  "grep -q 'resolveProjectDir' '$ROOT_DIR/mcp-server/src/tools/repo-preflight.ts'"
+
+assert "mcp-server: orchestration-tracker.ts가 resolveProjectDir 사용" \
+  "grep -q 'resolveProjectDir' '$ROOT_DIR/mcp-server/src/tools/orchestration-tracker.ts'"
+
+assert "mcp-server: x-verify.ts가 resolveProjectDir 사용" \
+  "grep -q 'resolveProjectDir' '$ROOT_DIR/mcp-server/src/tools/x-verify.ts'"
+
 # next.md: 세션 종료 시 /nova:checkpoint 크로스 레퍼런스
 assert "next.md: 세션 종료 시 /nova:checkpoint 크로스 레퍼런스" \
   "grep -q '/nova:checkpoint' '$ROOT_DIR/.claude/commands/next.md'"

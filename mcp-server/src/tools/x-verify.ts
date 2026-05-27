@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
+import { resolveProjectDir } from "../util/project-dir.js";
 
 type AiName = "claude" | "gpt" | "gemini";
 
@@ -326,11 +327,11 @@ export function registerXVerify(server: McpServer): void {
       }),
     },
     async ({ question, no_save, selected_ais, claude_model }) => {
-      // .env 로드 (CWD = 사용자 프로젝트 루트)
+      // .env 로드 (CLAUDE_PROJECT_DIR(CC v2.1.141+) → process.cwd() fallback)
       let envVars: Record<string, string> = {};
       try {
         const envContent = await fs.readFile(
-          path.join(process.cwd(), ".env"),
+          path.join(resolveProjectDir(), ".env"),
           "utf-8"
         );
         envVars = parseEnv(envContent);
@@ -487,7 +488,7 @@ export function registerXVerify(server: McpServer): void {
             .replace(/[^a-zA-Z0-9가-힣]/g, "-")
             .replace(/-+/g, "-")
             .replace(/-$/, "");
-          const verifyDir = path.join(process.cwd(), "docs", "verifications");
+          const verifyDir = path.join(resolveProjectDir(), "docs", "verifications");
           await fs.mkdir(verifyDir, { recursive: true });
           const filePath = path.join(verifyDir, `${date}-${slug}.md`);
           await fs.writeFile(

@@ -265,12 +265,21 @@ if [ -d "$_ORPHAN_TEAMS_DIR" ]; then
   fi
 fi
 
+# ── reloadSkills opt-in (CC v2.1.152+, P-1 2026-05-27 evolve) ──
+# NOVA_AUTO_RELOAD_SKILLS=1 환경변수 설정 시 매 SessionStart/Resume 마다 스킬 디렉토리 동적 재로드.
+# 기본 off — opt-in 안전. CC v2.1.151 이하 사용자는 필드 무시 (graceful no-op).
+_RELOAD_SKILLS_FIELD=""
+if [ "${NOVA_AUTO_RELOAD_SKILLS:-0}" = "1" ]; then
+  _RELOAD_SKILLS_FIELD=',
+    "reloadSkills": true'
+fi
+
 cat << NOVA_EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
     "sessionTitle": "${SESSION_TITLE}",
-    "additionalContext": "${ADDITIONAL_CONTEXT}"
+    "additionalContext": "${ADDITIONAL_CONTEXT}"${_RELOAD_SKILLS_FIELD}
   }
 }
 NOVA_EOF

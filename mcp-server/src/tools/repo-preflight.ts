@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { resolveProjectDir } from "../util/project-dir.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -202,7 +203,7 @@ export function registerRepoPreflight(server: McpServer): void {
         cwd: z
           .string()
           .optional()
-          .describe("nested 지침 탐색을 시작할 작업 디렉토리. 미지정 시 project_path 또는 process.cwd()를 사용합니다."),
+          .describe("nested 지침 탐색을 시작할 작업 디렉토리. 미지정 시 project_path → CLAUDE_PROJECT_DIR(CC v2.1.141+) → process.cwd() 순으로 fallback."),
         include_contents: z
           .boolean()
           .optional()
@@ -218,7 +219,7 @@ export function registerRepoPreflight(server: McpServer): void {
     async ({ project_path, cwd, include_contents, max_bytes_per_file }) => {
       let startDir: string;
       try {
-        startDir = await resolveStartDir(cwd ?? project_path ?? process.cwd());
+        startDir = await resolveStartDir(resolveProjectDir(cwd ?? project_path));
       } catch {
         return {
           content: [

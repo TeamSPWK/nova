@@ -21170,6 +21170,13 @@ import fs3 from "fs/promises";
 import path3 from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+
+// src/util/project-dir.ts
+function resolveProjectDir(explicit) {
+  return explicit ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+}
+
+// src/tools/get-state.ts
 var execFileAsync = promisify(execFile);
 async function buildAdvisory(targetDir, stateContent) {
   const activityMatch = stateContent.match(
@@ -21205,12 +21212,12 @@ function registerGetState(server2) {
       description: "\uD504\uB85C\uC81D\uD2B8\uC758 NOVA-STATE.md\uB97C \uC77D\uACE0, \uAC80\uC99D \uB204\uB77D \uACBD\uACE0(advisory)\uB97C \uD568\uAED8 \uBC18\uD658\uD569\uB2C8\uB2E4.",
       inputSchema: external_exports.object({
         project_path: external_exports.string().optional().describe(
-          "NOVA-STATE.md\uAC00 \uC704\uCE58\uD55C \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8 \uACBD\uB85C. \uBBF8\uC9C0\uC815 \uC2DC \uD604\uC7AC \uB514\uB809\uD1A0\uB9AC(process.cwd())"
+          "NOVA-STATE.md\uAC00 \uC704\uCE58\uD55C \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8 \uACBD\uB85C. \uBBF8\uC9C0\uC815 \uC2DC CLAUDE_PROJECT_DIR(CC v2.1.141+) \uB610\uB294 process.cwd()"
         )
       })
     },
     async ({ project_path }) => {
-      const targetDir = path3.resolve(project_path ?? process.cwd());
+      const targetDir = path3.resolve(resolveProjectDir(project_path));
       const statePath = path3.join(targetDir, "NOVA-STATE.md");
       const resolvedState = path3.resolve(statePath);
       if (!resolvedState.startsWith(targetDir + path3.sep) && resolvedState !== path3.join(targetDir, "NOVA-STATE.md")) {
@@ -21669,7 +21676,7 @@ function registerXVerify(server2) {
       let envVars = {};
       try {
         const envContent = await fs4.readFile(
-          path4.join(process.cwd(), ".env"),
+          path4.join(resolveProjectDir(), ".env"),
           "utf-8"
         );
         envVars = parseEnv(envContent);
@@ -21794,7 +21801,7 @@ function registerXVerify(server2) {
         try {
           const date3 = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
           const slug = question.slice(0, 40).replace(/[^a-zA-Z0-9가-힣]/g, "-").replace(/-+/g, "-").replace(/-$/, "");
-          const verifyDir = path4.join(process.cwd(), "docs", "verifications");
+          const verifyDir = path4.join(resolveProjectDir(), "docs", "verifications");
           await fs4.mkdir(verifyDir, { recursive: true });
           const filePath = path4.join(verifyDir, `${date3}-${slug}.md`);
           await fs4.writeFile(
@@ -21827,7 +21834,7 @@ function normalizeIso(ts) {
   return d.toISOString();
 }
 async function saveToDisk() {
-  const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
+  const filePath = path5.join(resolveProjectDir(), ".nova-orchestration.json");
   const tmpPath = `${filePath}.tmp.${process.pid}`;
   try {
     const data = Object.fromEntries(orchestrations);
@@ -21842,7 +21849,7 @@ async function saveToDisk() {
 }
 async function loadFromDisk() {
   try {
-    const filePath = path5.join(process.cwd(), ".nova-orchestration.json");
+    const filePath = path5.join(resolveProjectDir(), ".nova-orchestration.json");
     const content = await fs5.readFile(filePath, "utf-8");
     const data = JSON.parse(content);
     for (const [id, diskOrch] of Object.entries(data)) {
@@ -22186,7 +22193,7 @@ function registerRepoPreflight(server2) {
       description: "\uB808\uD3EC \uC791\uC5C5 \uC804 CLAUDE.md, AGENTS.md, NOVA-STATE.md \uC704\uCE58\uC640 \uC801\uC6A9 \uC6B0\uC120\uC21C\uC704\uB97C \uD655\uC778\uD558\uACE0 preflight evidence\uB97C \uBC18\uD658\uD569\uB2C8\uB2E4.",
       inputSchema: external_exports.object({
         project_path: external_exports.string().optional().describe("\uD0D0\uC0C9\uC744 \uC81C\uD55C\uD560 \uD504\uB85C\uC81D\uD2B8 \uB8E8\uD2B8. \uBBF8\uC9C0\uC815 \uC2DC git root\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4."),
-        cwd: external_exports.string().optional().describe("nested \uC9C0\uCE68 \uD0D0\uC0C9\uC744 \uC2DC\uC791\uD560 \uC791\uC5C5 \uB514\uB809\uD1A0\uB9AC. \uBBF8\uC9C0\uC815 \uC2DC project_path \uB610\uB294 process.cwd()\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4."),
+        cwd: external_exports.string().optional().describe("nested \uC9C0\uCE68 \uD0D0\uC0C9\uC744 \uC2DC\uC791\uD560 \uC791\uC5C5 \uB514\uB809\uD1A0\uB9AC. \uBBF8\uC9C0\uC815 \uC2DC project_path \u2192 CLAUDE_PROJECT_DIR(CC v2.1.141+) \u2192 process.cwd() \uC21C\uC73C\uB85C fallback."),
         include_contents: external_exports.boolean().optional().describe("CLAUDE.md/AGENTS.md \uB0B4\uC6A9\uC744 \uACB0\uACFC\uC5D0 \uD3EC\uD568\uD560\uC9C0 \uC5EC\uBD80. \uAE30\uBCF8\uAC12 true."),
         max_bytes_per_file: external_exports.number().int().positive().optional().describe("\uAC01 \uC9C0\uCE68 \uD30C\uC77C\uC5D0\uC11C \uD3EC\uD568\uD560 \uCD5C\uB300 byte \uC218. \uAE30\uBCF8 12000, \uBC94\uC704 1000~50000.")
       })
@@ -22194,7 +22201,7 @@ function registerRepoPreflight(server2) {
     async ({ project_path, cwd, include_contents, max_bytes_per_file }) => {
       let startDir;
       try {
-        startDir = await resolveStartDir(cwd ?? project_path ?? process.cwd());
+        startDir = await resolveStartDir(resolveProjectDir(cwd ?? project_path));
       } catch {
         return {
           content: [
