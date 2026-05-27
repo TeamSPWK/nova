@@ -2454,6 +2454,108 @@ assert "S9.18: tests/fixtures/nova-state-*.md 6개 존재 (pass/empty/no_pass/st
    [ -f '$FIXTURE_DIR/nova-state-timestamp_broken.md' ] && \
    [ -f '$FIXTURE_DIR/nova-state-conflict.md' ]"
 
+# ── v5.48.1+: A. scope 필터 + B. 4시간 윈도 회귀 가드 ──
+
+# S9.19: scope 필터 — doc-only staged (README.md만) + STALE fixture → exit 0 (skip)
+assert "S9.19: scope 필터 — doc-only(README.md) + STALE → exit 0 (skip)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   touch README.md && git add README.md; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S9.20: scope 필터 — 코드 포함(.sh) staged + STALE → exit 2 (차단 유지)
+assert "S9.20: scope 필터 — 코드 포함(scripts/foo.sh) + STALE → exit 2 (차단)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.21: scope 필터 — spec(docs/specs/*.md)은 코드 동등 → exit 2
+assert "S9.21: scope 필터 — docs/specs/*.md는 코드 동등(차단 유지)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir -p docs/specs && touch docs/specs/foo.md && git add docs/specs/foo.md; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.22: 4시간 윈도 — events.jsonl review_pass 1초 전 + STALE fixture → exit 0
+assert "S9.22: 4h 윈도 — events.jsonl review_pass 방금 기록 + STALE → exit 0" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S9.23: 4시간 윈도 초과 — review_pass 5시간 전 + STALE fixture → exit 2 (fallback STALE)
+assert "S9.23: 4h 윈도 초과 — review_pass 5h 전 + STALE → exit 2 (fallback)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   OLD=\$(( \$(date +%s) - 18000 )); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$OLD}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.24: NOVA_PASS_WINDOW_SEC=0 오버라이드 — 어떤 review_pass도 STALE 처리
+assert "S9.24: NOVA_PASS_WINDOW_SEC=0 → 어떤 review_pass도 STALE (윈도 비활성화)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW}\" > .nova/events.jsonl; \
+   NOVA_PASS_WINDOW_SEC=0 bash '$HOOK' < <(echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}') >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.25: rename(R) 우회 차단 — git mv scripts/foo.sh docs/guides/foo.md → 코드 변경으로 인식
+assert "S9.25: rename 우회 차단 — git mv scripts/foo.sh docs/guides/foo.md + STALE → exit 2" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && mkdir -p docs/guides; \
+   echo code > scripts/foo.sh; \
+   git add scripts/foo.sh && git -c hooks.pre-commit= commit -q -m init 2>/dev/null; \
+   git mv scripts/foo.sh docs/guides/foo.md; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.26: NTP 역행/시계 오설정 — review_pass timestamp가 미래(now+3600) → fallback (보수적)
+assert "S9.26: NTP 역행 — review_pass timestamp가 미래(diff_sec<0) → fallback STALE" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   FUTURE=\$(( \$(date +%s) + 3600 )); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$FUTURE}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.27: NOVA_PASS_WINDOW_SEC 상한 클램핑 — 30일(2592000s) 설정해도 1일(86400) 강제
+# review_pass 25h 전 + NOVA_PASS_WINDOW_SEC=2592000 → 클램핑되어 STALE
+assert "S9.27: NOVA_PASS_WINDOW_SEC 상한 클램핑 — 30일 설정해도 1일 강제 (25h 전 PASS는 STALE)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   OLD=\$(( \$(date +%s) - 90000 )); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$OLD}\" > .nova/events.jsonl; \
+   NOVA_PASS_WINDOW_SEC=2592000 bash '$HOOK' < <(echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}') >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

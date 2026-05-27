@@ -45,8 +45,35 @@ if echo "$COMMAND" | grep -q -- "--emergency" || [ "${NOVA_EMERGENCY:-0}" = "1" 
 fi
 
 # ── Evaluator Hard Gate 7상태 판정 ──
-# 판정 순서 고정: MISSING → CONFLICT → EMPTY → NO_PASS → TIMESTAMP_BROKEN → STALE → PASS
+# 판정 순서 고정: events.jsonl 4h 윈도 → MISSING → CONFLICT → EMPTY → NO_PASS → TIMESTAMP_BROKEN → STALE → PASS
+# v5.48.1+: events.jsonl의 review_pass 이벤트가 4시간(NOVA_PASS_WINDOW_SEC 환경변수로 오버라이드 가능) 이내면 우선 PASS.
+#          fallback은 기존 NOVA-STATE.md Recent Activity 첫 row 로직(하위 호환).
 check_evaluator_pass() {
+  # ── v5.48.1+: events.jsonl review_pass 시간 윈도 조회 (단일 진실원 정합) ──
+  local events_file="${NOVA_EVENTS_PATH:-.nova/events.jsonl}"
+  local window_sec="${NOVA_PASS_WINDOW_SEC:-14400}"  # 기본 4시간
+  # NOVA_PASS_WINDOW_SEC=0이면 윈도 비활성화 (fallback만 사용 — 디버그/엄격 모드)
+  # 상한 클램핑: 86400(1일) 초과 설정은 정책 무력화 방지를 위해 1일로 강제 제한
+  if [ "$window_sec" -gt 86400 ]; then
+    window_sec=86400
+  fi
+  if [ "$window_sec" -gt 0 ] && [ -f "$events_file" ] && command -v jq >/dev/null 2>&1; then
+    local now_epoch latest_pass_epoch diff_sec
+    now_epoch=$(date +%s)
+    latest_pass_epoch=$(grep '"event_type":"review_pass"' "$events_file" 2>/dev/null \
+      | tail -1 \
+      | jq -r '.timestamp_epoch // 0' 2>/dev/null || echo "0")
+    if [ -n "$latest_pass_epoch" ] && [ "$latest_pass_epoch" -gt 0 ]; then
+      diff_sec=$((now_epoch - latest_pass_epoch))
+      # NTP 역행/시계 오설정으로 음수 diff면 신뢰 불가 → fallback (보수적)
+      if [ "$diff_sec" -ge 0 ] && [ "$diff_sec" -le "$window_sec" ]; then
+        echo "PASS"
+        return
+      fi
+    fi
+  fi
+
+  # ── fallback: NOVA-STATE.md 본문 검사 (events.jsonl 없거나 윈도 초과) ──
   if [ ! -f "NOVA-STATE.md" ]; then
     echo "MISSING"
     return
@@ -150,9 +177,30 @@ EOF
   exit 2
 fi
 
-# ── 다른 차단 상태 (EMERGENCY 우회 가능) ──
+# ── v5.48.1+: scope 필터 (doc-only 커밋 Hard Gate skip) ──
+# 보수적 화이트리스트 — 모든 staged 파일이 매치하면 STATE 무관하게 통과(CONFLICT 제외).
+# 매치 제외: docs/specs/, docs/plans/, docs/designs/, docs/proposals/, docs/nova-rules.md,
+#           docs/eval-checklist.md, docs/nova-antipatterns.md — 이들은 코드와 동등 무게.
+#
+# rename(R) 보안: --name-only는 새 경로만 반환 → `git mv scripts/foo.sh docs/guides/foo.md`
+# 같은 코드→docs 이동이 우회 가능. --name-status 기반으로 old+new 경로 모두 검사.
+SCOPE_SKIP=0
+CHANGED_FILES_LIST=$(git diff --cached --name-status 2>/dev/null | awk '{for(i=2;i<=NF;i++) print $i}' || true)
+if [ -n "$CHANGED_FILES_LIST" ]; then
+  # 화이트리스트에 매치되지 않는 파일이 하나라도 있으면 NON_DOC에 포함
+  NON_DOC=$(echo "$CHANGED_FILES_LIST" | grep -vE '^(README|CHANGELOG|LICENSE)([._-].*)?$|^\.gitignore$|^docs/guides/|^dev/docs/|^\.nova/|^docs/nova-meta\.json$' || true)
+  if [ -z "$NON_DOC" ]; then
+    SCOPE_SKIP=1
+  fi
+fi
+
+# ── 다른 차단 상태 (EMERGENCY 우회 가능 + scope 필터 우회 가능) ──
 if [ "$STATE" != "PASS" ]; then
-  if [ "$EMERGENCY" = "1" ]; then
+  if [ "$SCOPE_SKIP" = "1" ]; then
+    echo "[Nova Hard Gate] scope 필터 통과 — doc-only 커밋 (상태: ${STATE})" >&2
+    record_gate_event commit_scope_skip "$(printf '{"state":"%s","files":%s}' "$STATE" "$(echo "$CHANGED_FILES_LIST" | jq -R . | jq -sc .)")"
+    # fall-through → 아래 리마인더 컨텍스트 주입
+  elif [ "$EMERGENCY" = "1" ]; then
     echo "[Nova Hard Gate] --emergency 우회 감지 — 상태: ${STATE}" >&2
     record_gate_event commit_emergency "$(printf '{"state":"%s"}' "$STATE")"
     # fall-through → 아래 리마인더 컨텍스트 주입
@@ -165,8 +213,13 @@ if [ "$STATE" != "PASS" ]; then
   MISSING           -> NOVA-STATE.md 없음. /nova:check 실행 후 커밋.
   EMPTY             -> Last Activity 섹션 비어있음. 검증 기록 추가 필요.
   NO_PASS           -> 최근 활동에 PASS 없음. /nova:review 또는 /nova:check 실행.
-  STALE             -> 마지막 PASS가 오늘 날짜가 아님. 재검증 필요.
+  STALE             -> 최근 PASS 없음(events.jsonl review_pass 4h+ 이전 또는 NOVA-STATE.md 첫 row가 오늘 아님). /nova:review 재실행.
   TIMESTAMP_BROKEN  -> 타임스탬프 파싱 실패. NOVA-STATE.md 포맷 확인.
+
+자동 우회 (v5.48.1+):
+  scope 필터    — README/CHANGELOG/LICENSE/docs/guides/dev/docs 등 doc-only 커밋은 자동 통과
+  4시간 윈도     — events.jsonl의 review_pass 이벤트가 4시간 이내면 자동 통과
+                  (NOVA_PASS_WINDOW_SEC 환경변수로 윈도 조정 가능)
 
 긴급 우회:
   git commit -m "메시지 --emergency"
