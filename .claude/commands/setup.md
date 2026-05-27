@@ -114,7 +114,6 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
    - **모노레포 가드**: 생성 전 `git rev-parse --show-toplevel`로 루트를 확인하고, 루트에 이미 NOVA-STATE.md가 있으면 하위 디렉토리에 중복 생성하지 않는다. 하위 앱 디렉토리에서 실행해도 루트 기준으로 동작한다.
    > `docs/decisions`, `docs/verifications`, `docs/templates`는 처음에 생성하지 않는다.
    > 이후 `/nova:check` 실행 시 → "검증 결과를 저장할 `docs/verifications/`를 생성할까요?"
-   > `/nova:evolve` 실행 시 → "의사결정 기록을 위한 `docs/decisions/`를 생성할까요?"
    > 이런 식으로 **필요 시점에 제안**한다.
 
 4. `CLAUDE.md`를 프로젝트 루트에 **경량 버전**으로 생성한다:

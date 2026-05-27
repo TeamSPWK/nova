@@ -514,7 +514,7 @@ esac
 if [[ "$FORMAT" == "text" ]]; then
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  /nova:evolve --from-observations 로 CPS Problem 초안 생성 가능"
+  echo "  Nova 개발자: dev/commands/evolve.md --from-observations 로 CPS Problem 초안 생성"
   echo "  (자동 승격 금지 — 사용자 승인 필수)"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 fi

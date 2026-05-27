@@ -12,17 +12,18 @@
 
 ### 요약
 
-Nova는 다음 13개 **스킬**을 ship한다 (커맨드와 별개):
+Nova는 다음 11개 **스킬**을 ship한다 (커맨드와 별개):
 
 | 카테고리 | 스킬 |
 |----------|------|
 | 품질 게이트 | `evaluator`, `jury` |
 | 계획·설계 | `deepplan`, `orchestrator` |
 | 운영 (세션·환경) | `context-chain`, `worktree-setup`, `repo-preflight`, `strategic-compact` |
-| 메타·자기진화 | `evolution`, `field-test`, `writing-nova-skill` |
-| 도메인 | `claude-md`, `ux-audit` |
+| 메타 | `writing-nova-skill` |
+| 도메인 | `claude-md`, `ux-audit`, `status-dashboard` |
 
-> ⚠️ `scan`, `setup`, `next`, `auto`, `audit-self`, `run`, `plan`, `design`, `review`, `check`, `ask`는 **커맨드(`/nova:*`)**이지 스킬이 아니다. `skillOverrides`로 제어할 수 없다. 커맨드는 사용자가 명시 호출(`/`) 시에만 동작하므로 별도 비활성화가 필요한 경우는 적다 — Nova plugin 자체를 settings에서 제외하면 커맨드도 함께 사라진다.
+> ⚠️ `scan`, `setup`, `next`, `auto`, `run`, `plan`, `design`, `review`, `check`, `ask`는 **커맨드(`/nova:*`)**이지 스킬이 아니다.
+> ⚠️ `evolution`, `field-test`, `audit-self`는 Nova 개발자 전용으로 `dev/`에 격리됐다 (플러그인 배포 제외). 일반 사용자 환경에는 노출되지 않으므로 `skillOverrides`로 제어할 수 없다. `skillOverrides`로 제어할 수 없다. 커맨드는 사용자가 명시 호출(`/`) 시에만 동작하므로 별도 비활성화가 필요한 경우는 적다 — Nova plugin 자체를 settings에서 제외하면 커맨드도 함께 사라진다.
 
 모두 활성화하면 컨텍스트 점유와 자동 트리거 빈도가 높아진다. Claude Code v2.1.126+가 제공하는 `skillOverrides` 설정으로 스킬을 선택적으로 끌 수 있다.
 
@@ -49,23 +50,22 @@ Nova는 다음 13개 **스킬**을 ship한다 (커맨드와 별개):
   "skillOverrides": {
     "nova:ux-audit": "off",
     "nova:writing-nova-skill": "user-invocable-only",
-    "nova:field-test": "user-invocable-only",
     "nova:strategic-compact": "name-only"
   }
 }
 ```
 
-> 키는 `<plugin>:<skill-name>` 형식. Nova 스킬은 모두 `nova:` 접두사를 갖는다. Nova가 ship하는 정확한 13개 스킬 외 이름을 적으면 사일런트로 무시된다 — 위 "요약" 표 참조.
+> 키는 `<plugin>:<skill-name>` 형식. Nova 스킬은 모두 `nova:` 접두사를 갖는다. Nova가 ship하는 정확한 11개 스킬 외 이름을 적으면 사일런트로 무시된다 — 위 "요약" 표 참조.
 
 ### Nova 스킬 카테고리별 권장 설정
 
-| 카테고리 | 스킬 (실제 ship 13개) | 권장 (대부분 사용자) | 권장 (가벼운 작업) |
+| 카테고리 | 스킬 (실제 ship 11개) | 권장 (대부분 사용자) | 권장 (가벼운 작업) |
 |----------|----------------------|----------------------|---------------------|
 | **품질 게이트 (핵심)** | `evaluator`, `jury` | 활성 (기본) | `evaluator`만 활성, `jury`는 `user-invocable-only` |
 | **계획·설계** | `deepplan`, `orchestrator` | 활성 (자동 트리거 가치 큼) | `deepplan`은 `user-invocable-only` |
 | **운영 (세션·환경)** | `context-chain`, `worktree-setup`, `repo-preflight`, `strategic-compact` | 활성 (기본) | 활성 — 환경 안전 직결 |
-| **메타 (자기진화)** | `evolution`, `field-test`, `writing-nova-skill` | `user-invocable-only` | `name-only` |
-| **도메인** | `claude-md`, `ux-audit` | 활성 (필요 도메인) | UX는 backend-only 프로젝트에서 `off` |
+| **메타** | `writing-nova-skill` | `user-invocable-only` | `name-only` |
+| **도메인** | `claude-md`, `ux-audit`, `status-dashboard` | 활성 (필요 도메인) | UX는 backend-only 프로젝트에서 `off` |
 
 ### 적용 후 확인
 
@@ -93,9 +93,10 @@ Nova는 다음 13개 **스킬**을 ship한다 (커맨드와 별개):
 
 ### TL;DR
 
-Nova ships 13 **skills** (separate from 16 commands) covering quality gates, planning, environment, meta-evolution, and domain helpers. If they all auto-trigger you may end up with heavy context usage. Claude Code v2.1.126+ exposes `skillOverrides` so you can selectively disable, restrict to manual `/` invocation, or hide descriptions of skills you don't need.
+Nova ships 11 **skills** (separate from commands) covering quality gates, planning, environment, meta, and domain helpers. If they all auto-trigger you may end up with heavy context usage. Claude Code v2.1.126+ exposes `skillOverrides` so you can selectively disable, restrict to manual `/` invocation, or hide descriptions of skills you don't need.
 
-> Note: `scan`, `setup`, `next`, `auto`, `audit-self`, `run`, `plan`, `design`, `review`, `check`, `ask` are **commands** (`/nova:*`), not skills — they cannot be controlled via `skillOverrides`. Commands only run on explicit `/` invocation, so disabling them is rarely needed; if you need to remove them entirely, exclude the Nova plugin from your settings.
+> Note: `scan`, `setup`, `next`, `auto`, `run`, `plan`, `design`, `review`, `check`, `ask` are **commands** (`/nova:*`), not skills — they cannot be controlled via `skillOverrides`. Commands only run on explicit `/` invocation, so disabling them is rarely needed; if you need to remove them entirely, exclude the Nova plugin from your settings.
+> Note: `evolution`, `field-test`, `audit-self` are Nova-developer-only and isolated under `dev/` (excluded from plugin distribution). They never reach end-user environments, so `skillOverrides` does not apply.
 
 ### Three modes
 
@@ -114,21 +115,20 @@ Edit `~/.claude/settings.json` or project `.claude/settings.json`:
   "skillOverrides": {
     "nova:ux-audit": "off",
     "nova:writing-nova-skill": "user-invocable-only",
-    "nova:field-test": "user-invocable-only",
     "nova:strategic-compact": "name-only"
   }
 }
 ```
 
-Keys follow `<plugin>:<skill-name>`. All Nova skills are namespaced under `nova:`. Skill names that don't match an actually-shipped skill are silently ignored — see the table above for the canonical 13.
+Keys follow `<plugin>:<skill-name>`. All Nova skills are namespaced under `nova:`. Skill names that don't match an actually-shipped skill are silently ignored — see the table above for the canonical 11.
 
 ### Recommended defaults
 
 - **Quality gate skills** (`evaluator`, `jury`): keep active. Disabling these defeats Nova's core value.
 - **Planning** (`deepplan`, `orchestrator`): active for most users; consider `user-invocable-only` for `deepplan` if your work is mostly small tasks.
 - **Operations** (`context-chain`, `worktree-setup`, `repo-preflight`, `strategic-compact`): keep active — they protect against env/secret drift and session-state loss.
-- **Meta-evolution** (`evolution`, `field-test`, `writing-nova-skill`): `user-invocable-only` or `name-only` for most teams.
-- **Domain** (`claude-md`, `ux-audit`): keep active where the domain applies; `off` for `ux-audit` on backend-only projects.
+- **Meta** (`writing-nova-skill`): `user-invocable-only` or `name-only` for most teams.
+- **Domain** (`claude-md`, `ux-audit`, `status-dashboard`): keep active where the domain applies; `off` for `ux-audit` on backend-only projects.
 
 ### Verification
 

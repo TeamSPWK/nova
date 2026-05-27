@@ -46,7 +46,7 @@ description은 **언제 발동하는가**만 기술한다. HOW(동작 방식)은
 
 `tests/test-skill-triggering.sh`가 각 `skills/*/SKILL.md`에 대응하는 positive fixture 존재를 강제한다. 누락 시 CI FAIL.
 
-실제 LLM 트리거 검증은 `/nova:field-test`로 수동 수행.
+실제 LLM 트리거 검증은 Nova 개발자 전용 `dev/skills/field-test/`로 수동 수행 (사용자 플러그인에는 미포함).
 
 ### 4. 동기화 체크리스트 (CLAUDE.md와 일치)
 

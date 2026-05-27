@@ -76,13 +76,13 @@ OWASP Top 10 기준으로 취약점을 식별하고, 최소 권한 원칙과 심
 - 보안과 무관한 코드 품질 이슈는 지적하지 않음
 - 외부 네트워크 접근 금지 — 로컬 코드 분석만 수행
 
-# Nova 자기 코드 감사 모드 (self-audit)
+# Nova 자기 코드 감사 모드 (self-audit, Nova 개발자 전용)
 
-`/nova:audit-self` 호출 시 본 규약을 적용한다 (메타-루프 가드).
+Nova 개발자 전용 `dev/commands/audit-self.md` 호출 시 본 규약을 적용한다 (메타-루프 가드). 플러그인 사용자에게는 노출되지 않으므로 사용자 환경에서는 활성화되지 않는다.
 
 ## 기본 원칙 — 검사자/검사 대상 분리
 
-- **자기 정의 검사 금지**: `agents/security-engineer.md` (자기 자신), `commands/audit-self.md`, `docs/security-rules.md` 는 검사 대상에서 명시 제외한다 (메타-루프 자가 합리화 회피, R1 완화)
+- **자기 정의 검사 금지**: `.claude/agents/security-engineer.md` (자기 자신), `dev/commands/audit-self.md`, `docs/security-rules.md` 는 검사 대상에서 명시 제외한다 (메타-루프 자가 합리화 회피, R1 완화)
 - **분리 원칙 깨지면 결과 무효**: 검사자가 자기 정의를 검사하면 통과 편향이 발생한다. v5.23.0 의 `--jury` Red/Blue/Auditor 다관점 검증으로 자기 검사를 외부화 예정
 
 ## 룰셋 외부 참조
@@ -93,13 +93,13 @@ OWASP Top 10 기준으로 취약점을 식별하고, 최소 권한 원칙과 심
 
 ## 출력 포맷 — 카테고리별 섹션 + Risk Map
 
-`/nova:audit-self` Phase 5 출력 포맷을 따른다:
+`dev/commands/audit-self.md` Phase 5 출력 포맷을 따른다:
 
 - 5 카테고리(plugin/hooks/agents/skills/commands) 별 섹션 + 위반 항목 테이블
 - Risk Map 요약 — Critical/Warning/Info 카운트
 - 결과 해석 가이드 — Critical 발견 시 권장 행동 표기
 
-자유 형식 마크다운 금지. 사용자가 `/nova:audit-self` 출력 포맷을 학습하면 다음 호출에서도 동일한 구조를 기대한다.
+자유 형식 마크다운 금지. 호출자(Nova 개발자)가 출력 포맷을 학습하면 다음 호출에서도 동일한 구조를 기대한다.
 
 ## 결과 핸드오프 — Phase 3/4 통과 의무
 

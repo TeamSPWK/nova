@@ -55,7 +55,6 @@ description_en: "Review code adversarially and surface hidden issues. — MUST T
 | `server` | 서버 로직, API, DB | 비즈니스 로직, 데이터 관통, 에러 처리 | UI/UX, 프론트엔드 스타일 |
 | `client` | 프론트엔드, UI/UX | 컴포넌트 구조, 상태 관리, 접근성 | 서버 로직, DB 쿼리 |
 | `security` | 보안 집중 | OWASP Top 10, 인증/인가, 입력 검증, 시크릿 | 스타일, 설계 정합성 |
-| `security` (Nova 플러그인 자기 코드) | **`/nova:audit-self` 우선** | Nova plugin.json/hooks/agents/skills/commands 자기 보안 진단 (5 카테고리 30+ 룰) | review --scope security는 사용자 코드 대상, audit-self는 플러그인 자기 코드 대상 |
 | `design` | 설계 정합성 | Design Drift, 아키텍처 일관성, Data Contract | 보안 스캔, 코드 스타일 |
 | `perf` | 성능 | N+1, 불필요 재렌더, 메모리 누수, 캐싱 | 기능 정확성, 보안 |
 

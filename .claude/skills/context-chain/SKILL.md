@@ -56,14 +56,11 @@ user-invocable: false
 | `/nova:review` 완료 | Refs의 Last Verification | events.jsonl + marker 자동 렌더 |
 | `/nova:check` 완료 | Refs의 Last Verification | events.jsonl + marker 자동 렌더 |
 | `/nova:ux-audit` 완료 | (Critical 있으면) Known Risks 추가 | events.jsonl + marker 자동 렌더 |
-| `/nova:evolve` 완료 | (필요 시) Refs/Notes | events.jsonl + marker 자동 렌더 |
 | 작업 완료 | Tasks에서 제거 | events.jsonl (work_item_transitioned) |
 
-**v5.44.0+ 단일 진실원 모델**: AI는 NOVA-STATE.md의 시계열 영역(Recent Activity 표, Recently Done 표)에 직접 행을 추가하지 않는다. 시계열은 `hooks/record-event.sh`가 `.nova/events.jsonl`에 자동 기록 + Stop hook이 `scripts/registry-render-state.sh`로 v3 marker 영역을 자동 갱신. 9개 진입점은 본문 스냅샷(Current/Phase/Refs/Risks)만 손편집한다.
+**v5.44.0+ 단일 진실원 모델**: AI는 NOVA-STATE.md의 시계열 영역(Recent Activity 표, Recently Done 표)에 직접 행을 추가하지 않는다. 시계열은 `hooks/record-event.sh`가 `.nova/events.jsonl`에 자동 기록 + Stop hook이 `scripts/registry-render-state.sh`로 v3 marker 영역을 자동 갱신. 8개 진입점은 본문 스냅샷(Current/Phase/Refs/Risks)만 손편집한다.
 
 **v3 marker 영역**: NOVA-STATE.md의 `<!-- nova:registry-rendered:start -->` ~ `<!-- nova:registry-rendered:end -->` 사이는 `scripts/registry-render-state.sh`가 자동 렌더한다. **손편집 금지**. work-item index는 `.nova/work-items/index.json`이 진실원. v2/v1 STATE(marker 부재)는 자동 렌더 silent skip — 시계열 영역이 빈 채로 유지되며 사용자가 활동을 보려면 `/nova:status` HTML 대시보드(events.jsonl 기반) 사용.
-
-**예외 — `evolve_decision` 이벤트 (v5.20.0+, JSONL only)**: `/nova:evolve --accept`/`--reject` 호출은 `.nova/events.jsonl`에 `evolve_decision` 이벤트만 append. NOVA-STATE.md 갱신 트리거 X.
 
 ## Last Activity 포맷
 

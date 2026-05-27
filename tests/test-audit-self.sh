@@ -18,10 +18,12 @@ set -eu
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 RULES="$ROOT_DIR/.claude/docs/security-rules.md"
-CMD="$ROOT_DIR/.claude/commands/audit-self.md"
+# audit-self는 Nova 개발자 전용으로 dev/에 격리됨 (플러그인 배포 제외)
+CMD="$ROOT_DIR/dev/commands/audit-self.md"
 
 # Plugin 루트 fallback (테스트 외부 호출)
 [[ -f "$RULES" ]] || RULES="$ROOT_DIR/docs/security-rules.md"
+[[ -f "$CMD" ]] || CMD="$ROOT_DIR/.claude/commands/audit-self.md"
 [[ -f "$CMD" ]] || CMD="$ROOT_DIR/commands/audit-self.md"
 
 PASS_COUNT=0

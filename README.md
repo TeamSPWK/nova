@@ -279,14 +279,12 @@ Commands provide **additional control** on top of auto-apply rules.
 | Command | Description |
 |---------|------------|
 | `/nova:ask` | Run multi-AI consultation. Queries Claude + GPT + Gemini in parallel and analyzes the consensus level. |
-| `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | Auto-run a natural-language request through the full design → implement → verify → fix cycle. |
 | `/nova:check` | Combined code review + design-implementation gap verification in one pass. |
 | `/nova:checkpoint` | Before ending a session, checks STATE drift and honestly reports classification of suspected-done items. Does not misrepresent untracked items as complete. |
 | `/nova:claude-md` | Show a guided intro, audit CLAUDE.md/AGENTS.md instructions, and propose a new/existing project reorganization. |
 | `/nova:deepplan` | Generate a deep Plan document via an Explorer → Synth → Critic → Refiner 4-stage pipeline. |
 | `/nova:design` | Write a Design document using the CPS (Context-Problem-Solution) framework. |
-| `/nova:evolve` | Scan tech trends and auto-evolve Nova. Changes are verified by Nova's own quality gate on your behalf. |
 | `/nova:migrate-state` | Migrate NOVA-STATE.md to v3 work-item registry (latest). Accepts v1/v2 input directly — no multi-hop needed. Flow: dry-run → user review → apply + drift-check auto. |
 | `/nova:next` | Diagnose current project state and recommend the next Nova command to run. |
 | `/nova:plan` | Write a Plan document using the CPS (Context-Problem-Solution) framework. |
@@ -298,24 +296,6 @@ Commands provide **additional control** on top of auto-apply rules.
 | `/nova:ux-audit` | Deep UI/UX evaluation via 5 adversarial reviewers — accessibility (WCAG 2.2), cognitive load, performance (Core Web Vitals), and dark patterns (EU DSA) analyzed from code. |
 | `/nova:worktree-setup` | Instantly symlink the main repo's .env, secrets, and config files into the current worktree. Manual retry of the SessionStart auto-hook. |
 <!-- /AUTO-GEN:commands -->
-
-## Self-Evolution
-
-Nova evolves itself. `/nova:evolve` scans tech trends, filters by Nova relevance, and proposes or applies improvements automatically.
-
-```bash
-/nova:evolve              # Scan trends + generate proposals (default)
-/nova:evolve --apply      # Implement proposals + quality gate
-/nova:evolve --auto       # scan + apply + auto-merge within scope
-```
-
-### Autonomy Policy
-
-| Level | Example | Automation |
-|-------|---------|-----------|
-| **patch** | Docs improvement, checklist updates | Auto-commit |
-| **minor** | New verification criteria, hook improvements | PR creation |
-| **major** | New commands, architecture changes | Proposal only |
 
 ### Automatic Schedule
 
@@ -371,8 +351,6 @@ Skills are multi-step operations that commands invoke internally. They can also 
 | **context-chain** | Use when session-to-session context must carry over. |
 | **deepplan** | Use when a Plan's search breadth or verification depth is insufficient and a deeper Plan is needed. |
 | **evaluator** | Use when code implementation must be verified from an adversarial stance. |
-| **evolution** | Use when evolving Nova itself. |
-| **field-test** | Use when validating the Nova methodology on real projects to find improvement points. |
 | **jury** | Use when single-Evaluator bias is a concern and an important judgment needs a multi-perspective re-review. |
 | **orchestrator** | Use when a natural-language request needs the entire development cycle auto-handled. |
 | **repo-preflight** | Use when project instructions must be checked before repository work. |

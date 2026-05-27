@@ -274,14 +274,12 @@ Nova 자동 판단:
 | Command | Description |
 |---------|------------|
 | `/nova:ask` | 멀티 AI 다관점 자문을 실행한다. Claude + GPT + Gemini 3개 AI에게 동시에 질의하고 합의 수준을 분석한다. |
-| `/nova:audit-self` | Nova 플러그인 자기 코드(plugin.json/hooks/agents/skills/commands)에 대한 정적 보안 진단을 수행한다. 30+ 룰셋 5 카테고리, security-engineer → evaluator 직렬 검증, 메인 사실 검증 회로. ECC AgentShield 영감. |
 | `/nova:auto` | 자연어 요청을 설계→구현→검증→수정 전체 사이클로 자동 실행한다. |
 | `/nova:check` | 코드 품질 리뷰 + 설계-구현 정합성 검증을 한 번에 수행한다. |
 | `/nova:checkpoint` | 세션 종료 전 STATE 드리프트를 점검하고, 완료 의심 항목을 정직하게 분류·보고한다. 검증 불가 항목을 완료로 포장하지 않는다. |
 | `/nova:claude-md` | 안내와 함께 CLAUDE.md/AGENTS.md 에이전트 지침을 감사하고 신규/기존 프로젝트 기준으로 재구성안을 만든다. |
 | `/nova:deepplan` | Explorer→Synth→Critic→Refiner 4단 파이프라인으로 깊이 있는 Plan 문서를 생성한다. |
 | `/nova:design` | CPS(Context-Problem-Solution) 프레임워크로 Design 문서를 작성한다. |
-| `/nova:evolve` | 기술 동향을 스캔하고 Nova를 자동으로 진화시킨다. 사용자 대신 Nova 품질 게이트가 변경을 검증한다. |
 | `/nova:migrate-state` | NOVA-STATE.md를 최신 v3 work-item registry로 변환한다. v1/v2 입력 모두 직접 v3 가능. dry-run → 사용자 검수 → apply + drift-check 자동. |
 | `/nova:next` | 현재 프로젝트 상태를 진단하고 다음에 실행할 Nova 커맨드를 추천한다. |
 | `/nova:plan` | CPS(Context-Problem-Solution) 프레임워크로 Plan 문서를 작성한다. |
@@ -293,30 +291,6 @@ Nova 자동 판단:
 | `/nova:ux-audit` | 5인 적대적 평가자로 UI/UX를 다관점 심층 평가. 접근성(WCAG 2.2)·인지 부하·성능(Core Web Vitals)·다크 패턴(EU DSA)까지 코드 기반 분석. |
 | `/nova:worktree-setup` | 현재 worktree에서 메인 레포의 .env·시크릿·설정 파일을 즉시 심볼릭 링크한다. SessionStart 자동 훅의 수동 재시도 버전. |
 <!-- /AUTO-GEN:commands -->
-
-## Self-Evolution (자동 진화)
-
-Nova는 스스로 진화한다. `/nova:evolve`가 기술 동향을 스캔하고, Nova에 적용할 개선점을 찾아 제안하거나 직접 구현한다.
-
-```bash
-/nova:evolve              # 기술 동향 스캔 + 제안서 생성 (기본)
-/nova:evolve --apply      # 제안서 기반 구현 + 품질 게이트
-/nova:evolve --auto       # scan + apply + 자율 범위 자동 머지
-```
-
-### 자율 범위 정책
-
-| 수준 | 예시 | 자동화 |
-|------|------|--------|
-| **patch** | 문서 개선, 체크리스트 보완 | 자동 커밋 |
-| **minor** | 검증 기준 추가, 훅 개선 | PR 생성 |
-| **major** | 새 커맨드, 아키텍처 변경 | 제안서만 |
-
-### 자동 스케줄
-
-Claude Code 원격 에이전트로 **매주 월/수/금 06:00 KST**에 자동 실행된다.
-
-관리: https://claude.ai/code/scheduled
 
 ## MCP 서버
 
@@ -366,8 +340,6 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 | **context-chain** | 세션 간 맥락을 연결해야 할 때. |
 | **deepplan** | Plan 문서의 탐색 폭/검증 깊이가 부족할 때 깊이 있는 Plan을 생성한다. |
 | **evaluator** | 코드 구현을 적대적 관점으로 검증해야 할 때. |
-| **evolution** | Nova 자체를 진화시킬 때 사용한다. |
-| **field-test** | Nova 방법론을 실제 프로젝트에서 검증해 개선 포인트를 찾을 때. |
 | **jury** | 단일 Evaluator의 편향이 우려되는 중요 판단일 때 여러 관점으로 재검토한다. |
 | **orchestrator** | 자연어 요청을 받아 전체 개발 사이클을 자동 처리해야 할 때. |
 | **repo-preflight** | 레포 작업을 시작하기 전에 프로젝트 지침을 확인해야 할 때. |
