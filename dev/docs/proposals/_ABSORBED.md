@@ -28,6 +28,9 @@
 | measurement-closed-loop | (Nova 자체) | v5.24.0 | `scripts/publish-metrics.sh` + `docs/guides/publish-metrics.md` | active |
 | visual-intent-verify-g1-g3 | (Nova 자체) | v5.26.0 | UI 변경 시 시각 의도 캡처(G1) + 자가 검증(G3) 페어 게이트 | active |
 | audit-teammates-shutdown | (Nova 자체) | v5.47.9 | `hooks/audit-teammates.sh` — leader shutdown_request 누락 좀비 감지 | active |
+| anthropic-session-start-reload-skills | https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md | v5.49.0 | `hooks/session-start.sh` — NOVA_AUTO_RELOAD_SKILLS=1 opt-in, CC v2.1.152+ | active |
+| anthropic-mcp-claude-project-dir | https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md | v5.49.0 | `mcp-server/src/util/project-dir.ts` + 4 tools (get-state/repo-preflight/orchestration-tracker/x-verify), CC v2.1.141+ | active |
+| external-context-chain-comparison | https://github.com/thedotmack/claude-mem , https://github.com/parcadei/Continuous-Claude-v3 | v5.49.0 | `docs/comparison/context-chain-vs-external.md` + README 영/한 1줄 링크 | active |
 
 ## 매칭 알고리즘 (evolve Phase 2)
 
