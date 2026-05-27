@@ -538,6 +538,36 @@ assert "session-start.sh: NOVA_AUTO_RELOAD_SKILLS=1 시에도 JSON 유효" \
 assert "session-start.sh: NOVA_SUBAGENT=1 + opt-in 조합에서도 reloadSkills 미포함 (intentional)" \
   "! NOVA_SUBAGENT=1 NOVA_AUTO_RELOAD_SKILLS=1 bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -q 'reloadSkills'"
 
+# v5.49.1 A 조치: release.sh Step 7.5 review_pass 자동 기록 (--emergency 남용 차단)
+assert "release.sh: Step 7.5 review_pass 자동 기록 라인 존재 (A 조치)" \
+  "grep -q 'review_pass 자동 기록' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: record-event.sh review_pass 호출 존재" \
+  "grep -qE 'record-event\\.sh.*review_pass' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: review_pass source=release.sh 명시" \
+  "grep -q '\"source\":\"release.sh\"' '$ROOT_DIR/scripts/release.sh'"
+
+# v5.49.1 B 조치: release.sh NOVA_LEDGER_APPEND 흡수 (별도 ledger commit 차단)
+assert "release.sh: NOVA_LEDGER_APPEND 환경변수 처리 존재 (B 조치)" \
+  "grep -q 'NOVA_LEDGER_APPEND' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: _ABSORBED.md append 라인 존재" \
+  "grep -q '_ABSORBED.md' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: ledger append가 Step 3(커밋) 이전에 위치 (통합 commit에 포함)" \
+  "awk '/Step 2.7/{found=1} /Step 3/{exit found ? 0 : 1}' '$ROOT_DIR/scripts/release.sh'"
+
+assert "dev/commands/evolve.md: NOVA_LEDGER_APPEND 권장 패턴 문서화" \
+  "grep -q 'NOVA_LEDGER_APPEND' '$ROOT_DIR/dev/commands/evolve.md'"
+
+# v5.49.1 P2 보강: A 조용한 실패 WARN + B 크기 상한 advisory (QA Engineer 권고)
+assert "release.sh: review_pass 기록 실패 시 WARN 메시지 노출 (조용한 실패 차단)" \
+  "grep -q 'review_pass 기록 실패' '$ROOT_DIR/scripts/release.sh'"
+
+assert "release.sh: NOVA_LEDGER_APPEND >10KB advisory (비대화 차단)" \
+  "grep -q '10KB' '$ROOT_DIR/scripts/release.sh'"
+
 # v5.49.0 P-5: 외부 context-chain 도구 비교 문서 존재
 assert "docs/comparison/context-chain-vs-external.md 존재 (P-5)" \
   "test -f '$ROOT_DIR/docs/comparison/context-chain-vs-external.md'"

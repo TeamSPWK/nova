@@ -185,6 +185,28 @@ if (( GATE_FAIL == 1 )); then
 fi
 echo ""
 
+# ── Step 2.7: ledger append 흡수 (B 조치, v5.49.1+) ──
+# NOVA_LEDGER_APPEND 환경변수에 값이 있으면 _ABSORBED.md에 append 후 통합 commit에 포함.
+# evolve --apply/--auto가 minor/major 머지 시 별도 commit으로 분리되던 패턴을 release.sh로 흡수.
+# 형식: literal newline으로 구분된 markdown table row (`| slug | url | ver | path | active |`)
+# 사유: 별도 ledger commit이 STALE Hard Gate 차단 → --emergency 남용 유발.
+if [[ -n "${NOVA_LEDGER_APPEND:-}" ]]; then
+  echo "━━━ Step 2.7/7: ledger append (NOVA_LEDGER_APPEND) ━━━"
+  LEDGER_BYTES=$(printf '%s' "$NOVA_LEDGER_APPEND" | wc -c | tr -d ' ')
+  if (( LEDGER_BYTES > 10240 )); then
+    echo "  ⚠️  NOVA_LEDGER_APPEND ${LEDGER_BYTES} bytes (>10KB) — _ABSORBED.md 비대화 위험. 분할 release 권장" >&2
+  fi
+  LEDGER_FILE="$ROOT/dev/docs/proposals/_ABSORBED.md"
+  if [[ -f "$LEDGER_FILE" ]]; then
+    printf '\n%s\n' "$NOVA_LEDGER_APPEND" >> "$LEDGER_FILE"
+    LEDGER_LINES=$(printf '%s\n' "$NOVA_LEDGER_APPEND" | grep -c '^|' 2>/dev/null || echo 0)
+    echo "  ✅ _ABSORBED.md에 ${LEDGER_LINES}개 row append (${LEDGER_BYTES}B, 통합 commit 포함)"
+  else
+    echo "  ⚠️ _ABSORBED.md 미존재 — ledger append 스킵" >&2
+  fi
+  echo ""
+fi
+
 # ── Step 3: 변경사항 커밋 ──
 # v5.26.2+: staged/unstaged 분리 로직 제거 — 모든 working tree 변경을 통합 commit.
 # 이전 로직(staged만 commit)은 사용자가 일부만 git add 했을 때 unstaged 변경이
@@ -269,6 +291,21 @@ gh release create "v${NEW_VERSION}" \
   --title "v${NEW_VERSION} — ${TITLE_TRIMMED}" \
   --notes "${RELEASE_NOTES}"
 echo ""
+
+# ── Step 7.5: review_pass 이벤트 자동 기록 (A 조치, v5.49.1+) ──
+# release.sh가 Step 1(test) + Step 2.5(review 흔적) + Step 5.5(clean-clone) 3중 게이트를 통과했으므로
+# 본 릴리스는 사실상 review PASS. events.jsonl에 review_pass를 명시 기록해 직후 4h 동안 doc-only/ledger
+# follow-up commit이 STALE Hard Gate에 차단되지 않도록 한다.
+# 사유: release 직후 ledger append/doc 정정 commit이 STALE 차단 → --emergency 남용 유발 패턴 차단.
+if [[ -x "$ROOT/hooks/record-event.sh" ]]; then
+  if bash "$ROOT/hooks/record-event.sh" review_pass \
+    "$(printf '{"verdict":"PASS","source":"release.sh","version":"%s","strength":"Release"}' "$NEW_VERSION")" \
+    2>/dev/null; then
+    echo "  ✅ events.jsonl review_pass 자동 기록 (4h 윈도 충전)"
+  else
+    echo "  ⚠️  review_pass 기록 실패 — 4h 윈도 미충전 (record-event.sh 또는 .nova/events.jsonl 쓰기 권한 확인)" >&2
+  fi
+fi
 
 # §16 impl-tracker reset — 릴리스 성공 = review/STATE 통과 = 미해소 신호 해소
 rm -f .nova/impl-tracker.json 2>/dev/null

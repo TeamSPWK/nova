@@ -251,15 +251,21 @@ Gate Chain 통과 후 patch 변경이 1건 이상이면:
 gh issue close {이슈번호} --repo TeamSPWK/nova --comment "v{새버전}에서 적용 완료"
 ```
 
-### Ledger Append (minor/major 머지 직후)
+### Ledger Append (release.sh 흡수, v5.49.1+)
 
-minor PR 머지 또는 major 사용자 결재 + 머지 직후 `dev/docs/proposals/_ABSORBED.md`에 행 추가:
+minor PR 머지 또는 major 사용자 결재 + 머지 직후 `dev/docs/proposals/_ABSORBED.md`에 행 추가가 필요하다. v5.49.1+부터 **`release.sh`가 `NOVA_LEDGER_APPEND` 환경변수**를 받아 통합 commit에 자동 흡수한다 — 별도 ledger commit이 STALE Hard Gate에 차단되던 `--emergency` 남용 패턴을 차단한다.
+
+```bash
+# 권장 패턴: ledger row를 환경변수로 전달 → release.sh가 자동 append + commit 포함
+NOVA_LEDGER_APPEND=$'| pattern-slug-1 | https://source-url | v5.49.0 | path/to/artifact | active |\n| pattern-slug-2 | https://source-url-2 | v5.49.0 | path/to/artifact-2 | active |' \
+  bash scripts/release.sh minor "feat: ...설명... — review PASS"
 ```
-| {pattern_slug} | {source_url} | v{current_version} | {nova_artifact_path} | active |
-```
-- patch는 ledger 영향 없음 (문서 보정 수준이라 중복 제안 차단 가치 낮음)
-- `pattern_slug`는 kebab-case 외부 도구 일반명 (예: `aider-repo-map`, `cursor-rules-mdc`)
-- 누락된 ledger append는 다음 evolve 사이클에서 동일 제안 재발생 → 중복 제안 차단 실패
+
+- 형식: literal newline(`\n`) separated markdown table row. `bash $'...'` ANSI-C quoting 사용.
+- patch는 ledger 영향 없음 (문서 보정 수준이라 중복 제안 차단 가치 낮음).
+- `pattern_slug`는 kebab-case 외부 도구 일반명 (예: `aider-repo-map`, `cursor-rules-mdc`).
+- 누락된 ledger append는 다음 evolve 사이클에서 동일 제안 재발생 → 중복 제안 차단 실패.
+- **release.sh 외부에서 별도 ledger commit 금지** — STALE Hard Gate 차단 + `--emergency` 남용 트리거.
 
 ```
 [Nova Evolve] Phase 4/4: 구현 + 품질 게이트 중...
