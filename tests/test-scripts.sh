@@ -3757,6 +3757,48 @@ assert "R37o: session-start.sh — 자동 액션 (PENDING/preview 생성) 코드
   "! grep -q 'cat > \"\$_MP_FILE\"' '$ROOT_DIR/hooks/session-start.sh' && \
    ! grep -q 'MIGRATE_PREFIX' '$ROOT_DIR/hooks/session-start.sh'"
 
+# R37p: session-start.sh — 기본 sessionTitle = <프로젝트> · <goal> (Nova: prefix 제거, 프로젝트명 우선)
+assert "R37p: session-start.sh — 기본 라벨 = <프로젝트> · <goal> (Nova: prefix 없음)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: build login\nactive_ao: null\nhandoff: null\n---\n# Body\n' > NOVA-STATE.md; \
+   PROJ=\$(basename \"\$(git rev-parse --show-toplevel 2>/dev/null || echo \"\$TMPD\")\"); \
+   T=\$(echo '{}' | NOVA_TITLE_PREFIX='' bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   S=0; \
+   case \"\$T\" in Nova:*) S=1;; esac; \
+   echo \"\$T\" | grep -q \"\$PROJ\" || S=1; \
+   echo \"\$T\" | grep -q 'build login' || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37q: session-start.sh — NOVA_TITLE_PREFIX 커스텀 접두사가 라벨 맨 앞에 적용
+assert "R37q: session-start.sh — NOVA_TITLE_PREFIX 커스텀 접두사 반영" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: gx\nactive_ao: null\nhandoff: null\n---\n# Body\n' > NOVA-STATE.md; \
+   T=\$(echo '{}' | NOVA_TITLE_PREFIX='ZZ ' bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   S=1; case \"\$T\" in 'ZZ '*) S=0;; esac; \
+   echo \"\$T\" | grep -q 'gx' || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# R37r: session-start.sh — goal 없으면 (NOVA-STATE.md 없음) 라벨 = 프로젝트명만
+assert "R37r: session-start.sh — goal 없으면 라벨 = 프로젝트명만 (' · ' 구분자 없음)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   PROJ=\$(basename \"\$(git rev-parse --show-toplevel 2>/dev/null || echo \"\$TMPD\")\"); \
+   T=\$(echo '{}' | NOVA_TITLE_PREFIX='' bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"hookSpecificOutput\"][\"sessionTitle\"])'); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; \
+   [ \"\$T\" = \"\$PROJ\" ]"
+
+# R37s: 세션 라벨 가이드 문서 존재 + NOVA_TITLE_PREFIX 키워드 (커스터마이즈 발견성)
+assert "R37s: docs/guides/session-nametag.md 존재 + NOVA_TITLE_PREFIX 문서화" \
+  "test -f '$ROOT_DIR/docs/guides/session-nametag.md' && \
+   grep -q 'NOVA_TITLE_PREFIX' '$ROOT_DIR/docs/guides/session-nametag.md'"
+
+# R37t: v2 multi-line goal(YAML block scalar)도 JSON 유효 (개행 → 공백 정규화, JSON 깨짐 방지)
+assert "R37t: session-start.sh — multi-line goal → JSON 유효 (개행 정규화)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   printf -- '---\nschema_version: 2\ngoal: |\n  line one\n  line two\nactive_ao: null\nhandoff: null\n---\n# Body\n' > NOVA-STATE.md; \
+   S=0; \
+   echo '{}' | NOVA_TITLE_PREFIX='' bash $ROOT_DIR/hooks/session-start.sh 2>/dev/null | python3 -m json.tool >/dev/null 2>&1 || S=1; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

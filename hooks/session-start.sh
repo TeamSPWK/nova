@@ -44,7 +44,13 @@ NOVA_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # NOVA-STATE.md에서 Goal 읽기 (v2 frontmatter 우선, v1 감지 시 자동 마이그레이션)
 # Spec: docs/specs/nova-state-schema-v2.md §9 (자동 트리거)
-SESSION_TITLE="Nova"
+# 세션 라벨: 프로젝트명(git 레포명 → cwd basename)을 정체성으로 우선 — 여러 세션 식별 용이.
+# 가이드: docs/guides/session-nametag.md
+# NOVA_TITLE_PREFIX: 라벨 맨 앞에 붙는 접두사. 미설정/빈 값이면 없음(기본).
+#   마커/브랜딩 원하면 export NOVA_TITLE_PREFIX="◆ " → "◆ <프로젝트> · <goal>".
+NOVA_TITLE_PREFIX="${NOVA_TITLE_PREFIX-}"
+_NOVA_PROJECT="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")")"
+SESSION_TITLE="${NOVA_TITLE_PREFIX}${_NOVA_PROJECT}"
 MIGRATE_NOTICE=""
 if [ -f "NOVA-STATE.md" ] && command -v python3 >/dev/null 2>&1; then
   _STATE_INFO=$(python3 - <<'PYEOF' 2>/dev/null
@@ -58,6 +64,7 @@ def _truncate_goal(g):
     """sessionTitle 시각 품질 — 강조 제거 + 자연 자르기 + 80자 cap (CJK 친화)"""
     if not g:
         return ''
+    g = re.sub(r'\s+', ' ', g).strip()  # 개행/탭/연속공백 → 단일 공백 (multi-line goal JSON 보호)
     g = re.sub(r'\*\*(.+?)\*\*', r'\1', g)
     g = re.sub(r'__(.+?)__', r'\1', g)
     for sep in ('. ', ' — ', ' (', ', '):
@@ -112,12 +119,12 @@ PYEOF
   fi
 
   if [ -n "$GOAL" ]; then
-    SESSION_TITLE="Nova: $GOAL"
+    SESSION_TITLE="${NOVA_TITLE_PREFIX}${_NOVA_PROJECT} · $GOAL"
   fi
 elif [ -f "NOVA-STATE.md" ]; then
   # python3 미설치 환경 fallback (v1 패턴만)
   GOAL=$(grep -m1 '^\- \*\*Goal\*\*:' NOVA-STATE.md 2>/dev/null | sed 's/.*\*\*Goal\*\*: *//')
-  [ -n "$GOAL" ] && SESSION_TITLE="Nova: $GOAL"
+  [ -n "$GOAL" ] && SESSION_TITLE="${NOVA_TITLE_PREFIX}${_NOVA_PROJECT} · $GOAL"
 fi
 
 # JSON 특수문자 이스케이프
