@@ -1005,6 +1005,16 @@ assert "dev/evolve.md: 외부 소스 최소 2개 의무 규칙 명시" \
 assert "dev/evolve.md: Limited scan 경고 규칙 명시" \
   "grep -q 'Limited scan' '$ROOT_DIR/dev/commands/evolve.md'"
 
+# D2) evolve 출처 진위 1차 대조 + 직전 비채택 중복 차단 (P-10, v5.51.0) — evolve.md ↔ SKILL.md 동기화 가드
+assert "dev/evolve.md: WebSearch-only 단독 근거 금지 규칙 (P-10)" \
+  "grep -q 'WebSearch-only' '$ROOT_DIR/dev/commands/evolve.md'"
+assert "dev/skills/evolution/SKILL.md: WebSearch-only 단독 근거 금지 규칙 (P-10 동기화)" \
+  "grep -q 'WebSearch-only' '$ROOT_DIR/dev/skills/evolution/SKILL.md'"
+assert "dev/evolve.md: 직전 비채택 재제출 차단 규칙 (P-10)" \
+  "grep -q '직전 비채택' '$ROOT_DIR/dev/commands/evolve.md'"
+assert "dev/skills/evolution/SKILL.md: 직전 비채택 재제출 차단 규칙 (P-10 동기화)" \
+  "grep -q '직전 비채택' '$ROOT_DIR/dev/skills/evolution/SKILL.md'"
+
 # E) Generator TDD-first 시그널 (P-5, v5.30.2)
 assert "run.md Generator: TDD-first 시그널 가이드 명시" \
   "grep -q 'TDD-first 시그널' '$ROOT_DIR/.claude/commands/run.md'"

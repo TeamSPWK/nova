@@ -58,6 +58,7 @@ Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch
    ```
    각 결과에서 `name/full_name/description/stargazers_count/html_url/topics/updated_at` 컬럼만 추출. rate-limit(403) 시 해당 쿼리만 skip하고 나머지 진행.
 3. 발견한 항목마다 **출처 URL**을 반드시 기록한다 (환각 방지). URL 미확인 항목은 "미확인" 표기 후 제안에서 제외.
+   - **고위험 출처 1차 대조 (P-10, v5.51.0+)**: WebSearch-only 학술 인용(arxiv 등)·개인 블로그는 환각/오인용/결론왜곡 위험이 높다(2026-06-01 사이클에서 arxiv 인용 3/3 결함 실증 — 제목 불일치 1, 결론 상반 1, 맥락 차이 1). 이런 출처는 제안서 진입 전 **WebFetch로 제목·결론을 1차 대조**해 인용 주장과 일치하는지 확인한다. 대조 미통과(제목 불일치·결론 상반·미확인) 시 단독 근거로 쓰지 않고 **보조 근거로 강등**한다. Anthropic 공식 호스트·stars≥임계 GitHub는 경량 확인으로 차등(전수 검증 아님 — 비용/지연 통제).
 4. **소스 다양성 의무**: Anthropic 공식 외에 최소 **2개 이상의 외부 소스**를 반드시 포함한다.
    외부 소스 후보 (택 2 이상): GitHub awesome-list (예: `VoltAgent/awesome-agent-skills`, `hesreallyhim/awesome-claude-code`),
    외부 코딩 에이전트 공식 가이드 (Cursor / Cline / Aider / Continue.dev / Windsurf 공식 블로그·docs),
@@ -102,7 +103,8 @@ Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch
 
 1. `source_url` substring 매칭 (status≠deprecated 한정) → **"이미 흡수: {pattern_slug}"** 표기 후 폐기
 2. 미매칭 시 `title/description` 키워드와 ledger `pattern_slug` fuzzy 매칭 → **"잠재 중복: {pattern_slug}"** 표기 후 보고서에 노출 (자동 폐기 X, 사용자 확인)
-3. 매칭 없음 → ③ MUST 조건으로 진행
+3. **직전 비채택 매칭 (P-10, v5.51.0+)**: ledger 미매칭이어도 직전 사이클 제안서(`docs/proposals/*-evolve-scan.md`)의 **비채택(drop/defer/⊘) 항목**과 주제가 같으면 → **"직전 비채택 재제출: {slug} ({기각 사유})"** 표기. 직전 기각 사유를 반박하는 **새 근거 없이는 제안에서 제외** — 동일 논점 1사이클 만의 재제출(예: tree-sitter 압축맵 graphify→RepoMapper) 차단.
+4. 매칭 없음 → ③ MUST 조건으로 진행
 
 ### ③ MUST/MUST NOT 조건 (Nova 관점)
 
@@ -120,7 +122,7 @@ Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch
    - Nova에 없는 새로운 패턴/기법인가?
    - 사용자 경험을 개선할 수 있는가?
 
-MUST NOT (Nova 철학·구조 위배 시 폐기): 하네스 엔지니어링에 반함, Generator-Evaluator 약화, 출처 URL 부재, `.claude/rules/` 우선순위 침범.
+MUST NOT (Nova 철학·구조 위배 시 폐기): 하네스 엔지니어링에 반함, Generator-Evaluator 약화, 출처 URL 부재, `.claude/rules/` 우선순위 침범, **WebSearch-only 학술/블로그 인용을 단독 근거로 한 변경**(WebFetch 1차 대조 미통과 시 — P-10).
 
 ```
 [Nova Evolve] Phase 2/4: 관련성 필터 중...

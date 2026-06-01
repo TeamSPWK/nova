@@ -46,3 +46,5 @@ Scanner가 발견한 항목 `X`에 대해:
 - 신규 흡수: evolve Phase 4가 minor/major 머지 직후 자동 append. AI는 별도 행동 불필요.
 - 수동 보정: `status: deprecated` 또는 `nova_artifact` 컬럼 갱신은 PR로 처리. 시계열 추적 필요 시 `.nova/events.jsonl`의 `ledger_update` 이벤트 활용.
 - 시드 신뢰성: 본 시드는 retroactive 자가 선언이며, 측정 의무 없음(slug 매칭표 용도). 정체성 주장이 아닌 중복 방지용 인덱스로만 운용한다.
+
+| evolve-source-verification | (Nova 자체, 2026-06-01 arxiv 3/3 결함 실증) | v5.51.0 | dev/commands/evolve.md, dev/skills/evolution/SKILL.md | active |
