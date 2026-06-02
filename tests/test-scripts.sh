@@ -1471,9 +1471,11 @@ assert "A3: session-start.sh strict 모드에 visual gate" \
 assert "A3: session-start.sh JSON 유효 (3 모드)" \
   "bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null && NOVA_PROFILE=strict bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null && NOVA_PROFILE=lean bash '$ROOT_DIR/hooks/session-start.sh' | python3 -m json.tool > /dev/null"
 
-# A3-2: session-start standard 모드 크기 hard limit 2500 미만 (메모리 lightweight 원칙)
-assert "A3: session-start standard 모드 hard limit 2500 미만" \
-  "[ \"\$(bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext' | wc -c | tr -d ' ')\" -lt 2500 ]"
+# A3-2: session-start 크기 hard limit 2500 미만 (메모리 lightweight 원칙)
+# NOVA_MEASUREMENT_BASELINE=1 — 누적 .nova 상태(impl-tracker/drift/migrate advisory)가 측정에 새지 않도록 격리
+# (line 980 size 테스트와 동일 정책 — pristine HEAD는 통과하나 세션 누적 상태로 flaky하던 것 결정화, v5.53.0+).
+assert "A3: session-start 크기 hard limit 2500 미만 (baseline 격리)" \
+  "[ \"\$(NOVA_MEASUREMENT_BASELINE=1 bash '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext' | wc -c | tr -d ' ')\" -lt 2500 ]"
 
 # A3-3: nova-rules.md §14 추가
 assert "A3: nova-rules.md §14 UI Visual Intent + Self-Verify 섹션" \
@@ -2591,15 +2593,16 @@ assert "S9.21: scope 필터 — docs/specs/*.md는 코드 동등(차단 유지)"
    echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
    cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
 
-# S9.22: 4시간 윈도 — events.jsonl review_pass 1초 전 + STALE fixture → exit 0
-assert "S9.22: 4h 윈도 — events.jsonl review_pass 방금 기록 + STALE → exit 0" \
+# S9.22: 4시간 윈도(v5.53.0+ 파일 바인딩) — staged 파일 커버하는 review_pass + STALE → exit 0
+assert "S9.22: 4h 윈도 — staged 파일 바인딩된 review_pass 방금 기록 + STALE → exit 0" \
   "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
    git init -q . && git config user.email t@t && git config user.name t; \
-   mkdir scripts && touch scripts/foo.sh && git add scripts/foo.sh; \
+   mkdir scripts && echo code > scripts/foo.sh && git add scripts/foo.sh; \
    cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
    mkdir -p .nova; \
    NOW=\$(date +%s); \
-   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW}\" > .nova/events.jsonl; \
+   SHA=\$(git show :scripts/foo.sh | shasum -a 256 | awk '{print \$1}'); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW,\\\"extra\\\":{\\\"files\\\":[{\\\"path\\\":\\\"scripts/foo.sh\\\",\\\"content_sha256\\\":\\\"\$SHA\\\"}]}}\" > .nova/events.jsonl; \
    echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
    cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
 
@@ -2663,6 +2666,58 @@ assert "S9.27: NOVA_PASS_WINDOW_SEC 상한 클램핑 — 30일 설정해도 1일
    echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$OLD}\" > .nova/events.jsonl; \
    NOVA_PASS_WINDOW_SEC=2592000 bash '$HOOK' < <(echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}') >/dev/null 2>&1; S=\$?; \
    cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# ── v5.53.0+: review_pass 파일 바인딩 (self-attest 우회 차단) ──
+
+# S9.28: 무바인딩 review_pass '{}' 한 줄 우회 시도 + staged 코드 → exit 2 (우회 차단 — 핵심 계약)
+assert "S9.28: 바인딩 — 무바인딩 review_pass(files 없음) + staged 코드 → exit 2 (우회 차단)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo code > scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.29: review_pass files가 staged sha 커버 → exit 0 (정상 바인딩 통과)
+assert "S9.29: 바인딩 — review_pass files가 staged sha 커버 → exit 0 (정상 통과)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo code > scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   SHA=\$(git show :scripts/foo.sh | shasum -a 256 | awk '{print \$1}'); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW,\\\"extra\\\":{\\\"files\\\":[{\\\"path\\\":\\\"scripts/foo.sh\\\",\\\"content_sha256\\\":\\\"\$SHA\\\"}]}}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S9.30: review_pass가 다른 파일만 커버(staged 미커버) → exit 2 (부분/불일치 거부)
+assert "S9.30: 바인딩 — review_pass가 staged 파일 미커버(다른 파일만) → exit 2" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo code > scripts/foo.sh && git add scripts/foo.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW,\\\"extra\\\":{\\\"files\\\":[{\\\"path\\\":\\\"other.sh\\\",\\\"content_sha256\\\":\\\"deadbeefdeadbeef\\\"}]}}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.31: 다중(2) 파일 모두 커버 → exit 0 (BSD/macOS awk -v 개행 회귀 가드 — single-file S9.29가 못 잡음)
+assert "S9.31: 바인딩 — 다중 staged 파일(2개 distinct) 모두 커버 → exit 0 (multi-file, build-files-payload 경유)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; \
+   git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo aaa > scripts/a.sh && echo bbb > scripts/b.sh && git add scripts/a.sh scripts/b.sh; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   mkdir -p .nova; \
+   NOW=\$(date +%s); \
+   FILES=\$(bash '$ROOT_DIR/scripts/lib/build-files-payload.sh'); \
+   echo \"{\\\"event_type\\\":\\\"review_pass\\\",\\\"timestamp_epoch\\\":\$NOW,\\\"extra\\\":{\\\"files\\\":\$FILES}}\" > .nova/events.jsonl; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
 
 echo ""
 

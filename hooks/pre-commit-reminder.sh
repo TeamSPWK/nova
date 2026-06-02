@@ -48,6 +48,52 @@ fi
 # 판정 순서 고정: events.jsonl 4h 윈도 → MISSING → CONFLICT → EMPTY → NO_PASS → TIMESTAMP_BROKEN → STALE → PASS
 # v5.48.1+: events.jsonl의 review_pass 이벤트가 4시간(NOVA_PASS_WINDOW_SEC 환경변수로 오버라이드 가능) 이내면 우선 PASS.
 #          fallback은 기존 NOVA-STATE.md Recent Activity 첫 row 로직(하위 호환).
+# ── v5.53.0+: review_pass 파일 바인딩 헬퍼 (self-attest 우회 차단) ──
+# 게이트 4h 윈도 PASS를 "review_pass가 현재 staged 파일을 커버"할 때만 인정한다.
+# files 없는(무바인딩) review_pass 한 줄(`record-event.sh review_pass '{}'`)로 게이트를
+# 통과시키던 우회를 닫는다 — 측정 채널(events.jsonl)과 통과 채널을 분리.
+# sha 소스는 staged blob(`git show :<path>`) — 리뷰 시점·커밋 시점이 동일 소스라야 일치.
+
+# staged 파일들의 content sha256(개행 분리) 출력. git/shasum/staged 없으면 빈 출력(보수적).
+_staged_content_shas() {
+  command -v git >/dev/null 2>&1 || return 0
+  command -v shasum >/dev/null 2>&1 || return 0
+  local f sha
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    sha=$(git show ":$f" 2>/dev/null | shasum -a 256 2>/dev/null | awk '{print $1}')
+    [ -n "$sha" ] && printf '%s\n' "$sha"
+  done < <(git -c core.quotepath=false diff --cached --name-only 2>/dev/null)
+}
+
+# in-window review_pass 중 staged_shas를 모두 커버(부분집합)하는 게 있으면 exit 0.
+# 인자: <events_file> <cutoff_epoch> <now_epoch> <staged_shas(개행분리)>
+_window_review_pass_covers() {
+  local events_file="$1" cutoff="$2" now="$3" staged_shas="$4"
+  local line ts ledger_shas ledger_oneline
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    ts=$(printf '%s' "$line" | jq -r '.timestamp_epoch // 0' 2>/dev/null || echo 0)
+    case "$ts" in ''|*[!0-9]*) continue ;; esac
+    # 윈도 범위 + 미래(NTP 역행/시계 오설정) 방어
+    [ "$ts" -ge "$cutoff" ] || continue
+    [ "$ts" -le "$now" ] || continue
+    ledger_shas=$(printf '%s' "$line" | jq -r '.extra.files[].content_sha256 // empty' 2>/dev/null)
+    [ -n "$ledger_shas" ] || continue
+    # awk -v 는 개행 포함 값을 거부(BSD/macOS awk: "newline in string") → sha(공백 없는 hex)를 공백 조인.
+    ledger_oneline=$(printf '%s' "$ledger_shas" | tr '\n' ' ')
+    # staged_shas ⊆ ledger_shas ?
+    if printf '%s\n' "$staged_shas" | awk -v ledger="$ledger_oneline" '
+        BEGIN { n=split(ledger, L, " "); for(i=1;i<=n;i++) if(L[i]!="") H[L[i]]=1 }
+        NF { if (!($1 in H)) { bad=1; exit } }
+        END { exit (bad?1:0) }
+      '; then
+      return 0
+    fi
+  done < <(grep '"event_type":"review_pass"' "$events_file" 2>/dev/null)
+  return 1
+}
+
 check_evaluator_pass() {
   # ── v5.48.1+: events.jsonl review_pass 시간 윈도 조회 (단일 진실원 정합) ──
   local events_file="${NOVA_EVENTS_PATH:-.nova/events.jsonl}"
@@ -61,18 +107,17 @@ check_evaluator_pass() {
     window_sec=86400
   fi
   if [ "$window_sec" -gt 0 ] && [ -f "$events_file" ] && command -v jq >/dev/null 2>&1; then
-    local now_epoch latest_pass_epoch diff_sec
+    # v5.53.0+: 파일 바인딩 — staged 파일을 커버하는 in-window review_pass만 PASS 인정.
+    # (구버전은 최신 review_pass의 timestamp만 봐서 `review_pass '{}'` 한 줄로 우회 가능했음.)
+    local now_epoch cutoff_epoch staged_shas
     now_epoch=$(date +%s)
-    latest_pass_epoch=$(grep '"event_type":"review_pass"' "$events_file" 2>/dev/null \
-      | tail -1 \
-      | jq -r '.timestamp_epoch // 0' 2>/dev/null || echo "0")
-    if [ -n "$latest_pass_epoch" ] && [ "$latest_pass_epoch" -gt 0 ]; then
-      diff_sec=$((now_epoch - latest_pass_epoch))
-      # NTP 역행/시계 오설정으로 음수 diff면 신뢰 불가 → fallback (보수적)
-      if [ "$diff_sec" -ge 0 ] && [ "$diff_sec" -le "$window_sec" ]; then
-        echo "PASS"
-        return
-      fi
+    cutoff_epoch=$((now_epoch - window_sec))
+    staged_shas=$(_staged_content_shas)
+    # staged 코드 파일이 없으면(doc-only/삭제) 윈도 바인딩 평가 불가 → fallback/SCOPE_SKIP가 처리.
+    if [ -n "$staged_shas" ] \
+       && _window_review_pass_covers "$events_file" "$cutoff_epoch" "$now_epoch" "$staged_shas"; then
+      echo "PASS"
+      return
     fi
   fi
 
@@ -216,12 +261,12 @@ if [ "$STATE" != "PASS" ]; then
   MISSING           -> NOVA-STATE.md 없음. /nova:check 실행 후 커밋.
   EMPTY             -> Last Activity 섹션 비어있음. 검증 기록 추가 필요.
   NO_PASS           -> 최근 활동에 PASS 없음. /nova:review 또는 /nova:check 실행.
-  STALE             -> 최근 PASS 없음(events.jsonl review_pass 4h+ 이전 또는 NOVA-STATE.md 첫 row가 오늘 아님). /nova:review 재실행.
+  STALE             -> 최근 PASS 없음(review_pass 4h+ 이전, staged 파일 미커버, 또는 NOVA-STATE.md 첫 row가 오늘 아님). /nova:review 재실행.
   TIMESTAMP_BROKEN  -> 타임스탬프 파싱 실패. NOVA-STATE.md 포맷 확인.
 
 자동 우회 (v5.48.1+):
   scope 필터    — README/CHANGELOG/LICENSE/docs/guides/dev/docs 등 doc-only 커밋은 자동 통과
-  4시간 윈도     — events.jsonl의 review_pass 이벤트가 4시간 이내면 자동 통과
+  4시간 윈도     — review_pass가 4시간 이내 + staged 파일 sha 커버 시 자동 통과 (v5.53.0+ 바인딩)
                   (NOVA_PASS_WINDOW_SEC 환경변수로 윈도 조정 가능)
 
 긴급 우회:

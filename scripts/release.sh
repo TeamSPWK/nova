@@ -301,16 +301,20 @@ gh release create "v${NEW_VERSION}" \
   --notes "${RELEASE_NOTES}"
 echo ""
 
-# ── Step 7.5: review_pass 이벤트 자동 기록 (A 조치, v5.49.1+) ──
+# ── Step 7.5: review_pass 이벤트 자동 기록 (A 조치, v5.49.1+ / v5.53.0+ 파일 바인딩) ──
 # release.sh가 Step 1(test) + Step 2.5(review 흔적) + Step 5.5(clean-clone) 3중 게이트를 통과했으므로
 # 본 릴리스는 사실상 review PASS. events.jsonl에 review_pass를 명시 기록해 직후 4h 동안 doc-only/ledger
 # follow-up commit이 STALE Hard Gate에 차단되지 않도록 한다.
-# 사유: release 직후 ledger append/doc 정정 commit이 STALE 차단 → --emergency 남용 유발 패턴 차단.
+# v5.53.0+: review_pass에 릴리스 커밋(HEAD) 파일 sha를 바인딩한다. 게이트가 무바인딩 review_pass를
+# 더 이상 인정하지 않으므로(self-attest 우회 차단), HEAD 파일에 한정해 윈도를 충전한다.
+# doc-only/ledger follow-up은 게이트 SCOPE_SKIP가 별도 처리하므로 영향 없음.
 if [[ -x "$ROOT/hooks/record-event.sh" ]]; then
+  REVIEW_FILES_JSON=$(bash "$ROOT/scripts/lib/build-files-payload.sh" --head 2>/dev/null || echo "[]")
+  [ -n "$REVIEW_FILES_JSON" ] || REVIEW_FILES_JSON="[]"
   if bash "$ROOT/hooks/record-event.sh" review_pass \
-    "$(printf '{"verdict":"PASS","source":"release.sh","version":"%s","strength":"Release"}' "$NEW_VERSION")" \
+    "$(printf '{"verdict":"PASS","source":"release.sh","version":"%s","strength":"Release","scope":"release","files":%s}' "$NEW_VERSION" "$REVIEW_FILES_JSON")" \
     2>/dev/null; then
-    echo "  ✅ events.jsonl review_pass 자동 기록 (4h 윈도 충전)"
+    echo "  ✅ events.jsonl review_pass 자동 기록 (HEAD 파일 바인딩, 4h 윈도 충전)"
   else
     echo "  ⚠️  review_pass 기록 실패 — 4h 윈도 미충전 (record-event.sh 또는 .nova/events.jsonl 쓰기 권한 확인)" >&2
   fi

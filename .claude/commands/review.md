@@ -378,6 +378,13 @@ NOVA-STATE.md 갱신 후 `bash scripts/check-state-drift.sh --strict`로 코드 
   - /nova:review → {PASS/CONDITIONAL/FAIL} — {리뷰 대상 파일/디렉토리} | {ISO 8601}
   ```
 - **시계열은 events.jsonl 단일 진실원 (v5.44.0+)**: NOVA-STATE.md의 Recent Activity / Recently Done 표에 행 추가 X. 활동 기록은 `hooks/record-event.sh`(자동 호출)가 `.nova/events.jsonl`에, v3 marker 영역은 Stop hook이 `scripts/registry-render-state.sh`로 자동 갱신. AI는 Current/Phase/Refs/Risks 본문 스냅샷만 손편집 — 트림 의무 없음. (상세: skills/context-chain/SKILL.md)
+- **4h 윈도 충전 시 `review_pass` 파일 바인딩 (v5.53.0+, 선택)**: PASS 판정 후 후속 커밋의 Hard Gate 4시간 윈도를 충전하려면, 리뷰한 staged 파일에 **바인딩된** `review_pass`를 기록한다. 무바인딩 `review_pass`(files 없음)는 게이트가 더 이상 인정하지 않는다(self-attest 우회 차단). 게이트와 동일한 sha 소스를 쓰도록 `scripts/lib/build-files-payload.sh`로 페이로드를 생성한다:
+  ```bash
+  FILES_JSON=$(bash scripts/lib/build-files-payload.sh)   # staged 파일 [{path,content_sha256}]
+  bash hooks/record-event.sh review_pass \
+    "$(jq -cn --argjson files "$FILES_JSON" '{verdict:"PASS",scope:"fast",files:$files}')"
+  ```
+  리뷰 후 파일 내용을 수정하면 sha가 달라져 게이트가 재검증을 강제한다.
 - **보안 이슈 발견 시**: `NOVA-STATE.md`의 "알려진 위험(Known Risks)" 테이블에 해당 이슈를 추가한다. 기존 항목과 중복되면 상태만 갱신한다.
   ```
   ## 알려진 위험 (Known Risks)

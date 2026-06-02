@@ -103,7 +103,9 @@ PYEOF
     [ -f "NOVA-MIGRATE-PENDING.md" ] && rm -f NOVA-MIGRATE-PENDING.md 2>/dev/null || true
     [ -f ".nova/migrate-preview.md" ] && rm -f .nova/migrate-preview.md 2>/dev/null || true
     # v5.43.1+: v3 marker 부재 + .nova/work-items/ 부재 → v3 권고 (single-line hint)
-    if [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ] && \
+    # NOVA_MEASUREMENT_BASELINE=1 시 skip — 사이즈 회귀 측정 격리 (state-dependent advisory가 baseline에 새지 않도록, v5.53.0+).
+    if [ "${NOVA_MEASUREMENT_BASELINE:-0}" != "1" ] && \
+       [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ] && \
        ! grep -qF "<!-- nova:registry-rendered:start -->" NOVA-STATE.md 2>/dev/null && \
        [ ! -f .nova/work-items/index.json ]; then
       MIGRATE_NOTICE="\n\n💡 NOVA-STATE.md v2 schema 감지, v3 work-item registry 미적용 — \`/nova:migrate-state\` 한 줄로 v3 변환 가능 (자동 마이그레이션 + drift-check)."
@@ -114,7 +116,7 @@ PYEOF
   # v5.41.0+: 자동 dry-run/preview 파일/sessionTitle prefix 모두 제거 — 사용자 보고 "자동화가 오히려 사용성 최악".
   # 변환은 사용자 명시 호출(/nova:migrate-state 커맨드 또는 직접 bash)로만.
   # NOVA_DISABLE_AUTO_MIGRATE=1 이면 hint도 스킵.
-  if [ "$_STATE_VER" = "V1" ] && [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ]; then
+  if [ "$_STATE_VER" = "V1" ] && [ "${NOVA_DISABLE_AUTO_MIGRATE:-0}" != "1" ] && [ "${NOVA_MEASUREMENT_BASELINE:-0}" != "1" ]; then
     MIGRATE_NOTICE="\n\n💡 NOVA-STATE.md v1 schema 감지 — \`/nova:migrate-state\` 한 줄로 v3 work-item registry 변환 가능 (v1→v3 직행, multi-hop 불필요). 자동 변환 안 함 (정보 손실 보호)."
   fi
 
