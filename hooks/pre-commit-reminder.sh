@@ -32,9 +32,36 @@ else
   exit 0
 fi
 
-# ── git commit 패턴 필터 ──
-# `git commit`, `git -c foo=bar commit`, `git commit --amend` 등 매칭
-if ! echo "$COMMAND" | grep -qE '^\s*git\s+(.*\s+)?commit(\s|$)'; then
+# ── git commit 패턴 필터 (v5.54.0+: cd/세퍼레이터 뒤 git commit도 감지) ──
+# `git commit`, `git -c foo=bar commit`, `cd <repo> && git commit`, `foo; git commit` 등 매칭.
+# (구버전은 line-anchored `^\s*git`라 `cd <repo> && git commit`을 놓쳐 cross-repo 평가가 도달 못 했음.)
+if ! echo "$COMMAND" | grep -qE '(^|[;&|])\s*git\s+(.*\s+)?commit(\s|$)'; then
+  exit 0
+fi
+
+# ── v5.54.0+: cross-repo 평가 — 커밋이 실제 실행될 레포에서 게이트를 평가 ──
+# PreToolUse 훅은 session cwd에서 실행되므로, `cd <repo> && git commit` / `git -C <repo> commit`
+# 같은 "다른 레포" 커밋을 session cwd 기준으로 잘못 평가하던 버그를 수정한다.
+# 보안: 변수 확장은 $(...)/`...`를 재실행하지 않으므로 추출 문자열로 명령이 실행되지 않는다.
+# 한계(best-effort, honor-system 가드): 서브셸 `(cd X)`나 상대경로 다중 cd는 정확히 추적 못 한다.
+#       Bash 가진 에이전트는 --emergency 등으로 어차피 우회 가능 — 흔한 cd/-C 패턴만 올바르게 보정한다.
+# git -C: git은 여러 -C를 누적 적용(마지막 우선)하고, `git commit -C <ref>`(메시지 재사용)도 -C를
+#         쓴다. 이를 구분하려고 "실제 디렉토리인 마지막 -C"만 git 실효 디렉토리로 채택한다.
+_NOVA_GIT_C=""
+for _nc in $(printf '%s' "$COMMAND" | grep -oE '\-C[[:space:]]+[^[:space:];&|]+' | sed -E 's/^-C[[:space:]]+//'); do
+  [ -d "$_nc" ] && _NOVA_GIT_C="$_nc"
+done
+_NOVA_CD=$(printf '%s' "$COMMAND" | grep -oE '(^|[;&|][[:space:]]*)cd[[:space:]]+[^[:space:];&|]+' | tail -1 | sed -E 's/.*cd[[:space:]]+//')
+_NOVA_TARGET="${_NOVA_GIT_C:-$_NOVA_CD}"
+if [ -n "$_NOVA_TARGET" ] && [ -d "$_NOVA_TARGET" ]; then
+  cd "$_NOVA_TARGET" 2>/dev/null || true
+fi
+
+# ── v5.54.0+: Nova 미관리 레포는 게이트 skip (전역 설치가 무관 레포를 차단하지 않도록) ──
+# 대상이 Nova를 한 번도 쓴 적 없으면 통과: working tree에 .nova/·NOVA-STATE.md 없고 + HEAD에도
+# NOVA-STATE.md 없음. HEAD까지 보는 이유 = unstaged `rm NOVA-STATE.md`로 working tree만 비워
+# skip을 유발하던 silent 우회 차단(삭제가 커밋에 안 들어가는데도 skip되던 문제). 진짜 비-Nova만 skip.
+if [ ! -d ".nova" ] && [ ! -f "NOVA-STATE.md" ] && ! git cat-file -e HEAD:NOVA-STATE.md 2>/dev/null; then
   exit 0
 fi
 
