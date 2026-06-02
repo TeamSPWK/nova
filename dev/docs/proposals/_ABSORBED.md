@@ -48,3 +48,5 @@ Scanner가 발견한 항목 `X`에 대해:
 - 시드 신뢰성: 본 시드는 retroactive 자가 선언이며, 측정 의무 없음(slug 매칭표 용도). 정체성 주장이 아닌 중복 방지용 인덱스로만 운용한다.
 
 | evolve-source-verification | (Nova 자체, 2026-06-01 arxiv 3/3 결함 실증) | v5.51.0 | dev/commands/evolve.md, dev/skills/evolution/SKILL.md | active |
+
+| anthropic-config-write-codeexec-guard | https://code.claude.com/docs/en/changelog | v5.52.0 | docs/nova-rules.md §9 | active |

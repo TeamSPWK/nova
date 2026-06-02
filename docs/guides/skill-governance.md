@@ -1,6 +1,6 @@
 # Skill Governance Guide
 
-이 가이드는 Nova가 ship하는 13개 스킬(+16 커맨드)을 사용자가 어떻게 통제할 수 있는지 설명한다. Claude Code의 `skillOverrides` 설정을 활용해 자동 트리거를 끄거나, 명시 호출 전용으로 바꾸거나, 메타데이터를 숨길 수 있다.
+이 가이드는 Nova가 ship하는 12개 스킬(+17 커맨드)을 사용자가 어떻게 통제할 수 있는지 설명한다. Claude Code의 `skillOverrides` 설정을 활용해 자동 트리거를 끄거나, 명시 호출 전용으로 바꾸거나, 메타데이터를 숨길 수 있다.
 
 한국어와 English를 모두 포함한다.
 
@@ -12,7 +12,7 @@
 
 ### 요약
 
-Nova는 다음 11개 **스킬**을 ship한다 (커맨드와 별개):
+Nova는 다음 12개 **스킬**을 ship한다 (커맨드와 별개):
 
 | 카테고리 | 스킬 |
 |----------|------|
@@ -55,11 +55,11 @@ Nova는 다음 11개 **스킬**을 ship한다 (커맨드와 별개):
 }
 ```
 
-> 키는 `<plugin>:<skill-name>` 형식. Nova 스킬은 모두 `nova:` 접두사를 갖는다. Nova가 ship하는 정확한 11개 스킬 외 이름을 적으면 사일런트로 무시된다 — 위 "요약" 표 참조.
+> 키는 `<plugin>:<skill-name>` 형식. Nova 스킬은 모두 `nova:` 접두사를 갖는다. Nova가 ship하는 정확한 12개 스킬 외 이름을 적으면 사일런트로 무시된다 — 위 "요약" 표 참조.
 
 ### Nova 스킬 카테고리별 권장 설정
 
-| 카테고리 | 스킬 (실제 ship 11개) | 권장 (대부분 사용자) | 권장 (가벼운 작업) |
+| 카테고리 | 스킬 (실제 ship 12개) | 권장 (대부분 사용자) | 권장 (가벼운 작업) |
 |----------|----------------------|----------------------|---------------------|
 | **품질 게이트 (핵심)** | `evaluator`, `jury` | 활성 (기본) | `evaluator`만 활성, `jury`는 `user-invocable-only` |
 | **계획·설계** | `deepplan`, `orchestrator` | 활성 (자동 트리거 가치 큼) | `deepplan`은 `user-invocable-only` |
@@ -93,7 +93,7 @@ Nova는 다음 11개 **스킬**을 ship한다 (커맨드와 별개):
 
 ### TL;DR
 
-Nova ships 11 **skills** (separate from commands) covering quality gates, planning, environment, meta, and domain helpers. If they all auto-trigger you may end up with heavy context usage. Claude Code v2.1.126+ exposes `skillOverrides` so you can selectively disable, restrict to manual `/` invocation, or hide descriptions of skills you don't need.
+Nova ships 12 **skills** (separate from commands) covering quality gates, planning, environment, meta, and domain helpers. If they all auto-trigger you may end up with heavy context usage. Claude Code v2.1.126+ exposes `skillOverrides` so you can selectively disable, restrict to manual `/` invocation, or hide descriptions of skills you don't need.
 
 > Note: `scan`, `setup`, `next`, `auto`, `run`, `plan`, `design`, `review`, `check`, `ask` are **commands** (`/nova:*`), not skills — they cannot be controlled via `skillOverrides`. Commands only run on explicit `/` invocation, so disabling them is rarely needed; if you need to remove them entirely, exclude the Nova plugin from your settings.
 > Note: `evolution`, `field-test`, `audit-self` are Nova-developer-only and isolated under `dev/` (excluded from plugin distribution). They never reach end-user environments, so `skillOverrides` does not apply.
@@ -120,7 +120,7 @@ Edit `~/.claude/settings.json` or project `.claude/settings.json`:
 }
 ```
 
-Keys follow `<plugin>:<skill-name>`. All Nova skills are namespaced under `nova:`. Skill names that don't match an actually-shipped skill are silently ignored — see the table above for the canonical 11.
+Keys follow `<plugin>:<skill-name>`. All Nova skills are namespaced under `nova:`. Skill names that don't match an actually-shipped skill are silently ignored — see the table above for the canonical 12.
 
 ### Recommended defaults
 

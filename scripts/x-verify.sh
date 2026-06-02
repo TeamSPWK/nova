@@ -134,7 +134,7 @@ echo -e "  ${BOLD}❓ 질문:${NC} $QUESTION"
 echo ""
 
 XV_TMPDIR=$(mktemp -d)
-trap "rm -rf $XV_TMPDIR" EXIT
+trap 'rm -rf "$XV_TMPDIR"' EXIT
 
 # ── Phase 1: 3개 AI 병렬 호출 ──
 

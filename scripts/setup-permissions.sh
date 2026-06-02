@@ -26,6 +26,7 @@ TARGET=".claude/settings.json"
 ALLOW_OUTSIDE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     --target) TARGET="${2:-}"; shift 2 ;;
     --allow-outside) ALLOW_OUTSIDE=1; shift ;;
     --force) shift ;;  # reserved
@@ -106,18 +107,28 @@ fi
 # - defaultMode: 사용자값 유지, 없으면 Nova 값
 # - allow: (user + nova) 합집합에서 nova.deny 제거 (충돌 시 deny 우선)
 # - deny: (user + nova) 합집합
+# - hooks.PreToolUse: §11 Sprint 2b 런타임 enforcement(precheck-tool.sh) 엔트리 주입.
+#   사용자 기존 hooks 보존 + precheck-tool.sh가 이미 등록돼 있으면 재주입 안 함(idempotent).
+#   (이 머지 누락이 §11이 약속한 런타임 enforcement 미설치 버그 — v5.51.x 수정)
 # - 기타 최상위 키: 보존
 MERGED=$(printf '%s' "$USER_JSON" | jq --slurpfile tpl "$TEMPLATE" '
   def merge_arr(a; b): ((a // []) + (b // [])) | unique;
   def nova: $tpl[0];
 
   . as $u |
+  ($u.hooks // {}) as $uh |
+  ($uh.PreToolUse // []) as $upre |
+  # 사용자 PreToolUse 훅 command 중 precheck-tool.sh 참조가 이미 있으면 재주입 금지
+  ([$upre[].hooks[]?.command // ""] | any(contains("precheck-tool.sh"))) as $has_precheck |
   $u + {
     permissions: {
       defaultMode: ($u.permissions.defaultMode // nova.permissions.defaultMode),
       allow: (merge_arr($u.permissions.allow; nova.permissions.allow) - (nova.permissions.deny // [])),
       deny:  merge_arr($u.permissions.deny;  nova.permissions.deny)
-    }
+    },
+    hooks: ($uh + {
+      PreToolUse: (if $has_precheck then $upre else ($upre + (nova.hooks.PreToolUse // [])) end)
+    })
   }
 ')
 

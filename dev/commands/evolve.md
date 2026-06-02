@@ -41,7 +41,7 @@ description_en: "Scan tech trends and auto-evolve Nova. Changes are verified by 
 
 Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch는 changelog/블로그 같은 서술 정보, `gh api`는 star/topic 같은 정량 시그널을 수집한다.
 
-1. **WebSearch 호출**: 각 소스별 최근 변경사항을 키워드로 탐색 (소스별 키워드는 `skills/evolution/SKILL.md` Scanner 소스 상세 참조)
+1. **WebSearch 호출**: 각 소스별 최근 변경사항을 키워드로 탐색 (소스별 키워드는 `dev/skills/evolution/SKILL.md` Scanner 소스 상세 참조)
 2. **`gh api` 호출 (병렬)**: 카테고리별 8개 쿼리를 병렬 실행
    ```bash
    # Anthropic 공식
@@ -86,7 +86,7 @@ Scanner는 **WebSearch + `gh api`** 두 채널을 병렬 호출한다. WebSearch
 
 ## Phase 2: Relevance Filter (관련성 필터)
 
-3단계 직렬 필터로 발견 항목을 압축한다. 상세 규칙은 `skills/evolution/SKILL.md` Relevance Filter 절 참조.
+3단계 직렬 필터로 발견 항목을 압축한다. 상세 규칙은 `dev/skills/evolution/SKILL.md` Relevance Filter 절 참조.
 
 ### ① 신호 강도 임계값
 

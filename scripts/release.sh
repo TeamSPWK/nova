@@ -19,12 +19,21 @@ cd "$ROOT"
 LEVEL="${1:-}"
 COMMIT_MSG="${2:-}"
 
-if [[ -z "$LEVEL" || -z "$COMMIT_MSG" ]]; then
+usage() {
   echo "사용법: bash scripts/release.sh <patch|minor|major> \"커밋 메시지\""
   echo ""
   echo "  patch  — 버그 수정, 문서 정리"
   echo "  minor  — 새 커맨드/스킬 추가, 기존 기능 개선"
   echo "  major  — 호환성 깨지는 변경, 아키텍처 전환"
+}
+
+if [[ "$LEVEL" == "-h" || "$LEVEL" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ -z "$LEVEL" || -z "$COMMIT_MSG" ]]; then
+  usage
   exit 1
 fi
 

@@ -17,7 +17,7 @@ AI Agent Ops 프레임워크 — Claude Code 플러그인으로 배포. 환경·
 ## Build & Test
 
 ```bash
-bash tests/test-scripts.sh                              # 전체 테스트 (169개)
+bash tests/test-scripts.sh                              # 전체 테스트 (ALL PASS 확인)
 bash hooks/session-start.sh | python3 -m json.tool      # session-start JSON 유효성
 bash scripts/bump-version.sh <patch|minor|major>         # 버전 범프
 ```

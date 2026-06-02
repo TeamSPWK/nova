@@ -1821,6 +1821,17 @@ assert "S2a.4: setup-permissions fixture 1(빈) → Nova deny 10+ 주입" \
    COUNT=\$(jq '.permissions.deny | length' \"\$TMPD/s.json\" 2>/dev/null); \
    rm -rf \"\$TMPD\"; [ \"\$COUNT\" -ge 10 ]"
 
+# S2a.4b: §11 런타임 enforcement 설치 회귀 가드 (v5.51.x) —
+# setup-permissions가 template hooks(precheck-tool PreToolUse)를 머지하는지 + 재실행 idempotent.
+# (이 머지 누락이 §11 약속한 enforcement 미설치 HIGH 버그였음 — 재발 차단)
+assert "S2a.4b: setup-permissions → hooks.PreToolUse precheck-tool 주입 + 재실행 idempotent" \
+  "TMPD=\$(mktemp -d); cp '$ROOT_DIR/tests/fixtures/settings-empty.json' \"\$TMPD/s.json\"; \
+   bash '$ROOT_DIR/scripts/setup-permissions.sh' --target \"\$TMPD/s.json\" --allow-outside > /dev/null 2>&1; \
+   C1=\$(jq '[.hooks.PreToolUse[].hooks[].command] | map(select(contains(\"precheck-tool.sh\"))) | length' \"\$TMPD/s.json\" 2>/dev/null); \
+   bash '$ROOT_DIR/scripts/setup-permissions.sh' --target \"\$TMPD/s.json\" --allow-outside > /dev/null 2>&1; \
+   C2=\$(jq '[.hooks.PreToolUse[].hooks[].command] | map(select(contains(\"precheck-tool.sh\"))) | length' \"\$TMPD/s.json\" 2>/dev/null); \
+   rm -rf \"\$TMPD\"; [ \"\$C1\" -eq 1 ] && [ \"\$C2\" -eq 1 ]"
+
 # S2a.5: fixture 2 — 기존 allow 보존 + env 최상위 키 보존
 assert "S2a.5: fixture 2(기존 allow+env) → 사용자 값 보존 + Nova 병합" \
   "TMPD=\$(mktemp -d); cp '$ROOT_DIR/tests/fixtures/settings-with-allow.json' \"\$TMPD/s.json\"; \
@@ -2227,6 +2238,13 @@ assert "S4.4c: nova-antipatterns.md §B 섹션 존재" \
 assert "S4.4d: nova-antipatterns.md 항목 12개 이상" \
   "[ \"\$(grep -c '^### [AB][0-9]' '$ROOT_DIR/docs/nova-antipatterns.md' 2>/dev/null || echo 0)\" -ge 12 ]"
 
+# S4.4e: 안티패턴 항목 수 == session-start strict '전체 N개' 정확 동기 (드리프트 재발 차단, v5.51.x)
+# (하드코딩 '12'가 실제 13과 어긋나도 ≥12라서 안 잡히던 갭 보완)
+assert "S4.4e: nova-antipatterns 항목 수 == session-start strict '전체 N개' (동기 가드)" \
+  "AP=\$(grep -c '^### [AB][0-9]' '$ROOT_DIR/docs/nova-antipatterns.md' 2>/dev/null); \
+   SS=\$(grep -oE '전체 [0-9]+개' '$ROOT_DIR/hooks/session-start.sh' 2>/dev/null | grep -oE '[0-9]+' | head -1); \
+   [ -n \"\$SS\" ] && [ \"\$AP\" -eq \"\$SS\" ]"
+
 # S4.5: release.sh에 removal report 경고 문구 존재
 assert "S4.5: scripts/release.sh — 제거 리포트 경고 문구 존재" \
   "grep -q '제거 리포트가 비어 있습니다' '$ROOT_DIR/scripts/release.sh'"
@@ -2373,9 +2391,12 @@ assert "S8.5: audit-orchestration.sh stderr 경고 출력" \
   "grep -qE '\[nova:audit\].*orchestration.*누락' $ROOT_DIR/hooks/audit-orchestration.sh"
 
 # S8.6: 엔드투엔드 스모크 — pre-tool-use-record.sh 실행 후 이벤트 기록 확인
+# pre-tool-use-record.sh:38이 record-event.sh를 백그라운드(&)로 기록하므로 고정 sleep은
+# 부하(clean-clone 등)에서 race로 실패한다 → 파일·이벤트 출현을 폴링(최대 5s)으로 결정화.
 assert "S8.6: pre-tool-use-record.sh 실행 → tool_call 이벤트 기록" \
-  "TMPD=\$(mktemp -d); NOVA_EVENTS_PATH=\"\$TMPD/events.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh < /dev/null && \
-   sleep 0.3 && grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && \
+  "TMPD=\$(mktemp -d); NOVA_EVENTS_PATH=\"\$TMPD/events.jsonl\" TOOL_NAME=Read bash $ROOT_DIR/hooks/pre-tool-use-record.sh < /dev/null; \
+   for _i in \$(seq 1 50); do [ -f \"\$TMPD/events.jsonl\" ] && grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && break; sleep 0.1; done; \
+   grep -q '\"event_type\":\"tool_call\"' \"\$TMPD/events.jsonl\" && \
    ! grep -q 'tool_input' \"\$TMPD/events.jsonl\"; S=\$?; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
 
 # S8.6b: 회귀 가드 — 빈 inherited stdin 시 hook이 2초 내 종료 (v5.38.0 cat hang 사고 재발 방지)
@@ -4381,6 +4402,37 @@ assert "WI-0014-T6: docs/nova-antipatterns.md 에 B7 항목 + 제목 존재" \
 
 assert "WI-0014-T7: docs/nova-rules.md §2 인용 블록에 audit-teammates.sh 참조 추가" \
   "grep -qF 'audit-teammates.sh' '$ROOT_DIR/docs/nova-rules.md'"
+
+# ── 단점 헌팅 회귀 가드 (v5.51.x): 활성 스크립트/훅 회귀 가드 0 → 최소 가드 추가 ──
+# [26] x-verify.sh: test-scripts.sh가 전혀 참조하지 않던 유일한 .sh — 존재+실행권한+무인자 비정상종료
+assert "WH-26a: scripts/x-verify.sh 존재 + 실행 권한" \
+  "[ -x '$ROOT_DIR/scripts/x-verify.sh' ]"
+assert "WH-26b: scripts/x-verify.sh — EXIT trap 따옴표 보존(공백 TMPDIR word-split 방지)" \
+  "grep -qF \"trap 'rm -rf \\\"\\\$XV_TMPDIR\\\"' EXIT\" '$ROOT_DIR/scripts/x-verify.sh'"
+# [27] pre-compact.sh: PreCompact 등록 상태-변형 활성 훅인데 회귀 가드 0 → 등록+존재+nonblocking read 가드
+assert "WH-27a: hooks.json PreCompact → pre-compact.sh 등록" \
+  "jq -e '.hooks.PreCompact[].hooks[].command | select(contains(\"pre-compact.sh\"))' '$ROOT_DIR/hooks/hooks.json' >/dev/null 2>&1"
+assert "WH-27b: hooks/pre-compact.sh — nonblocking read(-t) 가드 보존(stdin hang 방지)" \
+  "grep -qE 'read -r -t [0-9]+ PAYLOAD' '$ROOT_DIR/hooks/pre-compact.sh'"
+# [18] init-nova-state.sh: bare cat → nonblocking read 가드 보존
+assert "WH-18: scripts/init-nova-state.sh — bare cat 제거(nonblocking read 가드)" \
+  "! grep -qE '^INPUT=\\\$\\(cat\\)' '$ROOT_DIR/scripts/init-nova-state.sh' && grep -qE 'read -r -t [0-9]' '$ROOT_DIR/scripts/init-nova-state.sh'"
+# [20] registry-write.sh: wi-id path traversal 가드 보존 (형태 + 경로문자 차단)
+assert "WH-20a: scripts/registry-write.sh — wi-id 형식 가드 보존" \
+  "grep -qF 'wi-id 형식 위반' '$ROOT_DIR/scripts/registry-write.sh'"
+assert "WH-20b: scripts/registry-write.sh — 경로문자(/ ..) 차단 가드 보존" \
+  "grep -qF '경로 문자 불가' '$ROOT_DIR/scripts/registry-write.sh'"
+# 실효성: traversal id는 거부, 한글 slug는 형식가드 통과(미존재로 진행).
+# (자체 임시 registry 사용 — ensure_registry_initialized가 가드보다 선행하므로,
+#  스위트 내 앞선 테스트의 repo .nova 변형과 무관하게 결정적으로 가드 경로 도달)
+assert "WH-20c: registry-write — traversal id 거부 (실효성)" \
+  "TMPD=\$(mktemp -d); mkdir -p \"\$TMPD/.nova/work-items\"; echo '{}' > \"\$TMPD/.nova/work-items/index.json\"; \
+   OUT=\$(NOVA_REGISTRY_ROOT=\"\$TMPD\" bash '$ROOT_DIR/scripts/registry-write.sh' require-review 'WI-0001-a/../../etc/x' 2>&1); \
+   rm -rf \"\$TMPD\"; echo \"\$OUT\" | grep -q '경로 문자 불가'"
+assert "WH-20d: registry-write — 한글 slug id는 가드 통과해 존재검사 도달 (오탐 방지)" \
+  "TMPD=\$(mktemp -d); mkdir -p \"\$TMPD/.nova/work-items\"; echo '{}' > \"\$TMPD/.nova/work-items/index.json\"; \
+   OUT=\$(NOVA_REGISTRY_ROOT=\"\$TMPD\" bash '$ROOT_DIR/scripts/registry-write.sh' require-review 'WI-0013-드리프트-차단' 2>&1); \
+   rm -rf \"\$TMPD\"; echo \"\$OUT\" | grep -q '미존재'"
 
 echo ""
 

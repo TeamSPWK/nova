@@ -1,6 +1,6 @@
 # Nova Antipatterns — 에이전트 합리화 차단 리스트
 
-에이전트가 스스로 회피할 가능성이 있는 12가지 패턴과 차단 규칙.
+에이전트가 스스로 회피할 가능성이 있는 13가지 패턴과 차단 규칙.
 obra/superpowers writing-skills 근거 + Nova 특화 회피 패턴.
 
 ---

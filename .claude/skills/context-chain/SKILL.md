@@ -98,7 +98,7 @@ NOVA-STATE.md의 Last Activity는 **반드시 1줄**로 기록한다:
 
 - 스프린트 간 새 서브에이전트로 컨텍스트 오염 방지
 - `NOVA-STATE.md` + Design 문서로 새 세션에서 상태 복원
-- `docs/auto-handoff.md`는 더 이상 사용하지 않는다 — `NOVA-STATE.md`가 대체
+- 이전 auto-handoff 핸드오프 메커니즘은 더 이상 사용하지 않는다 — `NOVA-STATE.md`가 대체
 
 ## 세션-수준 압축은 별도 스킬 (v5.21.0+, v5.44.0 갱신)
 

@@ -71,14 +71,14 @@ compute_confidence() {
   local n_accept="${2:-0}"
   local n_reject="${3:-0}"
 
-  python3 -c "
-n_s = int('${n_sessions}')
-n_a = int('${n_accept}')
-n_r = int('${n_reject}')
+  # 값을 소스에 보간하지 않고 argv로 전달 — 인자가 Python 소스로 주입되는 경로 차단
+  python3 -c '
+import sys
+n_s, n_a, n_r = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
 score = 0.3 + 0.1 * n_s + 0.2 * n_a - 0.3 * n_r
 clamped = max(0.0, min(1.0, score))
-print(f'{clamped:.2f}')
-" 2>/dev/null || echo "0.30"
+print(f"{clamped:.2f}")
+' "$n_sessions" "$n_accept" "$n_reject" 2>/dev/null || echo "0.30"
 }
 
 # 직접 실행 시 첫 인자에 따라 분기 (CLI 호환)

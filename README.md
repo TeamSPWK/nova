@@ -18,7 +18,7 @@
 **Verify before you ship. Every time.**
 AI-generated code, cross-checked by an independent adversarial evaluator — before commit, before deploy.
 
-*A [Claude Code](https://claude.ai/code) plugin. 15 slash commands, 12 skills, 6 specialist agents, local MCP server.*
+*A [Claude Code](https://claude.ai/code) plugin. 17 slash commands, 12 skills, 6 specialist agents, local MCP server.*
 
 [한국어](README.ko.md) · [Install](#quick-start) · [How It Works](#how-it-works-examples) · [FAQ](#faq)
 
@@ -363,7 +363,7 @@ Skills are multi-step operations that commands invoke internally. They can also 
 | **writing-nova-skill** | Use when authoring a new Nova skill or revising an existing skill's description. |
 <!-- /AUTO-GEN:skills -->
 
-## Specialist Agents (5 Types)
+## Specialist Agents (6 Types)
 
 Each agent has a built-in Nova self-check checklist.
 

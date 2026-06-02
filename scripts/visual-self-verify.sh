@@ -178,6 +178,13 @@ fi
 
 SLUG=$(jq -r '.meta.slug' "$INTENT_PATH")
 
+# Slug regex validation (path traversal 차단 — 생산자 capture-visual-intent.sh:85와 대칭)
+# intent.json의 .meta.slug가 OUTPUT_PATH로 흘러 .nova 밖 경로를 조작하지 못하게 차단.
+if ! [[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "Error: intent.json .meta.slug must match ^[a-z0-9][a-z0-9-]*\$ (got: $SLUG)" >&2
+  exit 1
+fi
+
 # === Cache check (reuse detect-ui-change.sh hash) ===
 CACHE_HIT=false
 CURRENT_HASH=""

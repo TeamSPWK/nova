@@ -48,7 +48,7 @@ bash scripts/setup-permissions.sh --target <custom.json> # 대체 대상
 2. 결과를 보고만 하고, 파일 수정/생성은 하지 않는다
 3. 개선 추천과 실행 가능한 커맨드를 안내한다
 
-> Check 모드는 기존 `/nova:metrics` 기능을 대체한다. 동일한 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7), 동일한 5단계 Pillar, 동일한 등급 체계.
+> Check 모드는 (현재 제거된) 기존 metrics 점검 기능을 대체한다. 동일한 32항목 (5 Pillar: Structured 5 + Idempotent 4 + NOVA-STATE 7 + X-Verification 9 + Adaptive 7), 동일한 5단계 Pillar, 동일한 등급 체계.
 
 ## Upgrade 모드 실행 흐름
 

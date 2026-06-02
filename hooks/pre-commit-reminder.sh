@@ -52,6 +52,9 @@ check_evaluator_pass() {
   # ── v5.48.1+: events.jsonl review_pass 시간 윈도 조회 (단일 진실원 정합) ──
   local events_file="${NOVA_EVENTS_PATH:-.nova/events.jsonl}"
   local window_sec="${NOVA_PASS_WINDOW_SEC:-14400}"  # 기본 4시간
+  # 비숫자 값 정규화: 잘못된 NOVA_PASS_WINDOW_SEC가 아래 `-gt` 정수 비교에서 에러를 내며
+  # 윈도 로직을 침묵 우회하는 것을 방지 (기본값으로 강제 fallback)
+  case "$window_sec" in ''|*[!0-9]*) window_sec=14400 ;; esac
   # NOVA_PASS_WINDOW_SEC=0이면 윈도 비활성화 (fallback만 사용 — 디버그/엄격 모드)
   # 상한 클램핑: 86400(1일) 초과 설정은 정책 무력화 방지를 위해 1일로 강제 제한
   if [ "$window_sec" -gt 86400 ]; then

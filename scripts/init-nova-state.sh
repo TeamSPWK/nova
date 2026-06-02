@@ -5,7 +5,16 @@
 
 set -euo pipefail
 
-INPUT=$(cat)
+# v5.38.1 hotfix 패턴 이식: inherited 빈 stdin은 EOF가 안 와 `cat`이 무한 대기(hang) →
+# nonblocking read -t 로 전환. (참조: hooks/pre-tool-use-record.sh)
+INPUT=""
+if [[ ! -t 0 ]]; then
+  if IFS= read -r -t 1 INPUT 2>/dev/null; then
+    while IFS= read -r -t 0.1 _next 2>/dev/null; do
+      INPUT="${INPUT}${_next}"
+    done
+  fi
+fi
 CWD=$(echo "$INPUT" | jq -r '.cwd // "."' 2>/dev/null || true)
 
 # cwd 폴백

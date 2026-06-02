@@ -76,6 +76,17 @@ ensure_registry_initialized() {
 
 ensure_wi_exists() {
   local wi=$1
+  # wi-id 포맷 가드: 형태(WI-NNNN / WI-<hex8>) 검증 + path traversal 차단.
+  # 포맷 정규식은 id 생성부(WI-%04d / WI-uuid)·검증부(transition)와 동일.
+  if ! [[ "$wi" =~ ^WI-([0-9]{4}|[a-f0-9]{8})-.+$ ]]; then
+    log_err "wi-id 형식 위반: '$wi' (기대: WI-NNNN-slug 또는 WI-<hex8>-slug)"
+    return 2
+  fi
+  # 경로 문자 차단: slug에 한글 등 멀티바이트가 허용되므로(WI-0013-...드리프트) 문자집합
+  # allowlist 대신 path separator/상위참조만 명시 거부 — locale-safe + traversal 봉쇄.
+  case "$wi" in
+    */*|*..*) log_err "wi-id 경로 문자 불가('/' 또는 '..'): '$wi'"; return 2 ;;
+  esac
   local f="$WI_DIR/$wi.json"
   if [ ! -f "$f" ]; then
     log_err "work-item 미존재: $wi (file: $f)"

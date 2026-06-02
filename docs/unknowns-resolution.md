@@ -98,4 +98,4 @@ U1 답변에서 확인: Claude Code 공식 우선순위는 **Managed > Project `
 
 ## U6 — 스키마 혼재 로그 reader 정책
 
-**상태**: 해소됨 (Plan 결정 — 라인별 `schema_version` 감지, 미지원 버전 warning+skip, major 변경 시 수동 `scripts/migrate-events.sh`)
+**상태**: 해소됨 (Plan 결정 — 라인별 `schema_version` 감지, 미지원 버전 warning+skip, major 스키마 변경 발생 시 수동 마이그레이션 스크립트 작성 — 현재 major 변경 미발생으로 미구현)

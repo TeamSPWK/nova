@@ -23,7 +23,7 @@
 | /compact 컨텍스트 최적화 | https://docs.anthropic.com/en/docs/claude-code/context-management | tip | true | `skills/strategic-compact` (시점 판단 강화) |
 | IDE 통합 (VS Code/JetBrains) | https://docs.anthropic.com/en/docs/claude-code/ide-integrations | improvement | n/a | Claude Code 자체 기능 — 흡수 대상 아님 |
 | 병렬 도구 호출 | https://docs.anthropic.com/en/docs/claude-code/best-practices | tip | true | `commands/*.md` 전역 권장, `skills/orchestrator` Phase 병렬 spawn |
-| Skills (description-triggered) | https://docs.anthropic.com/en/docs/claude-code/skills | new-feature | true | `skills/*/SKILL.md` 13개 + `dev/skills/*` 2개 |
+| Skills (description-triggered) | https://docs.anthropic.com/en/docs/claude-code/skills | new-feature | true | `skills/*/SKILL.md` 12개 + `dev/skills/*` 2개 |
 
 ## 미적용(nova_applied=false) 항목
 

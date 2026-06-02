@@ -352,7 +352,7 @@ MCP 서버는 Nova 설치 디렉토리에서 파일을 직접 읽는다. API 호
 | **writing-nova-skill** | 새 Nova 스킬을 작성하거나 기존 스킬 description을 수정할 때. |
 <!-- /AUTO-GEN:skills -->
 
-## 전문 에이전트 (5종)
+## 전문 에이전트 (6종)
 
 각 에이전트는 역할별 Nova 자가 점검 체크리스트를 내장하고 있다.
 

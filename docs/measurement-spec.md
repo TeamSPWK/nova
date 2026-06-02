@@ -174,7 +174,7 @@ re_num=$(grep -c '^## .* — approved' "$RULES_LOG")
 
 **emit 지점** (Sprint 2+ 또는 별도 작업):
 - `/nova:evolve` 커맨드가 외부 기술 동향 분석 → 사용자 결정 시점.
-- evolve 스킬(`skills/evolution/SKILL.md`)이 채택/거부 판단 시.
+- evolve 스킬(`dev/skills/evolution/SKILL.md`)이 채택/거부 판단 시.
 - 호출: `bash hooks/record-event.sh evolve_decision '{"pattern_id":"<8자hex>","decision":"accept|reject"}'`.
 
 **현재 상태** (Sprint 1 종료 시점):
