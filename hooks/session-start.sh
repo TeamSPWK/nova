@@ -30,6 +30,16 @@ done
 
 NOVA_PROFILE="${NOVA_PROFILE:-standard}"
 
+# ── v5.53.0+: NOVA_COEXIST 모드 ──
+# OMC 등 다른 "세션 소유형" 오케스트레이션 플러그인과 공존. Nova의 고유 가치(커밋 게이트)만 유지하고
+# session-start 규칙 주입은 생략한다(다른 플러그인이 자체 가이드를 주입하므로 컨텍스트 중복·충돌 방지).
+# 게이트(pre-commit-reminder.sh)·init-nova-state·worktree-setup 훅은 별도 등록이라 계속 동작한다.
+# 토글: settings.json env에 "NOVA_COEXIST":"1" 추가/제거 (또는 bash scripts/nova-coexist.sh on|off).
+if [ "${NOVA_COEXIST:-0}" = "1" ]; then
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"[Nova coexist] 커밋 게이트만 활성 — 규칙 주입 생략(다른 플러그인과 공존). 규칙 상세는 docs/nova-rules.md, 끄려면 settings.json env에서 NOVA_COEXIST 제거."}}'
+  exit 0
+fi
+
 # v5.35.2 — $NOVA_PLUGIN_ROOT 자동 export (CLAUDE_PLUGIN_ROOT 미주입 환경 폴백)
 # 후속 Bash 도구 호출에서 "$NOVA_PLUGIN_ROOT/bin/nova-status" 같은 절대경로 참조 가능.
 if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -w "$(dirname "$CLAUDE_ENV_FILE")" 2>/dev/null ]; then

@@ -7,7 +7,7 @@
 # 도구 인자(경로/코드 등)는 privacy 위험으로 절대 기록하지 않는다. tool 이름만.
 # Safe-default: exit 0
 
-if [[ -n "${NOVA_DISABLE_EVENTS:-}" ]]; then
+if [[ -n "${NOVA_DISABLE_EVENTS:-}" || "${NOVA_COEXIST:-0}" = "1" ]]; then
   exit 0
 fi
 

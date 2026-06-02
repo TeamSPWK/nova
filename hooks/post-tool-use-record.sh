@@ -9,7 +9,7 @@
 # tool_input/tool_response 본문은 privacy 위험으로 절대 기록하지 않는다.
 # Safe-default: exit 0 (관찰성 실패가 도구 호출을 실패시키지 않는다)
 
-if [[ -n "${NOVA_DISABLE_EVENTS:-}" ]]; then
+if [[ -n "${NOVA_DISABLE_EVENTS:-}" || "${NOVA_COEXIST:-0}" = "1" ]]; then
   exit 0
 fi
 

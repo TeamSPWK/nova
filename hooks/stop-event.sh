@@ -4,7 +4,7 @@
 
 set -u
 
-if [[ -n "${NOVA_DISABLE_EVENTS:-}" ]]; then
+if [[ -n "${NOVA_DISABLE_EVENTS:-}" || "${NOVA_COEXIST:-0}" = "1" ]]; then
   exit 0
 fi
 

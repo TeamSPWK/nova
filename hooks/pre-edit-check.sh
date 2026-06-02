@@ -4,6 +4,8 @@
 # Write/Edit 호출 시 세션 내 편집 파일 수 누적 → 3파일 초과 시 Plan 승격 경고 주입.
 # Sprint 1: 경고만, 차단 없음 (exit 0 유지).
 # Tier 2: CPS 선행 권장 체크 추가 (NOVA_PROFILE=lean 시 스킵).
+# NOVA_COEXIST=1 — OMC 등 다른 오케스트레이션 플러그인과 공존 시 편집 경고 생략 (게이트만 유지).
+[ "${NOVA_COEXIST:-0}" = "1" ] && exit 0
 
 INPUT="${TOOL_INPUT:-$(cat)}"
 

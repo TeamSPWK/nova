@@ -32,7 +32,7 @@ Nova is a [Claude Code](https://claude.ai/code) plugin that makes AI agents oper
 |--------|---------|
 | **Environment** | Worktree, secret-sharing, isolated agent workspaces — see [Worktree Setup guide](docs/guides/worktree-setup.md) |
 | **Context** | Session-to-session state continuity (`NOVA-STATE.md`) |
-| **Quality** | Generator-Evaluator separation, pre-commit hard gate |
+| **Quality** | Generator-Evaluator separation, file-bound pre-commit hard gate — run gate-only alongside other plugins via [`NOVA_COEXIST`](docs/guides/coexist.md) |
 | **Collaboration** | Design→build→verify orchestration, multi-AI consulting |
 | **Evolution** | Self-diagnosis and auto-upgrade |
 

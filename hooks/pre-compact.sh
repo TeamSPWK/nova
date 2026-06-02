@@ -6,6 +6,9 @@
 # v1 legacy:              ## Last Activity 라인 추가 (deprecated, session-start가 자동 마이그레이션)
 # Spec: docs/specs/nova-state-schema-v2.md §4 (본문 섹션)
 
+# NOVA_COEXIST=1 — OMC 등 다른 오케스트레이션 플러그인과 공존 시 생략 (게이트만 유지).
+[ "${NOVA_COEXIST:-0}" = "1" ] && exit 0
+
 # -t 1: inherited 빈 stdin(EOF 미도달) 시 read가 블로킹되는 것을 방지 (PAYLOAD 미사용, 타임아웃 fallback)
 read -r -t 1 PAYLOAD 2>/dev/null || PAYLOAD="{}"
 
