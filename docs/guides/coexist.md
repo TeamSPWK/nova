@@ -4,7 +4,7 @@
 
 OMC(oh-my-claudecode)처럼 SessionStart·PreToolUse·PostToolUse·Stop 훅을 전부 잡는 "세션 소유형"
 플러그인과 Nova를 같이 쓰면 훅이 2배로 쌓인다. **`NOVA_COEXIST=1`** 은 Nova의 고유 가치인
-**커밋 게이트만 남기고** 나머지(규칙 주입·per-tool 관찰성·stop·pre-compact·pre-edit)를 끈다.
+**커밋 게이트만 남기고** 나머지(규칙 주입·per-tool 관찰성·stop·pre-compact·pre-edit·NOVA-STATE.md 자동생성)를 끈다.
 
 ```bash
 bash scripts/nova-coexist.sh on        # 공존 모드 켜기 (게이트만)
@@ -28,10 +28,17 @@ bash scripts/nova-coexist.sh status    # 현재 상태
 | 훅 | COEXIST=1 | 이유 |
 |----|-----------|------|
 | `pre-commit-reminder.sh` (커밋 게이트) | ✅ **유지** | Nova 고유 가치 — 검증 안 된 커밋 차단 |
-| `init-nova-state.sh` · `worktree-setup.sh` | ✅ 유지 | 게이트 인프라·env 셋업, OMC와 무충돌 |
+| `worktree-setup.sh` (env 셋업) | ✅ 유지 | 사용자 .env 심링크 — Nova 마커 아님, OMC와 무충돌 |
+| `init-nova-state.sh` (NOVA-STATE.md 자동생성) | ⛔ no-op | 게이트만 모드 = working tree에 Nova 산출물 0 |
 | `session-start.sh` (규칙 주입) | ⛔ 최소화 | OMC가 자체 가이드 주입 → 중복 방지 |
 | `pre/post-tool-use-record.sh` | ⛔ no-op | OMC per-tool 훅과 레이턴시 중첩 |
 | `pre-edit-check.sh` · `stop-event.sh` · `pre-compact.sh` | ⛔ no-op | OMC 대응 훅과 중복 |
+
+> ⚠️ **게이트 활성 조건 (NOVA-STATE.md 자동생성 off의 함의)**: coexist는 working tree에 Nova
+> 산출물(NOVA-STATE.md)을 만들지 않으므로, 게이트는 **`.nova/`가 있는 레포에서만 활성**이다.
+> `.nova/`는 `/nova:review`를 한 번 이상 실행하면 자동 생성된다(`.gitignore` 대상). 따라서 Nova를
+> 한 번도 쓰지 않은 **깨끗한 레포의 첫 커밋은 게이트가 막지 않는다** — 첫 `/nova:review` 이후 활성.
+> (정상 흐름 `코드 → /nova:review → commit`에서는 review 시점에 `.nova/`가 생겨 게이트가 동작한다.)
 
 ## 절차
 
@@ -53,7 +60,8 @@ bash scripts/nova-coexist.sh status    # 현재 상태
 | 증상 | 원인 | 해결 |
 |------|------|------|
 | 켰는데 규칙 주입이 그대로 | 현재 세션에 미적용 | Claude Code **재시작** (env는 세션 로드) |
-| 게이트가 안 막힘 | COEXIST가 아니라 게이트 자체 미설치 | `bash scripts/setup.sh` 또는 `NOVA_DISABLE_EVENTS` 해제 확인 |
+| 게이트가 안 막힘 (coexist) | `.nova/` 없는 깨끗한 레포 — 게이트 미활성 | `/nova:review` 1회 실행(`.nova/` 생성) 후 재시도 |
+| 게이트가 안 막힘 (일반) | COEXIST가 아니라 게이트 자체 미설치 | `bash scripts/setup.sh` 또는 `NOVA_DISABLE_EVENTS` 해제 확인 |
 | `settings.json 파싱 실패` | 기존 settings.json JSON 깨짐 | 해당 파일 JSON 유효성 먼저 복구 |
 | 설치된 플러그인이 무시 | 캐시가 구버전(가드 없는) | 플러그인 업데이트(이 변경 포함 버전 이상) |
 
@@ -65,5 +73,5 @@ bash scripts/nova-coexist.sh on                # 게이트만 (OMC 공존)
 bash scripts/nova-coexist.sh on --project      # 이 레포에서만
 bash scripts/nova-coexist.sh off               # full Nova 복귀
 bash scripts/nova-coexist.sh -h                # 도움말
-# 적용은 항상 새 세션부터. 게이트는 COEXIST에서도 항상 살아있다.
+# 적용은 항상 새 세션부터. coexist 게이트는 .nova/ 있는 레포(=/nova:review 1회+)에서 활성.
 ```

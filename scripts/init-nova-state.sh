@@ -5,6 +5,12 @@
 
 set -euo pipefail
 
+# ── NOVA_COEXIST=1 — 게이트만 모드: NOVA-STATE.md 자동생성 생략 ──
+# 다른 "세션 소유형" 오케스트레이션 플러그인과 공존 시 Nova는 working tree에 자동 산출물을
+# 만들지 않는다(생성물 0). 게이트(pre-commit-reminder.sh)는 .nova/ 존재(= /nova:review 1회
+# 이상 실행)를 활성 기준으로 쓰므로 게이트 자체는 유지된다 — 깨끗한 레포는 첫 review 전까지 skip.
+[ "${NOVA_COEXIST:-0}" = "1" ] && exit 0
+
 # v5.38.1 hotfix 패턴 이식: inherited 빈 stdin은 EOF가 안 와 `cat`이 무한 대기(hang) →
 # nonblocking read -t 로 전환. (참조: hooks/pre-tool-use-record.sh)
 INPUT=""

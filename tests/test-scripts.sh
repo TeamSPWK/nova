@@ -2891,6 +2891,14 @@ assert "C7: nova-coexist.sh on/off — 토글 + 기존 env 보존" \
 assert "C8: docs/guides/coexist.md 존재 + NOVA_COEXIST/게이트/cheatsheet 키워드" \
   "[ -f '$ROOT_DIR/docs/guides/coexist.md' ] && grep -q 'NOVA_COEXIST' '$ROOT_DIR/docs/guides/coexist.md' && grep -q '게이트' '$ROOT_DIR/docs/guides/coexist.md' && grep -qi 'cheatsheet' '$ROOT_DIR/docs/guides/coexist.md'"
 
+# C9: ★ coexist — init-nova-state.sh가 NOVA-STATE.md 자동생성 생략 (게이트만 모드 = working tree 생성물 0)
+assert "C9: COEXIST — init-nova-state NOVA-STATE.md 미생성(생성물 0)" \
+  "TMPD=\$(mktemp -d); printf '{\"cwd\":\"%s\"}' \"\$TMPD\" | NOVA_COEXIST=1 bash '$ROOT_DIR/scripts/init-nova-state.sh' >/dev/null 2>&1; R=0; [ -f \"\$TMPD/NOVA-STATE.md\" ] && R=1; rm -rf \"\$TMPD\"; [ \$R -eq 0 ]"
+
+# C9b: 대조군 — COEXIST 미설정이면 NOVA-STATE.md 정상 생성 (게이트 인프라 보존 확인)
+assert "C9b: COEXIST 미설정 — init-nova-state NOVA-STATE.md 정상 생성" \
+  "TMPD=\$(mktemp -d); printf '{\"cwd\":\"%s\"}' \"\$TMPD\" | bash '$ROOT_DIR/scripts/init-nova-state.sh' >/dev/null 2>&1; R=1; [ -f \"\$TMPD/NOVA-STATE.md\" ] && R=0; rm -rf \"\$TMPD\"; [ \$R -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════
