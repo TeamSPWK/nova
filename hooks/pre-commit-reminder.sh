@@ -121,6 +121,21 @@ _window_review_pass_covers() {
   return 1
 }
 
+# (b2) 검증 신선도 — day-resolution 자정 경계 완화: TS가 오늘 또는 어제면 PASS.
+# NOVA-STATE는 시:분이 없어 경과시간 판정 불가 → 자정 직후 어제 PASS가 무효화되는 걸 막는 grace.
+# 진짜 경과시간(시각)은 events.jsonl 4h 윈도가 1차로 담당 — 이 fallback은 약한 보조층.
+# 어제 계산 실패(date 플래그 미지원) 시 빈 문자열 → 오늘만 비교로 안전 degrade.
+_freshness_verdict() {
+  local ts="$1" today yesterday
+  today=$(date +%Y-%m-%d)
+  yesterday=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d 'yesterday' +%Y-%m-%d 2>/dev/null || echo "")
+  if [ "$ts" = "$today" ] || { [ -n "$yesterday" ] && [ "$ts" = "$yesterday" ]; }; then
+    echo "PASS"
+  else
+    echo "STALE"
+  fi
+}
+
 check_evaluator_pass() {
   # ── v5.48.1+: events.jsonl review_pass 시간 윈도 조회 (단일 진실원 정합) ──
   local events_file="${NOVA_EVENTS_PATH:-.nova/events.jsonl}"
@@ -180,16 +195,15 @@ check_evaluator_pass() {
       echo "TIMESTAMP_BROKEN"; return
     fi
     # MM-DD면 올해 추가
+    # known-gap(v5.54.1): 연초(1/1 등)에 작년말 MM-DD(예: 12-31) row는 올해가 붙어 미래→STALE 오판.
+    #   fail-safe(false-STALE이지 never false-PASS) + day-resolution 한계 + events.jsonl 4h 윈도가 1차 신선도.
+    #   발생 극희소(MM-DD 표기 사용 + 연초 커밋 + fallback 의존). MM-DD 정규화 통합 시 해소 예정.
     case "$TS" in
       [0-9][0-9][0-9][0-9]-*) ;;
       *) TS="$(date +%Y)-$TS" ;;
     esac
-    TODAY=$(date +%Y-%m-%d)
-    if [ "$TS" = "$TODAY" ]; then
-      echo "PASS"
-    else
-      echo "STALE"
-    fi
+    # 검증 신선도 (오늘 또는 어제 grace — day-resolution 자정 경계 완화)
+    _freshness_verdict "$TS"
     return
   fi
 
@@ -214,13 +228,8 @@ check_evaluator_pass() {
     return
   fi
 
-  # 오늘 날짜와 비교
-  TODAY=$(date +%Y-%m-%d)
-  if [ "$TS" = "$TODAY" ]; then
-    echo "PASS"
-  else
-    echo "STALE"
-  fi
+  # 검증 신선도 (오늘 또는 어제 grace — day-resolution 자정 경계 완화)
+  _freshness_verdict "$TS"
 }
 
 STATE=$(check_evaluator_pass)
@@ -263,7 +272,7 @@ SCOPE_SKIP=0
 CHANGED_FILES_LIST=$(git diff --cached --name-status 2>/dev/null | awk '{for(i=2;i<=NF;i++) print $i}' || true)
 if [ -n "$CHANGED_FILES_LIST" ]; then
   # 화이트리스트에 매치되지 않는 파일이 하나라도 있으면 NON_DOC에 포함
-  NON_DOC=$(echo "$CHANGED_FILES_LIST" | grep -vE '^(README|CHANGELOG|LICENSE)([._-].*)?$|^\.gitignore$|^docs/guides/|^dev/docs/|^\.nova/|^docs/nova-meta\.json$' || true)
+  NON_DOC=$(echo "$CHANGED_FILES_LIST" | grep -vE '^(README|CHANGELOG|LICENSE)([._-].*)?$|^\.gitignore$|^NOVA-STATE\.md$|^docs/guides/|^dev/docs/|^\.nova/|^docs/nova-meta\.json$' || true)
   if [ -z "$NON_DOC" ]; then
     SCOPE_SKIP=1
   fi
@@ -309,9 +318,10 @@ fi
 
 # ── 정상 경로 — NOVA-STATE.md / nova-meta.json 갱신 리마인더 ──
 
-# NOVA-STATE.md가 이번 커밋에 포함되었는지
+# NOVA-STATE.md가 이번 커밋에 포함되었는지 — 단, 실코드(non-doc) 변경이 동반될 때만 경고.
+# (a) doc-only 커밋엔 STATE 갱신 잔소리 금지(cry-wolf 제거). NON_DOC은 위 SCOPE 블록에서 계산됨.
 STATE_STALE=""
-if [ -f "NOVA-STATE.md" ]; then
+if [ -f "NOVA-STATE.md" ] && [ -n "${NON_DOC:-}" ]; then
   if ! git diff --cached --name-only 2>/dev/null | grep -q "NOVA-STATE.md"; then
     STATE_STALE="⚠️ NOVA-STATE.md가 이번 커밋에 포함되지 않았습니다. 갱신이 필요한지 확인하세요."
   fi

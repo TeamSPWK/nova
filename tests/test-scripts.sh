@@ -49,7 +49,10 @@ FAIL=0
 assert() {
   local description="$1"
   local condition="$2"
-  if eval "$condition"; then
+  # 서브셸 격리: condition 내 cd/OLDPWD/env 변경이 인접 assert로 누수되는 것을 차단
+  # (v5.54.1: 게이트 non-blocked-tail 테스트가 reconcile NUDGE를 cross-repo로 spawn하며
+  #  CWD를 흔들어 후속 테스트를 비결정적으로 만들던 flaky 차단 — security review 발견)
+  if ( eval "$condition" ); then
     echo -e "  ${GREEN}✓${NC} $description"
     ((PASS++))
   else
@@ -2777,6 +2780,59 @@ assert "S9.37: unstaged rm(NOVA-STATE+.nova) → exit 2 (HEAD 기준, silent ski
    echo bad > c.sh && git add c.sh; rm -f NOVA-STATE.md; rm -rf .nova; \
    echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
    cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+echo ""
+
+echo -e "${YELLOW}[v5.54.1: 게이트 마찰 결함 3종 수정 (a/b1/b2)]${NC}"
+
+# S9.38: (b1) NOVA-STATE.md-only staged + STALE fixture → exit 0 (상태파일 doc 취급 — scope_skip)
+assert "S9.38: (b1) NOVA-STATE.md만 staged + STALE → exit 0 (scope_skip)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; git add NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S9.39: (b1 음성) 코드(.sh)+NOVA-STATE.md 동시 staged + STALE → exit 2 (코드 있으면 scope_skip 안 됨 — 우회 표면 가드)
+assert "S9.39: (b1음성) 코드+NOVA-STATE 동시 + STALE → exit 2 (차단 유지)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo x > scripts/foo.sh; cp '$FIXTURE_DIR/nova-state-stale.md' NOVA-STATE.md; \
+   git add scripts/foo.sh NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.40: (b2) 어제 날짜 v2 + 코드 staged + 윈도없음 → exit 0 (어제 grace — 자정 경계 제거)
+assert "S9.40: (b2) 어제 v2 + 코드 staged → exit 0 (어제 grace)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo x > scripts/foo.sh && git add scripts/foo.sh; \
+   Y1=\$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d 'yesterday' +%Y-%m-%d); \
+   printf '%s\\n' '---' 'schema_version: 2' '---' '# S' '## 📊 Recent Activity' '| 시각 | 활동 | 결과 |' '|--|--|--|' \"| \$Y1 | x | ✅ PASS |\" > NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 0 ]"
+
+# S9.41: (b2 음성) 2일전 날짜 v2 + 코드 staged → exit 2 (grace는 어제까지 — 2일전은 STALE)
+assert "S9.41: (b2음성) 2일전 v2 + 코드 → exit 2 (STALE 유지)" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo x > scripts/foo.sh && git add scripts/foo.sh; \
+   Y2=\$(date -v-2d +%Y-%m-%d 2>/dev/null || date -d '2 days ago' +%Y-%m-%d); \
+   printf '%s\\n' '---' 'schema_version: 2' '---' '# S' '## 📊 Recent Activity' '| 시각 | 활동 | 결과 |' '|--|--|--|' \"| \$Y2 | x | ✅ PASS |\" > NOVA-STATE.md; \
+   echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' >/dev/null 2>&1; S=\$?; \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; [ \$S -eq 2 ]"
+
+# S9.42: (a) doc-only 커밋(README) → STATE_STALE cry-wolf 미출력 (NON_DOC 없으면 침묵)
+assert "S9.42: (a) doc-only 커밋 → STATE_STALE 경고 미출력" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   echo x > README.md && git add README.md; TODAY=\$(date +%Y-%m-%d); \
+   printf '%s\\n' '---' 'schema_version: 2' '---' '# S' '## 📊 Recent Activity' '| 시각 | 활동 | 결과 |' '|--|--|--|' \"| \$TODAY | x | ✅ PASS |\" > NOVA-STATE.md; \
+   OUT=\$(echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' 2>/dev/null); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; ! echo \"\$OUT\" | grep -q '포함되지 않았습니다'"
+
+# S9.43: (a 양성) 코드 변경 + NOVA-STATE staged 아님 + PASS → STATE_STALE 경고 출력 (진짜 신호는 보존)
+assert "S9.43: (a양성) 코드변경+STATE 미staged → STATE_STALE 경고 출력" \
+  "TMPD=\$(mktemp -d); cd \"\$TMPD\"; git init -q . && git config user.email t@t && git config user.name t; \
+   mkdir scripts && echo x > scripts/foo.sh && git add scripts/foo.sh; TODAY=\$(date +%Y-%m-%d); \
+   printf '%s\\n' '---' 'schema_version: 2' '---' '# S' '## 📊 Recent Activity' '| 시각 | 활동 | 결과 |' '|--|--|--|' \"| \$TODAY | x | ✅ PASS |\" > NOVA-STATE.md; \
+   OUT=\$(echo '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | bash '$HOOK' 2>/dev/null); \
+   cd - >/dev/null; rm -rf \"\$TMPD\"; echo \"\$OUT\" | grep -q '포함되지 않았습니다'"
 
 echo ""
 
