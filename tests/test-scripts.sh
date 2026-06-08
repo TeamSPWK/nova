@@ -2899,6 +2899,12 @@ assert "C9: COEXIST — init-nova-state NOVA-STATE.md 미생성(생성물 0)" \
 assert "C9b: COEXIST 미설정 — init-nova-state NOVA-STATE.md 정상 생성" \
   "TMPD=\$(mktemp -d); printf '{\"cwd\":\"%s\"}' \"\$TMPD\" | bash '$ROOT_DIR/scripts/init-nova-state.sh' >/dev/null 2>&1; R=1; [ -f \"\$TMPD/NOVA-STATE.md\" ] && R=0; rm -rf \"\$TMPD\"; [ \$R -eq 0 ]"
 
+# C10: ★ coexist — 커밋 게이트가 차단은 하되 .nova/를 (재)생성하지 않음 (record_gate_event no-op)
+#   사용자 페인포인트: NOVA_COEXIST=1인데 우회 커밋마다 .nova/ 부활 — record-event.sh의 mkdir 잔재.
+#   Nova-managed 레포(HEAD에 NOVA-STATE.md)에서 .nova 삭제 후 commit → 게이트 exit 2(차단) + .nova 미생성.
+assert "C10: COEXIST — 게이트 차단 시 .nova/ 미생성 (record_gate_event no-op)" \
+  "T=\$(mktemp -d); ( cd \"\$T\" && git init -q && git config user.email t@t && git config user.name t && printf '# state\n' > NOVA-STATE.md && git add NOVA-STATE.md && git commit -qm init && rm -rf .nova && echo code > foo.txt && git add foo.txt && printf '{\"tool_input\":{\"command\":\"git commit -m x\"}}' | NOVA_COEXIST=1 CLAUDE_PLUGIN_ROOT='$ROOT_DIR' bash '$ROOT_DIR/hooks/pre-commit-reminder.sh' >/dev/null 2>&1; E=\$?; [ \$E -eq 2 ] && [ ! -d .nova ] ); R=\$?; rm -rf \"\$T\"; [ \$R -eq 0 ]"
+
 echo ""
 
 # ═══════════════════════════════════════════

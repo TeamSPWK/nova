@@ -235,7 +235,11 @@ check_evaluator_pass() {
 STATE=$(check_evaluator_pass)
 
 # ── 이벤트 기록 헬퍼 (safe-default: 실패해도 Hard Gate 집행 영향 없음) ──
+# NOVA_COEXIST=1(게이트만 모드): 이벤트 기록은 "관찰성"이므로 no-op한다. record-event.sh가
+# `mkdir -p .nova`로 working tree에 .nova/를 (재)생성하던 잔재 차단 — 게이트의 차단 판정은
+# 이 헬퍼와 독립적이라 영향 없다. (게이트는 .nova/·NOVA-STATE.md를 읽기만 한다.)
 record_gate_event() {
+  [ "${NOVA_COEXIST:-0}" = "1" ] && return 0
   local event_type="$1"
   local extra_json="$2"
   local plugin_root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -342,7 +346,8 @@ fi
 DRIFT_NUDGE=""
 _plugin_root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 _reconcile_bin="$_plugin_root/scripts/reconcile-state.sh"
-if [ -x "$_reconcile_bin" ]; then
+# NOVA_COEXIST=1(게이트만 모드): drift NUDGE는 관찰성 기능이라 skip (계약상 "나머지 끔" + 매 커밋 3초 레이턴시 제거).
+if [ "${NOVA_COEXIST:-0}" != "1" ] && [ -x "$_reconcile_bin" ]; then
   # timeout 3초 — 폴백 체인: timeout → gtimeout → perl alarm → 무제한(최후)
   # macOS 기본 환경엔 timeout/gtimeout 둘 다 없음 → perl alarm이 3초 상한 보장
   if command -v timeout >/dev/null 2>&1; then

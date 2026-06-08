@@ -4,6 +4,8 @@
 # OMC 등 다른 "세션 소유형" 오케스트레이션 플러그인과 공존: Nova의 고유 가치(커밋 게이트)만
 # 유지하고 session-start 규칙 주입·per-tool 관찰성·stop·pre-compact·pre-edit·init-nova-state
 # (NOVA-STATE.md 자동생성)를 no-op한다 — 게이트만 모드에서 working tree에 Nova 산출물 0.
+# 게이트(pre-commit-reminder.sh)도 차단 판정만 하고 자기 이벤트 기록·drift NUDGE는 no-op이라
+# 커밋이 .nova/를 (재)생성하지 않는다(v5.55.1+). .nova/는 /nova:review 명시 호출 시에만 생성.
 #
 # 사용법:
 #   bash scripts/nova-coexist.sh status            # 현재 상태

@@ -27,7 +27,7 @@ bash scripts/nova-coexist.sh status    # 현재 상태
 
 | 훅 | COEXIST=1 | 이유 |
 |----|-----------|------|
-| `pre-commit-reminder.sh` (커밋 게이트) | ✅ **유지** | Nova 고유 가치 — 검증 안 된 커밋 차단 |
+| `pre-commit-reminder.sh` (커밋 게이트) | ✅ **유지** (차단만, 기록 X) | Nova 고유 가치 — 검증 안 된 커밋 차단. 단 게이트 자체의 이벤트 기록(`.nova/events.jsonl`)·drift NUDGE는 no-op → 커밋이 working tree에 `.nova/`를 (재)생성하지 않음 |
 | `worktree-setup.sh` (env 셋업) | ✅ 유지 | 사용자 .env 심링크 — Nova 마커 아님, OMC와 무충돌 |
 | `init-nova-state.sh` (NOVA-STATE.md 자동생성) | ⛔ no-op | 게이트만 모드 = working tree에 Nova 산출물 0 |
 | `session-start.sh` (규칙 주입) | ⛔ 최소화 | OMC가 자체 가이드 주입 → 중복 방지 |
@@ -39,6 +39,11 @@ bash scripts/nova-coexist.sh status    # 현재 상태
 > `.nova/`는 `/nova:review`를 한 번 이상 실행하면 자동 생성된다(`.gitignore` 대상). 따라서 Nova를
 > 한 번도 쓰지 않은 **깨끗한 레포의 첫 커밋은 게이트가 막지 않는다** — 첫 `/nova:review` 이후 활성.
 > (정상 흐름 `코드 → /nova:review → commit`에서는 review 시점에 `.nova/`가 생겨 게이트가 동작한다.)
+>
+> ⛔ **게이트는 커밋 시 `.nova/`를 쓰지 않는다 (v5.55.1+)**: coexist에서 게이트는 차단 판정만 하고
+> 자기 이벤트 기록(`commit_blocked` 등 → `record-event.sh`의 `mkdir -p .nova`)과 drift NUDGE를 모두
+> no-op한다. 따라서 `.nova/`는 오직 사용자가 `/nova:review`를 **명시 호출**할 때만 생긴다.
+> (이전엔 우회 커밋마다 `.nova/`가 부활하던 잔재가 있었음 — v5.55.1에서 제거.)
 
 ## 절차
 
