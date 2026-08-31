@@ -17,6 +17,9 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    # GitHub 기본 타임아웃은 360분(6시간)이라, 잡 하나가 걸리면 $2.16 이 탄다.
+    # 값 = 이 레포 최근 성공 잡 p95 × 3 (최소 15분).
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
