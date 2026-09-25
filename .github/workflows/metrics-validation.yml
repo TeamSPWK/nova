@@ -7,8 +7,6 @@ on:
   pull_request:
     paths:
       - 'docs/baselines/**.json'
-      - 'README.md'
-      - 'README.ko.md'
   push:
     branches: [main]
     paths:
