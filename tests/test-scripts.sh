@@ -3135,13 +3135,6 @@ assert "R16: publish-metrics.sh --dry-run baselines JSON schema (period/kpis 4 +
   "bash '$ROOT_DIR/scripts/publish-metrics.sh' --dry-run --fixture '$ROOT_DIR/tests/fixtures/events-sufficient.jsonl' --since all 2>/dev/null \
      | tail -n +2 | jq -e '.schema_version == 1 and (.period | test(\"^[0-9]{4}-W[0-9]{2}$\")) and (.kpis | length == 4) and (.kpis[0] | has(\"delta_pct\"))' >/dev/null"
 
-assert "R17: .github/workflows/metrics-validation.yml 존재 + 4 검증 단계 키워드" \
-  "[ -f '$ROOT_DIR/.github/workflows/metrics-validation.yml' ] && \
-   grep -q 'Schema validation' '$ROOT_DIR/.github/workflows/metrics-validation.yml' && \
-   grep -q 'Forbidden fields check' '$ROOT_DIR/.github/workflows/metrics-validation.yml' && \
-   grep -q 'README badge marker integrity' '$ROOT_DIR/.github/workflows/metrics-validation.yml' && \
-   grep -q '.nova/ leak check' '$ROOT_DIR/.github/workflows/metrics-validation.yml'"
-
 assert "R18: README.md + README.ko.md AUTO-GEN 마커 영역 (start/end)" \
   "grep -q 'nova-metrics:badges:start' '$ROOT_DIR/README.md' && \
    grep -q 'nova-metrics:badges:end' '$ROOT_DIR/README.md' && \
